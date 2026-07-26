@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: var(--font-vazirmatn);
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+input, textarea {
+  font-size: 16px !important;
+}
+
+input::placeholder {
+  text-align: right;
+  direction: rtl;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
