@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Vazirmatn } from "next/font/google";
+import { ServiceWorkerRegister } from "@/components/sw-register";
 import "./globals.css";
 
 const vazirmatn = Vazirmatn({
@@ -10,16 +11,13 @@ const vazirmatn = Vazirmatn({
 });
 
 export const metadata: Metadata = {
-  title: "SarafiX - مدیریت هوشمند صرافی",
-  description: "اپلیکیشن مدیریت هوشمند صرافی",
+  title: "SarafiX",
+  description: "مدیریت هوشمند صرافی",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "SarafiX",
-  },
-  formatDetection: {
-    telephone: false,
   },
 };
 
@@ -44,6 +42,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
       </head>
       <body className="min-h-dvh bg-white font-sans text-gray-900 antialiased">
+        <ServiceWorkerRegister />
         {children}
       </body>
     </html>

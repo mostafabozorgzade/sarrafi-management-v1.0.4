@@ -1,14 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { ArrowUpLeft, ArrowDownRight, Search } from "lucide-react";
 import { transactions, currencyNames } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
-type FilterType = "today" | "week" | "month";
-
 export default function TransactionsPage() {
-  const [filter, setFilter] = useState<FilterType>("today");
+  const [filter, setFilter] = useState<"today" | "week" | "month">("today");
   const [typeFilter, setTypeFilter] = useState<"all" | "buy" | "sell">("all");
   const [search, setSearch] = useState("");
 
@@ -49,7 +48,7 @@ export default function TransactionsPage() {
         <p className="text-[10px] text-gray-300 mb-2">{filtered.length} معامله</p>
         <div className="space-y-0">
           {filtered.map((t) => (
-            <a key={t.id} href={`/transactions/${t.id}`} className="flex items-center gap-3 py-3 border-b border-gray-50 last:border-0 active:bg-gray-50 -mx-4 px-4">
+            <Link key={t.id} href={`/transactions/${t.id}`} className="flex items-center gap-3 py-3 border-b border-gray-50 last:border-0 active:bg-gray-50 -mx-4 px-4">
               <div className={cn("flex h-9 w-9 items-center justify-center rounded-lg", t.type === "buy" ? "bg-blue-50" : "bg-emerald-50")}>
                 {t.type === "buy" ? <ArrowDownRight className="h-4 w-4 text-blue-600" strokeWidth={1.5} /> : <ArrowUpLeft className="h-4 w-4 text-emerald-600" strokeWidth={1.5} />}
               </div>
@@ -67,7 +66,7 @@ export default function TransactionsPage() {
                   <span className="text-[10px] text-green-500 font-medium">سود: {t.profit.toLocaleString("en-US")}</span>
                 </div>
               </div>
-            </a>
+            </Link>
           ))}
         </div>
       </div>

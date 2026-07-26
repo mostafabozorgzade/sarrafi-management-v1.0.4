@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
 import {
   ArrowUpLeft,
   ArrowDownRight,
@@ -9,6 +9,7 @@ import {
   UserCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
 
 type Tab = "transactions" | "rates" | "staff";
 
@@ -19,10 +20,10 @@ const tabs: { id: Tab; label: string }[] = [
 ];
 
 const transactions = [
-  { id: "1", type: "buy" as const, currency: "دلار", amount: "۵,۰۰۰", rate: "۵۸,۲۰۰", customer: "احمد محمدی", time: "۱۴:۳۰" },
-  { id: "2", type: "sell" as const, currency: "یورو", amount: "۳,۰۰۰", rate: "۶۳,۵۰۰", customer: "علی رضایی", time: "۱۳:۴۵" },
-  { id: "3", type: "buy" as const, currency: "روپیه", amount: "۵۰۰,۰۰۰", rate: "۲۲۰", customer: "فاطمه کریمی", time: "۱۲:۱۵" },
-  { id: "4", type: "sell" as const, currency: "دلار", amount: "۲,۰۰۰", rate: "۵۸,۵۰۰", customer: "حسن عباسی", time: "۱۱:۰۰" },
+  { id: "1", type: "buy" as const, currency: "دلار", amount: "۵,۰۰۰", customer: "احمد محمدی", time: "۱۴:۳۰" },
+  { id: "2", type: "sell" as const, currency: "یورو", amount: "۳,۰۰۰", customer: "علی رضایی", time: "۱۳:۴۵" },
+  { id: "3", type: "buy" as const, currency: "روپیه", amount: "۵۰۰,۰۰۰", customer: "فاطمه کریمی", time: "۱۲:۱۵" },
+  { id: "4", type: "sell" as const, currency: "دلار", amount: "۲,۰۰۰", customer: "حسن عباسی", time: "۱۱:۰۰" },
 ];
 
 const rateChanges = [
@@ -61,13 +62,9 @@ export function RecentActivities() {
 
       <div className="space-y-0 px-1">
         {activeTab === "transactions" && transactions.map((t) => (
-          <div key={t.id} className="flex items-center gap-3 px-3 py-3 border-b border-gray-50 last:border-0">
+          <Link key={t.id} href={`/transactions/${t.id}`} className="flex items-center gap-3 px-3 py-3 border-b border-gray-50 last:border-0 active:bg-gray-50 -mx-3">
             <div className={cn("flex h-8 w-8 items-center justify-center rounded-lg", t.type === "buy" ? "bg-blue-50" : "bg-emerald-50")}>
-              {t.type === "buy" ? (
-                <ArrowDownRight className="h-3.5 w-3.5 text-blue-600" strokeWidth={1.5} />
-              ) : (
-                <ArrowUpLeft className="h-3.5 w-3.5 text-emerald-600" strokeWidth={1.5} />
-              )}
+              {t.type === "buy" ? <ArrowDownRight className="h-3.5 w-3.5 text-blue-600" strokeWidth={1.5} /> : <ArrowUpLeft className="h-3.5 w-3.5 text-emerald-600" strokeWidth={1.5} />}
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between">
@@ -79,17 +76,13 @@ export function RecentActivities() {
                 <span className="text-[11px] font-medium text-gray-600" dir="ltr">{t.amount}</span>
               </div>
             </div>
-          </div>
+          </Link>
         ))}
 
         {activeTab === "rates" && rateChanges.map((r) => (
           <div key={r.id} className="flex items-center gap-3 px-3 py-3 border-b border-gray-50 last:border-0">
             <div className={cn("flex h-8 w-8 items-center justify-center rounded-lg", r.change === "up" ? "bg-green-50" : "bg-red-50")}>
-              {r.change === "up" ? (
-                <TrendingUp className="h-3.5 w-3.5 text-green-600" strokeWidth={1.5} />
-              ) : (
-                <TrendingDown className="h-3.5 w-3.5 text-red-600" strokeWidth={1.5} />
-              )}
+              {r.change === "up" ? <TrendingUp className="h-3.5 w-3.5 text-green-600" strokeWidth={1.5} /> : <TrendingDown className="h-3.5 w-3.5 text-red-600" strokeWidth={1.5} />}
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between">

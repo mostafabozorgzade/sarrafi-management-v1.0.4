@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Search, Phone } from "lucide-react";
 import { customers } from "@/lib/mock-data";
 
@@ -25,7 +26,7 @@ export default function CustomersPage() {
 
       <div className="px-4 py-2">
         {filtered.map((c) => (
-          <a key={c.id} href={`/customers/${c.id}`} className="flex items-center gap-3 py-3 border-b border-gray-50 last:border-0 active:bg-gray-50 -mx-4 px-4">
+          <Link key={c.id} href={`/customers/${c.id}`} className="flex items-center gap-3 py-3 border-b border-gray-50 last:border-0 active:bg-gray-50 -mx-4 px-4">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-xs font-bold text-blue-600">
               {c.name.charAt(0)}
             </div>
@@ -39,10 +40,8 @@ export default function CustomersPage() {
                 <span className="text-[11px] text-gray-400" dir="ltr">{c.phone}</span>
               </div>
             </div>
-            <div className="text-left">
-              <p className="text-[10px] text-gray-300">{c.totalTransactions} معامله</p>
-            </div>
-          </a>
+            <p className="text-[10px] text-gray-300">{c.totalTransactions} معامله</p>
+          </Link>
         ))}
       </div>
     </main>
