@@ -10,22 +10,16 @@ import { cn } from "@/lib/utils";
 interface Transaction {
   id: string;
   type: string;
-  currency: string;
+  currency: { code: string; name: string };
   amount: bigint;
   rate: bigint;
   totalToman: bigint;
   profit: bigint;
   description: string | null;
-  destinationAccount: string | null;
-  destinationBranch: string | null;
-  settlementDate: string | null;
-  isSettled: boolean;
   createdAt: string;
-  customer: { id: string; name: string; };
-  user: { id: string; firstName: string; lastName: string; };
+  customer: { id: string; name: string };
+  user: { id: string; firstName: string; lastName: string };
 }
-
-const currencyNames: Record<string, string> = { PKR: "روپیه پاکستان", USD: "دلار آمریکا", EUR: "یورو" };
 
 export default function TransactionDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -35,23 +29,21 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    api.get(`/api/transactions?id=${id}`).then((data) => {
-      const found = data.find((t: Transaction) => t.id === id);
-      setTx(found || null);
+    api.get(`/api/transactions`).then((data: Transaction[]) => {
+      setTx(data.find((t) => t.id === id) || null);
       setLoading(false);
     }).catch((err) => { setError(err.message); setLoading(false); });
   }, [id]);
 
   if (loading) return <main className="flex min-h-dvh items-center justify-center"><div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-200 border-t-blue-600" /></main>;
-
-  if (error || !tx) {
-    return <main className="flex min-h-dvh items-center justify-center"><p className="text-sm text-gray-400">{error || "یافت نشد"}</p></main>;
-  }
+  if (error || !tx) return <main className="flex min-h-dvh items-center justify-center"><p className="text-sm text-gray-400">{error || "یافت نشد"}</p></main>;
 
   const rows = [
     { label: "شماره", value: tx.id.slice(0, 8) },
     { label: "مشتری", value: tx.customer.name },
-    { label: "مقدار", value: `${Number(tx.amount).toLocaleString("en-US")} ${currencyNames[tx.currency]}` },
+    { label: "نوع", value: tx.type === "buy" ? "خرید" : "فروش" },
+    { label: "ارز", value: tx.currency.code },
+    { label: "مقدار", value: `${Number(tx.amount).toLocaleString("en-US")} ${tx.currency.code}` },
     { label: "نرخ", value: `${Number(tx.rate).toLocaleString("en-US")} تومان` },
     { label: "مبلغ کل", value: `${Number(tx.totalToman).toLocaleString("en-US")} تومان` },
     { label: "سود", value: `${Number(tx.profit).toLocaleString("en-US")} تومان` },
@@ -59,8 +51,6 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
     { label: "تاریخ", value: new Date(tx.createdAt).toLocaleDateString("fa-IR") },
     { label: "ساعت", value: new Date(tx.createdAt).toLocaleTimeString("fa-IR", { hour: "2-digit", minute: "2-digit" }) },
   ];
-
-  if (tx.destinationAccount) rows.splice(7, 0, { label: "حساب مقصد", value: tx.destinationAccount });
 
   return (
     <main className="min-h-dvh bg-white">
@@ -71,16 +61,14 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
         <div className={cn("flex h-6 w-6 items-center justify-center rounded-md", tx.type === "buy" ? "bg-blue-50" : "bg-emerald-50")}>
           {tx.type === "buy" ? <ArrowDownRight className="h-3 w-3 text-blue-600" strokeWidth={1.5} /> : <ArrowUpLeft className="h-3 w-3 text-emerald-600" strokeWidth={1.5} />}
         </div>
-        <h1 className="text-sm font-semibold text-gray-900">{tx.type === "buy" ? "خرید" : "فروش"} {currencyNames[tx.currency]}</h1>
+        <h1 className="text-sm font-semibold text-gray-900">{tx.type === "buy" ? "خرید" : "فروش"} {tx.currency.code}</h1>
       </div>
-
       <div className="p-4 space-y-4">
         <div className={cn("rounded-xl p-4 text-white", tx.type === "buy" ? "bg-blue-600" : "bg-emerald-600")}>
           <p className="text-xs opacity-70">مبلغ کل</p>
           <p className="text-xl font-bold mt-0.5" dir="ltr">{Number(tx.totalToman).toLocaleString("en-US")} تومان</p>
           <p className="text-xs opacity-60 mt-1">{Number(tx.amount).toLocaleString("en-US")} × {Number(tx.rate).toLocaleString("en-US")}</p>
         </div>
-
         <div className="rounded-xl border border-gray-100 divide-y divide-gray-50">
           {rows.map((row) => (
             <div key={row.label} className="flex items-center justify-between px-4 py-3">
@@ -89,7 +77,6 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
             </div>
           ))}
         </div>
-
         {tx.description && (
           <div className="rounded-xl border border-gray-100 p-4">
             <p className="text-[10px] text-gray-300 mb-1">توضیحات</p>

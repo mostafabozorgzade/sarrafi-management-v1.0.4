@@ -9,7 +9,18 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   const customer = await prisma.customer.findUnique({
     where: { id },
-    include: { transactions: { orderBy: { createdAt: "desc" }, take: 20 } },
+    include: {
+      transactions: {
+        include: { currency: true, user: { select: { firstName: true, lastName: true } } },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+      },
+      orders: {
+        include: { currency: true },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+      },
+    },
   });
 
   if (!customer) return NextResponse.json({ error: "یافت نشد" }, { status: 404 });

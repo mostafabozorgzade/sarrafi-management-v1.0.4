@@ -1,19 +1,21 @@
 export const PERMISSIONS = {
-  SUPER_ADMIN: {
+  OWNER: {
     dashboard: ["read"],
     transactions: ["create", "read", "update", "delete"],
+    orders: ["create", "read", "update", "delete"],
     customers: ["create", "read", "update", "delete"],
     rates: ["read", "update"],
-    cashier: ["create", "read"],
+    cashier: ["create", "read", "update"],
     expenses: ["create", "read", "update", "delete"],
     reports: ["read"],
     settings: ["read", "update"],
     users: ["create", "read", "update", "delete"],
-    tenants: ["create", "read", "update", "delete"],
+    currencies: ["create", "read", "update", "delete"],
   },
   MANAGER: {
     dashboard: ["read"],
     transactions: ["create", "read", "update"],
+    orders: ["create", "read", "update"],
     customers: ["create", "read", "update"],
     rates: ["read", "update"],
     cashier: ["create", "read"],
@@ -21,11 +23,12 @@ export const PERMISSIONS = {
     reports: ["read"],
     settings: ["read"],
     users: ["read"],
-    tenants: [],
+    currencies: ["read"],
   },
-  EMPLOYEE: {
+  CASHIER: {
     dashboard: ["read"],
     transactions: ["create", "read"],
+    orders: ["create", "read"],
     customers: ["read"],
     rates: ["read"],
     cashier: ["read"],
@@ -33,12 +36,25 @@ export const PERMISSIONS = {
     reports: [],
     settings: [],
     users: [],
-    tenants: [],
+    currencies: ["read"],
+  },
+  ACCOUNTANT: {
+    dashboard: ["read"],
+    transactions: ["read"],
+    orders: ["read"],
+    customers: ["read", "update"],
+    rates: ["read"],
+    cashier: ["read"],
+    expenses: ["create", "read", "update"],
+    reports: ["read"],
+    settings: [],
+    users: [],
+    currencies: ["read"],
   },
 } as const;
 
 export type Permission = "create" | "read" | "update" | "delete";
-export type Resource = keyof typeof PERMISSIONS.SUPER_ADMIN;
+export type Resource = keyof typeof PERMISSIONS.OWNER;
 export type Role = keyof typeof PERMISSIONS;
 
 export function hasPermission(role: Role, resource: Resource, action: Permission): boolean {

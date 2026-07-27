@@ -6,10 +6,14 @@ export async function GET(request: NextRequest) {
   const user = await getAuthUser(request);
   if (!user) return unauthorized();
 
-  const where = user.role === "SUPER_ADMIN" ? {} : { tenantId: user.tenantId! };
+  const where = user.role === "OWNER" ? {} : { tenantId: user.tenantId! };
 
   const rates = await prisma.currencyRate.findMany({
     where,
+    include: {
+      currency: { select: { code: true, name: true } },
+      changedBy: { select: { firstName: true, lastName: true } },
+    },
     orderBy: { createdAt: "desc" },
   });
 
@@ -22,22 +26,17 @@ export async function POST(request: NextRequest) {
   if (!user.tenantId) return NextResponse.json({ error: "tenant required" }, { status: 400 });
 
   const body = await request.json();
-  const { currency, buyRate, sellRate } = body;
+  const { currencyId, buyRate, sellRate } = body;
 
-  if (!currency || !buyRate || !sellRate) {
+  if (!currencyId || !buyRate || !sellRate) {
     return NextResponse.json({ error: "فیلدهای الزامی را پر کنید" }, { status: 400 });
   }
 
   const rate = await prisma.currencyRate.upsert({
-    where: { tenantId_currency: { tenantId: user.tenantId, currency } },
-    update: { buyRate: Number(buyRate), sellRate: Number(sellRate), changedBy: user.name },
-    create: {
-      tenantId: user.tenantId,
-      currency,
-      buyRate: Number(buyRate),
-      sellRate: Number(sellRate),
-      changedBy: user.name,
-    },
+    where: { tenantId_currencyId: { tenantId: user.tenantId, currencyId } },
+    update: { buyRate: Number(buyRate), sellRate: Number(sellRate), changedById: user.userId },
+    create: { tenantId: user.tenantId, currencyId, buyRate: Number(buyRate), sellRate: Number(sellRate), changedById: user.userId },
+    include: { currency: { select: { code: true, name: true } }, changedBy: { select: { firstName: true, lastName: true } } },
   });
 
   return NextResponse.json(rate);

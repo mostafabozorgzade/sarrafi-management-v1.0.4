@@ -4,16 +4,18 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
-  ArrowLeftRight,
+  ClipboardList,
   Users,
+  Wallet,
   Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { label: "داشبورد", icon: LayoutDashboard, href: "/dashboard" },
-  { label: "معاملات", icon: ArrowLeftRight, href: "/transactions" },
+  { label: "سفارشات", icon: ClipboardList, href: "/orders" },
   { label: "مشتریان", icon: Users, href: "/customers" },
+  { label: "صندوق‌ها", icon: Wallet, href: "/cashier" },
   { label: "تنظیمات", icon: Settings, href: "/settings" },
 ];
 
@@ -30,7 +32,7 @@ export function BottomNav() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center gap-0.5 px-4 py-2 text-[10px] font-medium transition-colors",
+                "flex flex-col items-center gap-0.5 px-3 py-2 text-[10px] font-medium transition-colors",
                 isActive ? "text-blue-600" : "text-gray-400"
               )}
             >

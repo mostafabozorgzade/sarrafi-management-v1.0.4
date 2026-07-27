@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
   const user = await getAuthUser(request);
   if (!user) return unauthorized();
 
-  const where = user.role === "SUPER_ADMIN" ? {} : { tenantId: user.tenantId! };
+  const where = user.role === "OWNER" ? {} : { tenantId: user.tenantId! };
 
   const customers = await prisma.customer.findMany({
     where,

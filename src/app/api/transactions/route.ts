@@ -9,14 +9,27 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const type = searchParams.get("type");
   const customerId = searchParams.get("customerId");
+  const currencyId = searchParams.get("currencyId");
+  const dateFrom = searchParams.get("dateFrom");
+  const dateTo = searchParams.get("dateTo");
 
-  const where: Record<string, unknown> = user.role === "SUPER_ADMIN" ? {} : { tenantId: user.tenantId! };
+  const where: Record<string, unknown> = user.role === "OWNER" ? {} : { tenantId: user.tenantId! };
   if (type && type !== "all") where.type = type;
   if (customerId) where.customerId = customerId;
+  if (currencyId) where.currencyId = currencyId;
+  if (dateFrom || dateTo) {
+    where.createdAt = {};
+    if (dateFrom) (where.createdAt as Record<string, unknown>).gte = new Date(dateFrom);
+    if (dateTo) (where.createdAt as Record<string, unknown>).lte = new Date(dateTo + "T23:59:59.999Z");
+  }
 
   const transactions = await prisma.transaction.findMany({
     where,
-    include: { customer: { select: { name: true, phone: true } }, user: { select: { firstName: true, lastName: true } } },
+    include: {
+      customer: { select: { name: true, phone: true } },
+      currency: { select: { code: true, name: true } },
+      user: { select: { firstName: true, lastName: true } },
+    },
     orderBy: { createdAt: "desc" },
     take: 100,
   });
@@ -30,9 +43,9 @@ export async function POST(request: NextRequest) {
   if (!user.tenantId) return NextResponse.json({ error: "tenant required" }, { status: 400 });
 
   const body = await request.json();
-  const { type, customerId, currency, amount, rate, destinationAccount, description } = body;
+  const { type, customerId, currencyId, amount, rate, description } = body;
 
-  if (!type || !customerId || !currency || !amount || !rate) {
+  if (!type || !customerId || !currencyId || !amount || !rate) {
     return NextResponse.json({ error: "فیلدهای الزامی را پر کنید" }, { status: 400 });
   }
 
@@ -40,20 +53,16 @@ export async function POST(request: NextRequest) {
   const rateNum = Number(rate);
   const totalToman = amountNum * rateNum;
 
+  const currencyRate = await prisma.currencyRate.findUnique({
+    where: { tenantId_currencyId: { tenantId: user.tenantId, currencyId } },
+  });
+
   let profit = 0;
-  if (type === "sell") {
-    const buyRate = await prisma.currencyRate.findUnique({
-      where: { tenantId_currency: { tenantId: user.tenantId, currency } },
-    });
-    if (buyRate) {
-      profit = (rateNum - Number(buyRate.buyRate)) * amountNum;
-    }
-  } else {
-    const buyRate = await prisma.currencyRate.findUnique({
-      where: { tenantId_currency: { tenantId: user.tenantId, currency } },
-    });
-    if (buyRate) {
-      profit = (Number(buyRate.sellRate) - rateNum) * amountNum;
+  if (currencyRate) {
+    if (type === "sell") {
+      profit = (rateNum - Number(currencyRate.buyRate)) * amountNum;
+    } else {
+      profit = (Number(currencyRate.sellRate) - rateNum) * amountNum;
     }
   }
 
@@ -62,51 +71,30 @@ export async function POST(request: NextRequest) {
       tenantId: user.tenantId,
       userId: user.userId,
       customerId,
+      currencyId,
       type,
-      currency,
       amount: amountNum,
       rate: rateNum,
       totalToman,
       profit,
-      destinationAccount: destinationAccount || null,
       description: description || null,
     },
-    include: { customer: { select: { name: true } } },
+    include: { customer: { select: { name: true } }, currency: { select: { code: true } } },
   });
 
   if (type === "buy") {
-    await prisma.customer.update({
-      where: { id: customerId },
-      data: { totalBuy: { increment: totalToman } },
-    });
-    const register = await prisma.cashRegister.findFirst({
-      where: { tenantId: user.tenantId, type: "toman" },
-    });
+    await prisma.customer.update({ where: { id: customerId }, data: { totalBuy: { increment: totalToman } } });
+    const register = await prisma.cashRegister.findFirst({ where: { tenantId: user.tenantId, type: "toman" } });
     if (register) {
-      await prisma.cashEntry.create({
-        data: { registerId: register.id, type: "out", amount: totalToman, description: `خرید ${currency} - ${transaction.customer.name}` },
-      });
-      await prisma.cashRegister.update({
-        where: { id: register.id },
-        data: { balance: { decrement: totalToman } },
-      });
+      await prisma.cashEntry.create({ data: { registerId: register.id, type: "out", amount: totalToman, description: `خرید ${transaction.currency.code} - ${transaction.customer.name}` } });
+      await prisma.cashRegister.update({ where: { id: register.id }, data: { balance: { decrement: totalToman } } });
     }
   } else {
-    await prisma.customer.update({
-      where: { id: customerId },
-      data: { totalSell: { increment: totalToman } },
-    });
-    const register = await prisma.cashRegister.findFirst({
-      where: { tenantId: user.tenantId, type: "toman" },
-    });
+    await prisma.customer.update({ where: { id: customerId }, data: { totalSell: { increment: totalToman } } });
+    const register = await prisma.cashRegister.findFirst({ where: { tenantId: user.tenantId, type: "toman" } });
     if (register) {
-      await prisma.cashEntry.create({
-        data: { registerId: register.id, type: "in", amount: totalToman, description: `فروش ${currency} - ${transaction.customer.name}` },
-      });
-      await prisma.cashRegister.update({
-        where: { id: register.id },
-        data: { balance: { increment: totalToman } },
-      });
+      await prisma.cashEntry.create({ data: { registerId: register.id, type: "in", amount: totalToman, description: `فروش ${transaction.currency.code} - ${transaction.customer.name}` } });
+      await prisma.cashRegister.update({ where: { id: register.id }, data: { balance: { increment: totalToman } } });
     }
   }
 

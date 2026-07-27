@@ -8,31 +8,38 @@ import { Button } from "@/components/ui/button";
 import { ErrorAlert } from "@/components/ui/error-alert";
 import { cn } from "@/lib/utils";
 
-interface Rate { id: string; currency: string; buyRate: bigint; sellRate: bigint; changedBy: string; createdAt: string; }
-
-const currencyLabels: Record<string, string> = { PKR: "روپیه پاکستان", USD: "دلار آمریکا", EUR: "یورو" };
+interface Currency { id: string; code: string; name: string; }
+interface Rate { id: string; currencyId: string; buyRate: bigint; sellRate: bigint; createdAt: string; currency: { code: string; name: string }; changedBy: { firstName: string; lastName: string } }
 
 export default function RatesPage() {
   const [tab, setTab] = useState<"current" | "change">("current");
   const [rates, setRates] = useState<Rate[]>([]);
+  const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currency, setCurrency] = useState("PKR");
+  const [currencyId, setCurrencyId] = useState("");
   const [buyRate, setBuyRate] = useState("");
   const [sellRate, setSellRate] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  const loadRates = () => api.get("/api/rates").then((data) => { setRates(data); setLoading(false); }).catch(() => setLoading(false));
-  useEffect(() => { loadRates(); }, []);
+  useEffect(() => {
+    Promise.all([api.get("/api/rates"), api.get("/api/currencies")]).then(([r, c]) => {
+      setRates(r);
+      setCurrencies(c);
+      if (c.length > 0) setCurrencyId(c[0].id);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!buyRate || !sellRate) { setError("نرخ خرید و فروش الزامی است"); return; }
+    if (!currencyId || !buyRate || !sellRate) { setError("نرخ خرید و فروش الزامی است"); return; }
     try {
-      await api.post("/api/rates", { currency, buyRate, sellRate });
+      await api.post("/api/rates", { currencyId, buyRate, sellRate });
       setSuccess(true);
-      loadRates();
+      const updated = await api.get("/api/rates");
+      setRates(updated);
       setTimeout(() => { setSuccess(false); setTab("current"); }, 1500);
     } catch (err) { setError(err instanceof Error ? err.message : "خطا"); }
   };
@@ -52,8 +59,8 @@ export default function RatesPage() {
         ) : rates.map((r) => (
           <div key={r.id} className="rounded-xl border border-gray-100 p-4 mb-3">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-xs font-semibold text-gray-900">{currencyLabels[r.currency] || r.currency}</h3>
-              <span className="text-[10px] text-gray-300">{r.changedBy}</span>
+              <h3 className="text-xs font-semibold text-gray-900">{r.currency.name}</h3>
+              <span className="text-[10px] text-gray-300">{r.changedBy.firstName} {r.changedBy.lastName}</span>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div className="rounded-lg bg-blue-50 p-3 text-center">
@@ -77,8 +84,8 @@ export default function RatesPage() {
             {error && <ErrorAlert message={error} />}
             {success && <div className="flex items-center gap-2 rounded-lg bg-green-50 p-3 text-xs text-green-600"><CheckCircle2 className="h-4 w-4" />نرخ بروزرسانی شد</div>}
             <div className="space-y-1"><label className="text-xs font-medium text-gray-500">ارز</label>
-              <select value={currency} onChange={(e) => { setCurrency(e.target.value); const r = rates.find((x) => x.currency === e.target.value); setBuyRate(r ? String(r.buyRate) : ""); setSellRate(r ? String(r.sellRate) : ""); }} className="flex h-12 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm focus:outline-none focus:border-blue-500">
-                <option value="PKR">روپیه پاکستان</option><option value="USD">دلار آمریکا</option><option value="EUR">یورو</option>
+              <select value={currencyId} onChange={(e) => { setCurrencyId(e.target.value); const r = rates.find((x) => x.currencyId === e.target.value); setBuyRate(r ? String(r.buyRate) : ""); setSellRate(r ? String(r.sellRate) : ""); }} className="flex h-12 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm focus:outline-none focus:border-blue-500">
+                {currencies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select></div>
             <div className="space-y-1"><label className="text-xs font-medium text-gray-500">نرخ خرید (تومان)</label><Input type="number" value={buyRate} onChange={(e) => setBuyRate(e.target.value)} placeholder="0" className="h-12 text-left" inputMode="numeric" /></div>
             <div className="space-y-1"><label className="text-xs font-medium text-gray-500">نرخ فروش (تومان)</label><Input type="number" value={sellRate} onChange={(e) => setSellRate(e.target.value)} placeholder="0" className="h-12 text-left" inputMode="numeric" /></div>

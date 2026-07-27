@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
   const user = await getAuthUser(request);
   if (!user) return unauthorized();
 
-  const where = user.role === "SUPER_ADMIN" ? {} : { tenantId: user.tenantId! };
+  const where = user.role === "OWNER" ? {} : { tenantId: user.tenantId! };
 
   const users = await prisma.user.findMany({
     where,
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const user = await getAuthUser(request);
   if (!user) return unauthorized();
-  if (user.role === "EMPLOYEE") return NextResponse.json({ error: "دسترسی ندارید" }, { status: 403 });
+  if (user.role !== "OWNER" && user.role !== "MANAGER") return NextResponse.json({ error: "دسترسی ندارید" }, { status: 403 });
 
   const body = await request.json();
   const { mobile, firstName, lastName, role, password } = body;
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       firstName,
       lastName,
       password: hashedPassword,
-      role: role || "EMPLOYEE",
+      role: role || "CASHIER",
     },
     select: { id: true, mobile: true, firstName: true, lastName: true, role: true, isActive: true },
   });

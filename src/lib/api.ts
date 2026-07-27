@@ -20,5 +20,6 @@ export const api = {
   get: (url: string) => fetchAPI(url),
   post: (url: string, body: unknown) => fetchAPI(url, { method: "POST", body: JSON.stringify(body) }),
   put: (url: string, body: unknown) => fetchAPI(url, { method: "PUT", body: JSON.stringify(body) }),
+  patch: (url: string, body: unknown) => fetchAPI(url, { method: "PATCH", body: JSON.stringify(body) }),
   delete: (url: string) => fetchAPI(url, { method: "DELETE" }),
 };

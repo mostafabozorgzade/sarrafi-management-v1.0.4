@@ -10,8 +10,8 @@ import { cn } from "@/lib/utils";
 
 interface User { id: string; mobile: string; firstName: string; lastName: string; role: string; isActive: boolean; lastLogin: string | null; }
 
-const roleLabels: Record<string, string> = { SUPER_ADMIN: "سوپر ادمین", MANAGER: "مدیر", EMPLOYEE: "کارمند" };
-const roleColors: Record<string, string> = { SUPER_ADMIN: "bg-red-50 text-red-600", MANAGER: "bg-blue-50 text-blue-600", EMPLOYEE: "bg-gray-50 text-gray-600" };
+const roleLabels: Record<string, string> = { OWNER: "مالک", MANAGER: "مدیر", CASHIER: "صندوق‌دار", ACCOUNTANT: "حسابدار" };
+const roleColors: Record<string, string> = { OWNER: "bg-red-50 text-red-600", MANAGER: "bg-blue-50 text-blue-600", CASHIER: "bg-green-50 text-green-600", ACCOUNTANT: "bg-violet-50 text-violet-600" };
 
 export default function SettingsPage() {
   const [tab, setTab] = useState<"list" | "add">("list");
@@ -21,7 +21,7 @@ export default function SettingsPage() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("EMPLOYEE");
+  const [role, setRole] = useState("CASHIER");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
@@ -70,7 +70,7 @@ export default function SettingsPage() {
             <div className="space-y-1"><label className="text-xs font-medium text-gray-500">رمز عبور</label><Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="حداقل ۶ کاراکتر" className="h-12" /></div>
             <div className="space-y-1"><label className="text-xs font-medium text-gray-500">نقش</label>
               <select value={role} onChange={(e) => setRole(e.target.value)} className="flex h-12 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm focus:outline-none focus:border-blue-500">
-                <option value="EMPLOYEE">کارمند</option><option value="MANAGER">مدیر</option>
+                <option value="CASHIER">صندوق‌دار</option><option value="MANAGER">مدیر</option><option value="ACCOUNTANT">حسابدار</option>
               </select></div>
             <Button type="submit" isLoading={false} className="w-full h-12"><UserPlus className="h-4 w-4" strokeWidth={1.5} />افزودن کارمند</Button>
           </form>

@@ -3,7 +3,7 @@ import { jwtVerify } from "jose";
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET || "fallback-secret");
 
-const protectedRoutes = ["/dashboard", "/transactions", "/customers", "/rates", "/cashier", "/expenses", "/reports", "/settings"];
+const protectedRoutes = ["/dashboard", "/transactions", "/customers", "/rates", "/cashier", "/expenses", "/reports", "/settings", "/orders"];
 const authRoutes = ["/login"];
 
 export async function middleware(request: NextRequest) {

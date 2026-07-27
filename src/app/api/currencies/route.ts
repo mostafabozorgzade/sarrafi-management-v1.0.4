@@ -8,25 +8,30 @@ export async function GET(request: NextRequest) {
 
   const where = user.role === "OWNER" ? {} : { tenantId: user.tenantId! };
 
-  const registers = await prisma.cashRegister.findMany({
+  const currencies = await prisma.currency.findMany({
     where,
-    include: { entries: { orderBy: { createdAt: "desc" }, take: 20 } },
+    orderBy: { code: "asc" },
   });
 
-  return NextResponse.json(registers);
+  return NextResponse.json(currencies);
 }
 
 export async function POST(request: NextRequest) {
   const user = await getAuthUser(request);
   if (!user) return unauthorized();
   if (!user.tenantId) return NextResponse.json({ error: "tenant required" }, { status: 400 });
+  if (user.role !== "OWNER") return NextResponse.json({ error: "دسترسی ندارید" }, { status: 403 });
 
   const body = await request.json();
-  const { name, type } = body;
+  const { code, name, symbol } = body;
 
-  const register = await prisma.cashRegister.create({
-    data: { tenantId: user.tenantId, name, type },
+  if (!code || !name) {
+    return NextResponse.json({ error: "کد و نام ارز الزامی است" }, { status: 400 });
+  }
+
+  const currency = await prisma.currency.create({
+    data: { tenantId: user.tenantId, code: code.toUpperCase(), name, symbol: symbol || null },
   });
 
-  return NextResponse.json(register);
+  return NextResponse.json(currency);
 }

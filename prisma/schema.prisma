@@ -13,13 +13,30 @@ enum Role {
   ACCOUNTANT
 }
 
+enum OrderType {
+  IR_TO_PK
+  PK_TO_IR
+  BUY_PKR
+  SELL_PKR
+}
+
 enum OrderStatus {
   DRAFT
-  PENDING_PAYMENT
-  PAID
+  REGISTERED
+  TOMAN_RECEIVED
+  AWAITING_PKR_TRANSFER
+  PKR_TRANSFERRED
   IN_PROGRESS
   COMPLETED
   CANCELLED
+}
+
+enum DeliveryMethod {
+  HAWALA
+  EASYPAISA
+  JAZZCASH
+  BANK_TRANSFER
+  CASH
 }
 
 model Tenant {
@@ -104,29 +121,43 @@ model Customer {
 }
 
 model Order {
-  id          String      @id @default(uuid()) @db.Uuid
-  tenantId    String      @db.Uuid
-  customerId  String      @db.Uuid
-  userId      String      @db.Uuid
-  type        String
-  currencyId  String      @db.Uuid
-  amount      BigInt
-  rate        BigInt
-  totalToman  BigInt
-  status      OrderStatus @default(DRAFT)
-  description String?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  currency    Currency    @relation(fields: [currencyId], references: [id])
-  customer    Customer    @relation(fields: [customerId], references: [id])
-  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  user        User        @relation(fields: [userId], references: [id])
-  transaction Transaction?
+  id               String         @id @default(uuid()) @db.Uuid
+  tenantId         String         @db.Uuid
+  customerId       String         @db.Uuid
+  userId           String         @db.Uuid
+  currencyId       String         @db.Uuid
+  orderType        OrderType
+  status           OrderStatus    @default(DRAFT)
+
+  amount           BigInt
+  rate             BigInt
+  totalToman       BigInt
+  calculatedPkr    BigInt?
+  fee              BigInt         @default(0)
+  profit           BigInt?
+
+  recipientName    String?
+  recipientAccount String?
+  recipientMethod  DeliveryMethod?
+  destinationCard  String?
+  destinationSheba String?
+
+  description      String?
+  completedAt      DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  currency         Currency       @relation(fields: [currencyId], references: [id])
+  customer         Customer       @relation(fields: [customerId], references: [id])
+  tenant           Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user             User           @relation(fields: [userId], references: [id])
+  transaction      Transaction?
 
   @@index([tenantId])
   @@index([customerId])
   @@index([userId])
   @@index([status])
+  @@index([orderType])
   @@index([createdAt])
   @@map("orders")
 }
@@ -136,7 +167,7 @@ model Transaction {
   tenantId    String   @db.Uuid
   userId      String   @db.Uuid
   customerId  String   @db.Uuid
-  orderId     String?  @db.Uuid
+  orderId     String?  @db.Uuid @unique
   type        String
   currencyId  String   @db.Uuid
   amount      BigInt
