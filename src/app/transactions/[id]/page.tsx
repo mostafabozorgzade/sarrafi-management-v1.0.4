@@ -1,30 +1,63 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { use } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronRight, ArrowDownRight, ArrowUpLeft } from "lucide-react";
-import { transactions, currencyNames } from "@/lib/mock-data";
+import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
+
+interface Transaction {
+  id: string;
+  type: string;
+  currency: string;
+  amount: bigint;
+  rate: bigint;
+  totalToman: bigint;
+  profit: bigint;
+  description: string | null;
+  destinationAccount: string | null;
+  destinationBranch: string | null;
+  settlementDate: string | null;
+  isSettled: boolean;
+  createdAt: string;
+  customer: { id: string; name: string; };
+  user: { id: string; firstName: string; lastName: string; };
+}
+
+const currencyNames: Record<string, string> = { PKR: "روپیه پاکستان", USD: "دلار آمریکا", EUR: "یورو" };
 
 export default function TransactionDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
-  const tx = transactions.find((t) => t.id === id);
+  const [tx, setTx] = useState<Transaction | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  if (!tx) {
-    return <main className="flex min-h-dvh items-center justify-center"><p className="text-sm text-gray-400">یافت نشد</p></main>;
+  useEffect(() => {
+    api.get(`/api/transactions?id=${id}`).then((data) => {
+      const found = data.find((t: Transaction) => t.id === id);
+      setTx(found || null);
+      setLoading(false);
+    }).catch((err) => { setError(err.message); setLoading(false); });
+  }, [id]);
+
+  if (loading) return <main className="flex min-h-dvh items-center justify-center"><div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-200 border-t-blue-600" /></main>;
+
+  if (error || !tx) {
+    return <main className="flex min-h-dvh items-center justify-center"><p className="text-sm text-gray-400">{error || "یافت نشد"}</p></main>;
   }
 
   const rows = [
-    { label: "شماره", value: tx.id },
-    { label: "مشتری", value: tx.customer },
-    { label: "مقدار", value: `${tx.amount.toLocaleString("en-US")} ${currencyNames[tx.currency]}` },
-    { label: "نرخ", value: `${tx.rate.toLocaleString("en-US")} تومان` },
-    { label: "مبلغ کل", value: `${tx.totalToman.toLocaleString("en-US")} تومان` },
-    { label: "سود", value: `${tx.profit.toLocaleString("en-US")} تومان` },
-    { label: "ثبت‌کننده", value: tx.employee },
-    { label: "تاریخ", value: tx.date },
-    { label: "ساعت", value: tx.time },
+    { label: "شماره", value: tx.id.slice(0, 8) },
+    { label: "مشتری", value: tx.customer.name },
+    { label: "مقدار", value: `${Number(tx.amount).toLocaleString("en-US")} ${currencyNames[tx.currency]}` },
+    { label: "نرخ", value: `${Number(tx.rate).toLocaleString("en-US")} تومان` },
+    { label: "مبلغ کل", value: `${Number(tx.totalToman).toLocaleString("en-US")} تومان` },
+    { label: "سود", value: `${Number(tx.profit).toLocaleString("en-US")} تومان` },
+    { label: "ثبت‌کننده", value: `${tx.user.firstName} ${tx.user.lastName}` },
+    { label: "تاریخ", value: new Date(tx.createdAt).toLocaleDateString("fa-IR") },
+    { label: "ساعت", value: new Date(tx.createdAt).toLocaleTimeString("fa-IR", { hour: "2-digit", minute: "2-digit" }) },
   ];
 
   if (tx.destinationAccount) rows.splice(7, 0, { label: "حساب مقصد", value: tx.destinationAccount });
@@ -44,8 +77,8 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
       <div className="p-4 space-y-4">
         <div className={cn("rounded-xl p-4 text-white", tx.type === "buy" ? "bg-blue-600" : "bg-emerald-600")}>
           <p className="text-xs opacity-70">مبلغ کل</p>
-          <p className="text-xl font-bold mt-0.5" dir="ltr">{tx.totalToman.toLocaleString("en-US")} تومان</p>
-          <p className="text-xs opacity-60 mt-1">{tx.amount.toLocaleString("en-US")} × {tx.rate.toLocaleString("en-US")}</p>
+          <p className="text-xl font-bold mt-0.5" dir="ltr">{Number(tx.totalToman).toLocaleString("en-US")} تومان</p>
+          <p className="text-xs opacity-60 mt-1">{Number(tx.amount).toLocaleString("en-US")} × {Number(tx.rate).toLocaleString("en-US")}</p>
         </div>
 
         <div className="rounded-xl border border-gray-100 divide-y divide-gray-50">

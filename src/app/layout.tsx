@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Vazirmatn } from "next/font/google";
+import { AuthProvider } from "@/components/auth-provider";
 import { ServiceWorkerRegister } from "@/components/sw-register";
 import "./globals.css";
 
@@ -42,8 +43,10 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
       </head>
       <body className="min-h-dvh bg-white font-sans text-gray-900 antialiased">
-        <ServiceWorkerRegister />
-        {children}
+        <AuthProvider>
+          <ServiceWorkerRegister />
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

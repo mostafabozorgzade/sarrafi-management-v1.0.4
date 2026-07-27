@@ -1,41 +1,47 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { Phone, Lock, Eye, EyeOff, LogIn } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ErrorAlert } from "@/components/ui/error-alert";
-import { loginSchema, type LoginFormData } from "@/lib/validations";
 
 export function LoginForm() {
-  const router = useRouter();
+  const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [mobile, setMobile] = useState("");
+  const [password, setPassword] = useState("");
 
-  const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
-    mode: "onBlur",
-  });
-
-  const onSubmit = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setServerError(null);
-    setIsLoading(true);
-    try {
-      await new Promise((r) => setTimeout(r, 1000));
-      router.push("/dashboard");
-    } catch {
-      setServerError("خطا در اتصال به سرور");
-    } finally {
-      setIsLoading(false);
+
+    if (!mobile) {
+      setServerError("شماره موبایل الزامی است");
+      return;
     }
+    if (!/^09\d{9}$/.test(mobile)) {
+      setServerError("شماره موبایل صحیح نیست");
+      return;
+    }
+    if (!password) {
+      setServerError("رمز عبور الزامی است");
+      return;
+    }
+
+    setIsLoading(true);
+    const result = await login(mobile, password);
+    if (!result.success) {
+      setServerError(result.error || "خطا در ورود");
+    }
+    setIsLoading(false);
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="w-full space-y-3">
+    <form onSubmit={handleSubmit} className="w-full space-y-3">
       {serverError && <ErrorAlert message={serverError} />}
 
       <div className="space-y-1">
@@ -44,19 +50,17 @@ export function LoginForm() {
             <Phone className="h-4 w-4 text-gray-300" strokeWidth={1.5} />
           </div>
           <Input
-            {...register("mobile")}
             type="tel"
             placeholder="09123456789"
-            error={errors.mobile?.message}
+            value={mobile}
+            onChange={(e) => setMobile(e.target.value)}
             className="h-12 pr-10 pl-3"
             autoComplete="tel"
             inputMode="numeric"
             maxLength={11}
           />
         </div>
-        {!errors.mobile && (
-          <p className="text-[10px] text-gray-300 pr-1">+98 | شماره موبایل</p>
-        )}
+        <p className="text-[10px] text-gray-300 pr-1">+98 | شماره موبایل</p>
       </div>
 
       <div className="space-y-1">
@@ -65,10 +69,10 @@ export function LoginForm() {
             <Lock className="h-4 w-4 text-gray-300" strokeWidth={1.5} />
           </div>
           <Input
-            {...register("password")}
             type={showPassword ? "text" : "password"}
             placeholder="رمز عبور"
-            error={errors.password?.message}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             className="h-12 pr-10 pl-10"
             autoComplete="current-password"
           />

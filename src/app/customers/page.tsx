@@ -1,12 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Search, Phone } from "lucide-react";
-import { customers } from "@/lib/mock-data";
+import { Search, Phone, UserPlus } from "lucide-react";
+import { api } from "@/lib/api";
+
+interface Customer {
+  id: string; name: string; phone: string; pakAccount: string | null;
+  totalBuy: bigint; totalSell: bigint; debt: bigint;
+  totalTransactions?: number;
+}
 
 export default function CustomersPage() {
   const [search, setSearch] = useState("");
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.get("/api/customers").then((data) => { setCustomers(data); setLoading(false); }).catch(() => setLoading(false));
+  }, []);
+
   const filtered = customers.filter((c) => c.name.includes(search) || c.phone.includes(search));
 
   return (
@@ -14,7 +27,7 @@ export default function CustomersPage() {
       <div className="sticky top-0 z-30 border-b border-gray-100 bg-white">
         <div className="flex h-12 items-center justify-between px-4">
           <h1 className="text-sm font-semibold text-gray-900">مشتریان</h1>
-          <span className="text-[10px] text-gray-300">{filtered.length}</span>
+          <Link href="/customers/new" className="flex h-7 items-center gap-1 rounded-md bg-blue-600 px-2.5 text-[10px] font-medium text-white"><UserPlus className="h-3 w-3" strokeWidth={1.5} />جدید</Link>
         </div>
         <div className="px-4 pb-2">
           <div className="relative">
@@ -25,22 +38,21 @@ export default function CustomersPage() {
       </div>
 
       <div className="px-4 py-2">
-        {filtered.map((c) => (
+        {loading ? <div className="py-8 text-center text-xs text-gray-300">بارگذاری...</div> : filtered.length === 0 ? (
+          <div className="py-8 text-center text-xs text-gray-300">مشتری یافت نشد</div>
+        ) : filtered.map((c) => (
           <Link key={c.id} href={`/customers/${c.id}`} className="flex items-center gap-3 py-3 border-b border-gray-50 last:border-0 active:bg-gray-50 -mx-4 px-4">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-xs font-bold text-blue-600">
-              {c.name.charAt(0)}
-            </div>
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-xs font-bold text-blue-600">{c.name.charAt(0)}</div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-gray-900">{c.name}</span>
-                {c.debt > 0 && <span className="text-[9px] text-red-500 font-medium">بدهکار</span>}
+                {Number(c.debt) > 0 && <span className="text-[9px] text-red-500">بدهکار</span>}
               </div>
               <div className="flex items-center gap-1 mt-0.5">
                 <Phone className="h-2.5 w-2.5 text-gray-300" strokeWidth={1.5} />
                 <span className="text-[11px] text-gray-400" dir="ltr">{c.phone}</span>
               </div>
             </div>
-            <p className="text-[10px] text-gray-300">{c.totalTransactions} معامله</p>
           </Link>
         ))}
       </div>
