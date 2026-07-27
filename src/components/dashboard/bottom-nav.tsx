@@ -6,7 +6,7 @@ import {
   LayoutDashboard,
   ClipboardList,
   Users,
-  Wallet,
+  BarChart3,
   Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -15,7 +15,7 @@ const navItems = [
   { label: "داشبورد", icon: LayoutDashboard, href: "/dashboard" },
   { label: "سفارشات", icon: ClipboardList, href: "/orders" },
   { label: "مشتریان", icon: Users, href: "/customers" },
-  { label: "صندوق‌ها", icon: Wallet, href: "/cashier" },
+  { label: "گزارشات", icon: BarChart3, href: "/reports" },
   { label: "تنظیمات", icon: Settings, href: "/settings" },
 ];
 

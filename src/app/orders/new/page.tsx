@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 
 interface Customer { id: string; name: string; phone: string; pakAccount: string | null; }
 interface Currency { id: string; code: string; name: string; }
+interface Rate { id: string; currencyId: string; buyRate: string; sellRate: string; currency: { code: string } }
 
 const orderTypes = [
   { id: "IR_TO_PK", label: "حواله ایران → پاکستان", desc: "مشتری تومان می‌دهد، روپیه به پاکستان واریز می‌شود", color: "bg-blue-600", icon: "🇮🇷→🇵🇰" },
@@ -47,7 +48,7 @@ export default function NewOrderPage() {
       if (c.length > 0) setCustomerId(c[0].id);
       const pkrCurrency = cur.find((x: Currency) => x.code === "PKR");
       if (pkrCurrency) setCurrencyId(pkrCurrency.id);
-      const pkrRate = rates.find((r: { currency: { code: string }; buyRate: bigint; sellRate: bigint }) => r.currency?.code === "PKR");
+      const pkrRate = rates.find((r: Rate) => r.currency?.code === "PKR");
       if (pkrRate) setRate(String(pkrRate.sellRate));
     }).catch(() => {});
   }, []);
@@ -55,19 +56,38 @@ export default function NewOrderPage() {
   const amountNum = parseFloat(amount || "0");
   const rateNum = parseFloat(rate || "0");
   const feeNum = parseFloat(fee || "0");
-  const totalToman = amountNum * rateNum;
-  const calculatedPkr = rateNum > 0 ? Math.round(amountNum / rateNum * 100) : 0;
+
+  const isTomanAmount = orderType === "IR_TO_PK";
+
+  let totalToman = 0;
+  let calculatedPkr = 0;
+  if (isTomanAmount) {
+    totalToman = amountNum;
+    calculatedPkr = rateNum > 0 ? Math.round(amountNum / rateNum) : 0;
+  } else {
+    totalToman = amountNum * rateNum;
+    calculatedPkr = amountNum;
+  }
 
   const selectType = (type: OrderType) => {
     setOrderType(type);
     setStep("form");
+    setAmount("");
+    setRate("");
+    setFee("");
+    setRecipientName("");
+    setRecipientAccount("");
+    setDestinationCard("");
+    setDestinationSheba("");
+    setDescription("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     if (!customerId || !currencyId || !amount || !rate) { setError("فیلدهای الزامی را پر کنید"); return; }
-    if ((orderType === "IR_TO_PK" || orderType === "PK_TO_IR") && !recipientName) { setError("نام دریافت‌کننده الزامی است"); return; }
+    const isHawala = orderType === "IR_TO_PK" || orderType === "PK_TO_IR";
+    if (isHawala && !recipientName) { setError("نام دریافت‌کننده الزامی است"); return; }
     setLoading(true);
     try {
       await api.post("/api/orders", {
@@ -106,7 +126,6 @@ export default function NewOrderPage() {
   }
 
   const isHawala = orderType === "IR_TO_PK" || orderType === "PK_TO_IR";
-  const isReceive = orderType === "IR_TO_PK" || orderType === "SELL_PKR";
 
   return (
     <main className="min-h-dvh bg-white">
@@ -123,31 +142,42 @@ export default function NewOrderPage() {
             {customers.map((c) => <option key={c.id} value={c.id}>{c.name} ({c.phone})</option>)}
           </select></div>
 
-        <div className="space-y-1"><label className="text-xs font-medium text-gray-500">مبلغ {isReceive ? "تومان دریافتی" : "روپیه"}</label>
-          <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" className="h-12 text-left" inputMode="numeric" /></div>
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-gray-500">
+            {isTomanAmount ? "مبلغ تومان دریافتی" : "مبلغ روپیه"}
+          </label>
+          <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" className="h-12 text-left" inputMode="decimal" />
+        </div>
 
-        <div className="space-y-1"><label className="text-xs font-medium text-gray-500">نرخ تبدیل (تومان)</label>
-          <Input type="number" value={rate} onChange={(e) => setRate(e.target.value)} placeholder="0" className="h-12 text-left" inputMode="numeric" /></div>
+        <div className="space-y-1"><label className="text-xs font-medium text-gray-500">نرخ تبدیل (تومان به روپیه)</label>
+          <Input type="number" value={rate} onChange={(e) => setRate(e.target.value)} placeholder="مثلاً 2950" className="h-12 text-left" inputMode="decimal" /></div>
 
-        {isReceive && (
-          <div className="rounded-lg bg-blue-50 p-3">
-            <div className="flex items-center justify-between mb-1"><span className="text-[10px] text-blue-500">مبلغ دریافتی (تومان)</span><span className="text-sm font-bold text-blue-700" dir="ltr">{totalToman.toLocaleString("en-US")}</span></div>
-            <div className="flex items-center justify-between"><span className="text-[10px] text-blue-500">مبلغ واریزی (روپیه)</span><span className="text-xs font-semibold text-blue-600" dir="ltr">{calculatedPkr.toLocaleString("en-US")}</span></div>
-          </div>
-        )}
-
-        {!isReceive && (
-          <div className="rounded-lg bg-emerald-50 p-3">
-            <div className="flex items-center justify-between mb-1"><span className="text-[10px] text-emerald-500">مبلغ روپیه</span><span className="text-sm font-bold text-emerald-700" dir="ltr">{amountNum.toLocaleString("en-US")}</span></div>
-            <div className="flex items-center justify-between"><span className="text-[10px] text-emerald-500">مبلغ تومان</span><span className="text-xs font-semibold text-emerald-600" dir="ltr">{totalToman.toLocaleString("en-US")}</span></div>
+        {amountNum > 0 && rateNum > 0 && (
+          <div className={cn("rounded-lg p-3", isTomanAmount ? "bg-blue-50" : "bg-emerald-50")}>
+            <div className="flex items-center justify-between mb-1">
+              <span className={cn("text-[10px]", isTomanAmount ? "text-blue-500" : "text-emerald-500")}>
+                {isTomanAmount ? "مبلغ دریافتی (تومان)" : "مبلغ روپیه"}
+              </span>
+              <span className={cn("text-sm font-bold", isTomanAmount ? "text-blue-700" : "text-emerald-700")} dir="ltr">
+                {isTomanAmount ? totalToman.toLocaleString("en-US") : calculatedPkr.toLocaleString("en-US")}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className={cn("text-[10px]", isTomanAmount ? "text-blue-500" : "text-emerald-500")}>
+                {isTomanAmount ? "مبلغ واریزی (روپیه)" : "مبلغ دریافتی (تومان)"}
+              </span>
+              <span className={cn("text-xs font-semibold", isTomanAmount ? "text-blue-600" : "text-emerald-600")} dir="ltr">
+                {isTomanAmount ? calculatedPkr.toLocaleString("en-US") : totalToman.toLocaleString("en-US")}
+              </span>
+            </div>
           </div>
         )}
 
         <div className="space-y-1"><label className="text-xs font-medium text-gray-500">کارمزد (تومان)</label>
-          <Input type="number" value={fee} onChange={(e) => setFee(e.target.value)} placeholder="0" className="h-12 text-left" inputMode="numeric" /></div>
+          <Input type="number" value={fee} onChange={(e) => setFee(e.target.value)} placeholder="0" className="h-12 text-left" inputMode="decimal" /></div>
 
         {isHawala && (<>
-          <div className="space-y-1"><label className="text-xs font-medium text-gray-500">نام دریافت‌کننده در {orderType === "IR_TO_PK" ? "پاکستان" : "ایران"}</label>
+          <div className="space-y-1"><label className="text-xs font-medium text-gray-500">نام دریافت‌کننده</label>
             <Input value={recipientName} onChange={(e) => setRecipientName(e.target.value)} placeholder="نام کامل" className="h-12" /></div>
 
           <div className="space-y-1"><label className="text-xs font-medium text-gray-500">نحوه واریز</label>
