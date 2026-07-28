@@ -6,6 +6,7 @@ import {
   Plus,
   Clock,
   CheckCircle2,
+  AlertCircle,
   CreditCard,
   User,
   FileText,
@@ -89,6 +90,7 @@ export default function OrdersPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [errorToast, setErrorToast] = useState<string | null>(null);
 
   useEffect(() => {
     const params = filter === "all" ? "" : `?status=${filter}`;
@@ -190,7 +192,12 @@ export default function OrdersPage() {
       setOrders((prev) => [newOrder, ...prev]);
       resetForm();
       setSelectedDirection(null);
-    } catch (err) { setError(err instanceof Error ? err.message : "خطا"); }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "خطا در ایجاد سفارش";
+      setError(msg);
+      setErrorToast(msg);
+      setTimeout(() => setErrorToast(null), 4000);
+    }
     setSubmitting(false);
   };
 
@@ -278,6 +285,14 @@ export default function OrdersPage() {
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-xl bg-green-50 border border-green-200 px-4 py-3 shadow-lg animate-slide-up">
           <CheckCircle2 className="h-5 w-5 text-green-500" />
           <span className="text-sm font-medium text-green-700">سفارش ثبت شد</span>
+        </div>
+      )}
+
+      {/* Error Toast */}
+      {errorToast && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-xl bg-red-50 border border-red-200 px-4 py-3 shadow-lg animate-slide-up max-w-[90vw]">
+          <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
+          <span className="text-sm font-medium text-red-700">{errorToast}</span>
         </div>
       )}
 

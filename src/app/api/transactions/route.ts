@@ -68,28 +68,28 @@ export async function POST(request: NextRequest) {
       customerId,
       currencyId,
       type,
-      amount: amountNum,
-      rate: rateNum,
-      totalToman,
-      profit,
+      amount: BigInt(amountNum),
+      rate: BigInt(rateNum),
+      totalToman: BigInt(totalToman),
+      profit: BigInt(profit),
       description: description || null,
     },
     include: { customer: { select: { name: true } }, currency: { select: { code: true } } },
   });
 
   if (type === "buy") {
-    await prisma.customer.update({ where: { id: customerId }, data: { totalBuy: { increment: totalToman } } });
+    await prisma.customer.update({ where: { id: customerId }, data: { totalBuy: { increment: BigInt(totalToman) } } });
     const register = await prisma.cashRegister.findFirst({ where: { tenantId: user.tenantId, type: "toman" } });
     if (register) {
-      await prisma.cashEntry.create({ data: { registerId: register.id, type: "out", amount: totalToman, description: `خرید ${transaction.currency.code} - ${transaction.customer.name}` } });
-      await prisma.cashRegister.update({ where: { id: register.id }, data: { balance: { decrement: totalToman } } });
+      await prisma.cashEntry.create({ data: { registerId: register.id, type: "out", amount: BigInt(totalToman), description: `خرید ${transaction.currency.code} - ${transaction.customer.name}` } });
+      await prisma.cashRegister.update({ where: { id: register.id }, data: { balance: { decrement: BigInt(totalToman) } } });
     }
   } else {
-    await prisma.customer.update({ where: { id: customerId }, data: { totalSell: { increment: totalToman } } });
+    await prisma.customer.update({ where: { id: customerId }, data: { totalSell: { increment: BigInt(totalToman) } } });
     const register = await prisma.cashRegister.findFirst({ where: { tenantId: user.tenantId, type: "toman" } });
     if (register) {
-      await prisma.cashEntry.create({ data: { registerId: register.id, type: "in", amount: totalToman, description: `فروش ${transaction.currency.code} - ${transaction.customer.name}` } });
-      await prisma.cashRegister.update({ where: { id: register.id }, data: { balance: { increment: totalToman } } });
+      await prisma.cashEntry.create({ data: { registerId: register.id, type: "in", amount: BigInt(totalToman), description: `فروش ${transaction.currency.code} - ${transaction.customer.name}` } });
+      await prisma.cashRegister.update({ where: { id: register.id }, data: { balance: { increment: BigInt(totalToman) } } });
     }
   }
 

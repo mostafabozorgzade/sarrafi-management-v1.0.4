@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
       tenantId: user.tenantId,
       userId: user.userId,
       category,
-      amount: Number(amount),
+      amount: BigInt(Number(amount)),
       description: description || null,
     },
     include: { user: { select: { firstName: true, lastName: true } } },

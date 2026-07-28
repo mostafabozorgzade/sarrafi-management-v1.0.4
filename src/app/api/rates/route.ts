@@ -43,17 +43,17 @@ export async function POST(request: NextRequest) {
   const rate = await prisma.currencyRate.upsert({
     where: { tenantId_currencyId: { tenantId: user.tenantId, currencyId } },
     update: {
-      marketRate: marketRateNum,
-      buyRate: buyRateNum,
-      sellRate: sellRateNum,
+      marketRate: BigInt(marketRateNum),
+      buyRate: BigInt(buyRateNum),
+      sellRate: BigInt(sellRateNum),
       changedById: user.userId,
     },
     create: {
       tenantId: user.tenantId,
       currencyId,
-      marketRate: marketRateNum,
-      buyRate: buyRateNum,
-      sellRate: sellRateNum,
+      marketRate: BigInt(marketRateNum),
+      buyRate: BigInt(buyRateNum),
+      sellRate: BigInt(sellRateNum),
       changedById: user.userId,
     },
     include: {
@@ -66,9 +66,9 @@ export async function POST(request: NextRequest) {
     data: {
       tenantId: user.tenantId,
       currencyId,
-      marketRate: marketRateNum,
-      buyRate: buyRateNum,
-      sellRate: sellRateNum,
+      marketRate: BigInt(marketRateNum),
+      buyRate: BigInt(buyRateNum),
+      sellRate: BigInt(sellRateNum),
       changedById: user.userId,
     },
   });
