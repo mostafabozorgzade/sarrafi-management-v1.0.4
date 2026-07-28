@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { BarChart3, Users, ArrowUpRight, TrendingUp, Calendar } from "lucide-react";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type Tab = "summary" | "byEmployee" | "byTransaction";
 
@@ -26,7 +27,21 @@ export default function ReportsPage() {
 
   useEffect(() => { api.get("/api/reports?type=transactions").then((data) => { setTransactions(data); setLoading(false); }).catch(() => setLoading(false)); }, []);
 
-  if (loading) return <main className="min-h-dvh bg-white flex items-center justify-center"><div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-200 border-t-blue-600" /></main>;
+  if (loading) return (
+    <main className="min-h-dvh bg-white">
+      <div className="p-4 space-y-4">
+        <Skeleton className="h-24 w-full rounded-xl" />
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-lg border border-gray-100 p-3"><Skeleton className="h-3 w-10 mb-1" /><Skeleton className="h-5 w-16" /></div>
+          <div className="rounded-lg border border-gray-100 p-3"><Skeleton className="h-3 w-10 mb-1" /><Skeleton className="h-5 w-10" /></div>
+        </div>
+        <div className="space-y-3">
+          <Skeleton className="h-2.5 w-28" />
+          {Array.from({ length: 4 }).map((_, i) => (<div key={i} className="flex items-center justify-between py-2.5 border-b border-gray-50 last:border-0 -mx-4 px-4"><div className="space-y-1"><Skeleton className="h-3 w-24" /><Skeleton className="h-2 w-16" /></div><Skeleton className="h-3 w-16" /></div>))}
+        </div>
+      </div>
+    </main>
+  );
 
   const totalProfit = transactions.reduce((s, t) => s + Number(t.profit), 0);
   const totalVolume = transactions.reduce((s, t) => s + Number(t.totalToman), 0);

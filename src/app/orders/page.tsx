@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowDownToLine, ArrowUpFromLine, Plus } from "lucide-react";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Order {
   id: string; orderType: string; status: string; amount: bigint; rate: bigint; totalToman: bigint; fee: bigint;
@@ -85,7 +86,7 @@ export default function OrdersPage() {
         </div>
       </div>
       <div className="p-4">
-        {loading ? <div className="py-8 text-center text-xs text-gray-300">بارگذاری...</div> : orders.length === 0 ? (
+        {loading ? <div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => (<div key={i} className="rounded-xl border border-gray-100 p-3"><div className="flex items-center justify-between mb-2"><div className="flex items-center gap-2"><Skeleton className="h-4 w-4" /><Skeleton className="h-3 w-28" /></div><Skeleton className="h-4 w-16 rounded-md" /></div><div className="flex items-center justify-between mb-1"><Skeleton className="h-2.5 w-20" /><Skeleton className="h-2.5 w-28" /></div><div className="flex items-center justify-between mb-2"><Skeleton className="h-2.5 w-16" /><Skeleton className="h-3 w-24" /></div><div className="flex gap-1"><Skeleton className="h-7 flex-1 rounded-lg" /><Skeleton className="h-7 w-12 rounded-lg" /></div></div>))}</div> : orders.length === 0 ? (
           <div className="py-8 text-center text-xs text-gray-300">سفارشی ثبت نشده</div>
         ) : (
           <div className="space-y-3">{orders.map((o) => {
