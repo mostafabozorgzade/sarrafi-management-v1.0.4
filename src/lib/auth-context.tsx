@@ -35,14 +35,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const data = await res.json();
         setUser(data.user);
       } else {
+        document.cookie = "token=; path=/; max-age=0";
         setUser(null);
+        router.push("/login");
       }
     } catch {
+      document.cookie = "token=; path=/; max-age=0";
       setUser(null);
+      router.push("/login");
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     refreshUser();
