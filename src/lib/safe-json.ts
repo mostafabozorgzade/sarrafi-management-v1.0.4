@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 function serialize(obj: unknown): unknown {
   if (obj === null || obj === undefined) return obj;
   if (typeof obj === "bigint") return obj.toString();
+  if (obj instanceof Date) return obj.toISOString();
   if (Array.isArray(obj)) return obj.map(serialize);
   if (typeof obj === "object") {
     const result: Record<string, unknown> = {};

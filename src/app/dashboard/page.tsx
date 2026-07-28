@@ -6,7 +6,6 @@ import { TrendingUp, Receipt, ClipboardList, ArrowDownToLine, Wallet, Clock } fr
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ORDER_TYPE_LABELS } from "@/lib/order-types";
 
 interface DashboardData {
   stats: {

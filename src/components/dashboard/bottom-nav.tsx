@@ -16,7 +16,7 @@ const navItems = [
   { label: "داشبورد", icon: LayoutDashboard, href: "/dashboard" },
   { label: "سفارشات", icon: ClipboardList, href: "/orders" },
   { label: "مشتریان", icon: Users, href: "/customers" },
-  { label: "بزودی", icon: BarChart3, href: "/reports", disabled: true },
+  { label: "گزارشات", icon: BarChart3, href: "/reports" },
   { label: "پروفایل", icon: User, href: "/profile" },
 ];
 
@@ -24,8 +24,7 @@ export function BottomNav() {
   const pathname = usePathname();
   const [pendingHref, setPendingHref] = useState<string | null>(null);
 
-  const handleClick = (href: string, disabled?: boolean) => {
-    if (disabled) return;
+  const handleClick = (href: string) => {
     if (pathname.startsWith(href)) return;
     setPendingHref(href);
   };
@@ -36,19 +35,15 @@ export function BottomNav() {
     <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-gray-100 bg-white/95 backdrop-blur-sm">
       <div className="flex items-center justify-around px-2 pb-[env(safe-area-inset-bottom)]">
         {navItems.map((item) => {
-          const active = !item.disabled && pathname.startsWith(item.href);
-          const loading = !item.disabled && isLoading(item.href);
+          const active = pathname.startsWith(item.href);
+          const loading = isLoading(item.href);
           return (
             <Link
               key={item.href}
-              href={item.disabled ? "#" : item.href}
-              onClick={(e) => {
-                if (item.disabled) { e.preventDefault(); return; }
-                handleClick(item.href, item.disabled);
-              }}
+              href={item.href}
+              onClick={() => handleClick(item.href)}
               className={cn(
                 "relative flex flex-col items-center gap-0.5 px-3 py-2 text-[10px] font-medium transition-colors",
-                item.disabled && "cursor-default opacity-40",
                 active ? "text-blue-600" : "text-gray-400"
               )}
             >

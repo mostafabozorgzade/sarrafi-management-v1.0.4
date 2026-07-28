@@ -1,8 +1,6 @@
 import {
   Send,
   ArrowDownToLine,
-  ArrowUpFromLine,
-  Banknote,
   Coins,
   BanknoteIcon,
 } from "lucide-react";

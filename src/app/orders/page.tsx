@@ -3,9 +3,6 @@
 import { useState, useEffect } from "react";
 import {
   ArrowDownToLine,
-  ArrowUpFromLine,
-  Banknote,
-  Coins,
   Plus,
   Clock,
   CheckCircle2,
@@ -14,7 +11,6 @@ import {
   FileText,
   ChevronLeft,
   Send,
-  BanknoteIcon,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -35,7 +31,6 @@ import {
   isTomanAmountType,
   type OrderTypeEnum,
   type Direction,
-  type SubType,
 } from "@/lib/order-types";
 
 interface Order {
@@ -48,6 +43,9 @@ interface Order {
   fee: bigint;
   calculatedPkr: bigint | null;
   profit: bigint | null;
+  marketRateAtTime: bigint | null;
+  buyRateAtTime: bigint | null;
+  sellRateAtTime: bigint | null;
   recipientName: string | null;
   recipientAccount: string | null;
   recipientMethod: string | null;
@@ -496,6 +494,43 @@ export default function OrdersPage() {
                 </div>
               )}
             </div>
+
+            {/* Financial Details */}
+            {(selectedOrder.marketRateAtTime || selectedOrder.buyRateAtTime || selectedOrder.sellRateAtTime) && (
+              <div className="rounded-xl bg-green-50 p-3 space-y-2">
+                <p className="text-[10px] font-semibold text-green-600 uppercase">جزئیات مالی سفارش</p>
+                {selectedOrder.marketRateAtTime && Number(selectedOrder.marketRateAtTime) > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-green-600">نرخ بازار هنگام ثبت</span>
+                    <span className="text-xs font-bold text-green-700" dir="ltr">{Number(selectedOrder.marketRateAtTime).toLocaleString("en-US")} تومان</span>
+                  </div>
+                )}
+                {selectedOrder.buyRateAtTime && Number(selectedOrder.buyRateAtTime) > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-green-600">نرخ خرید هنگام ثبت</span>
+                    <span className="text-xs font-bold text-green-700" dir="ltr">{Number(selectedOrder.buyRateAtTime).toLocaleString("en-US")} تومان</span>
+                  </div>
+                )}
+                {selectedOrder.sellRateAtTime && Number(selectedOrder.sellRateAtTime) > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-green-600">نرخ فروش هنگام ثبت</span>
+                    <span className="text-xs font-bold text-green-700" dir="ltr">{Number(selectedOrder.sellRateAtTime).toLocaleString("en-US")} تومان</span>
+                  </div>
+                )}
+                {selectedOrder.calculatedPkr && Number(selectedOrder.calculatedPkr) > 0 && selectedOrder.buyRateAtTime && Number(selectedOrder.buyRateAtTime) > 0 && (
+                  <div className="flex items-center justify-between border-t border-green-200 pt-2 mt-1">
+                    <span className="text-xs text-green-600">هزینه تامین</span>
+                    <span className="text-xs font-bold text-green-700" dir="ltr">{(Number(selectedOrder.calculatedPkr) * Number(selectedOrder.buyRateAtTime)).toLocaleString("en-US")} تومان</span>
+                  </div>
+                )}
+                {selectedOrder.profit && Number(selectedOrder.profit) > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-green-600">سود خالص</span>
+                    <span className="text-sm font-bold text-green-800" dir="ltr">{Number(selectedOrder.profit).toLocaleString("en-US")} تومان</span>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Recipient / Destination */}
             {(selectedOrder.recipientName || selectedOrder.destinationCard) && (

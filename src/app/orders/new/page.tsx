@@ -17,7 +17,6 @@ import {
   isTomanAmountType,
   type OrderTypeEnum,
   type Direction,
-  type SubType,
 } from "@/lib/order-types";
 
 interface Customer { id: string; name: string; phone: string; }
@@ -25,7 +24,6 @@ interface Rate { id: string; currencyId: string; buyRate: string; sellRate: stri
 
 export default function NewOrderPage() {
   const router = useRouter();
-  const [directionSheetOpen, setDirectionSheetOpen] = useState(false);
   const [subTypeSheetOpen, setSubTypeSheetOpen] = useState(false);
   const [formSheetOpen, setFormSheetOpen] = useState(false);
   const [selectedDirection, setSelectedDirection] = useState<Direction | null>(null);
@@ -75,7 +73,6 @@ export default function NewOrderPage() {
 
   const selectDirection = (direction: Direction) => {
     setSelectedDirection(direction);
-    setDirectionSheetOpen(false);
     resetForm();
     setTimeout(() => setSubTypeSheetOpen(true), 100);
   };

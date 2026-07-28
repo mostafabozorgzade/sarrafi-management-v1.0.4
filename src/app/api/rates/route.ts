@@ -25,18 +25,52 @@ export async function POST(request: NextRequest) {
   if (!user) return unauthorized();
   if (!user.tenantId) return safeJson({ error: "tenant required" }, { status: 400 });
 
+  if (user.role !== "OWNER" && user.role !== "MANAGER") {
+    return safeJson({ error: "فقط مدیر یا صراف اجازه تغییر نرخ دارد" }, { status: 403 });
+  }
+
   const body = await request.json();
-  const { currencyId, buyRate, sellRate } = body;
+  const { currencyId, marketRate, buyRate, sellRate } = body;
 
   if (!currencyId || !buyRate || !sellRate) {
     return safeJson({ error: "فیلدهای الزامی را پر کنید" }, { status: 400 });
   }
 
+  const marketRateNum = Number(marketRate || 0);
+  const buyRateNum = Number(buyRate);
+  const sellRateNum = Number(sellRate);
+
   const rate = await prisma.currencyRate.upsert({
     where: { tenantId_currencyId: { tenantId: user.tenantId, currencyId } },
-    update: { buyRate: Number(buyRate), sellRate: Number(sellRate), changedById: user.userId },
-    create: { tenantId: user.tenantId, currencyId, buyRate: Number(buyRate), sellRate: Number(sellRate), changedById: user.userId },
-    include: { currency: { select: { code: true, name: true } }, changedBy: { select: { firstName: true, lastName: true } } },
+    update: {
+      marketRate: marketRateNum,
+      buyRate: buyRateNum,
+      sellRate: sellRateNum,
+      changedById: user.userId,
+    },
+    create: {
+      tenantId: user.tenantId,
+      currencyId,
+      marketRate: marketRateNum,
+      buyRate: buyRateNum,
+      sellRate: sellRateNum,
+      changedById: user.userId,
+    },
+    include: {
+      currency: { select: { code: true, name: true } },
+      changedBy: { select: { firstName: true, lastName: true } },
+    },
+  });
+
+  await prisma.rateHistory.create({
+    data: {
+      tenantId: user.tenantId,
+      currencyId,
+      marketRate: marketRateNum,
+      buyRate: buyRateNum,
+      sellRate: sellRateNum,
+      changedById: user.userId,
+    },
   });
 
   return safeJson(rate);

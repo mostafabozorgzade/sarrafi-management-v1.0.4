@@ -53,6 +53,7 @@ model Tenant {
   customers     Customer[]
   expenses      Expense[]
   orders        Order[]
+  rateHistory   RateHistory[]
   transactions  Transaction[]
   users         User[]
 
@@ -74,6 +75,7 @@ model User {
   expenses     Expense[]
   orders       Order[]
   rateChanges  CurrencyRate[]
+  rateHistory  RateHistory[]
   transactions Transaction[]
   tenant       Tenant?         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
@@ -93,6 +95,7 @@ model Currency {
   updatedAt    DateTime       @updatedAt
   tenant       Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   currencyRates CurrencyRate[]
+  rateHistory   RateHistory[]
   transactions Transaction[]
   orders       Order[]
 
@@ -135,6 +138,10 @@ model Order {
   calculatedPkr    BigInt?
   fee              BigInt         @default(0)
   profit           BigInt?
+
+  marketRateAtTime  BigInt?
+  buyRateAtTime     BigInt?
+  sellRateAtTime    BigInt?
 
   recipientName    String?
   recipientAccount String?
@@ -223,6 +230,7 @@ model CurrencyRate {
   id          String   @id @default(uuid()) @db.Uuid
   tenantId    String   @db.Uuid
   currencyId  String   @db.Uuid
+  marketRate  BigInt   @default(0)
   buyRate     BigInt
   sellRate    BigInt
   changedById String   @db.Uuid
@@ -235,6 +243,25 @@ model CurrencyRate {
   @@index([tenantId])
   @@index([currencyId])
   @@map("currency_rates")
+}
+
+model RateHistory {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @db.Uuid
+  currencyId  String   @db.Uuid
+  marketRate  BigInt
+  buyRate     BigInt
+  sellRate    BigInt
+  changedById String   @db.Uuid
+  createdAt   DateTime @default(now())
+  changedBy   User     @relation(fields: [changedById], references: [id])
+  currency    Currency @relation(fields: [currencyId], references: [id])
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([currencyId])
+  @@index([createdAt])
+  @@map("rate_history")
 }
 
 model Expense {

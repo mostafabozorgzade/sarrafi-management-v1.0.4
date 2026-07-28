@@ -61,16 +61,21 @@ export async function POST(request: NextRequest) {
     calculatedPkr = amountNum;
   }
 
-  let profit = feeNum;
   const currencyRate = await prisma.currencyRate.findUnique({
     where: { tenantId_currencyId: { tenantId: user.tenantId, currencyId } },
   });
+
+  const marketRateAtTime = currencyRate ? Number(currencyRate.marketRate) : 0;
+  const buyRateAtTime = currencyRate ? Number(currencyRate.buyRate) : 0;
+  const sellRateAtTime = currencyRate ? Number(currencyRate.sellRate) : 0;
+
+  let profit = feeNum;
   if (currencyRate) {
     const pkrAmount = orderType === "IR_TO_PK" ? calculatedPkr : amountNum;
     if (orderType === "BUY_PKR" || orderType === "PK_TO_IR") {
-      profit += (rateNum - Number(currencyRate.buyRate)) * pkrAmount;
+      profit += (rateNum - buyRateAtTime) * pkrAmount;
     } else {
-      profit += (Number(currencyRate.sellRate) - rateNum) * pkrAmount;
+      profit += (sellRateAtTime - rateNum) * pkrAmount;
     }
   }
 
@@ -87,6 +92,9 @@ export async function POST(request: NextRequest) {
       calculatedPkr,
       fee: feeNum,
       profit,
+      marketRateAtTime,
+      buyRateAtTime,
+      sellRateAtTime,
       recipientName: recipientName || null,
       recipientAccount: recipientAccount || null,
       recipientMethod: recipientMethod || null,
