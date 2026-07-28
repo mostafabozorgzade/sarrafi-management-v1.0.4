@@ -1,7 +1,8 @@
 import "dotenv/config";
-import { PrismaClient, Role, OrderStatus } from "@prisma/client";
+import { PrismaClient, Role, OrderStatus, OrderType } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import bcrypt from "bcryptjs";
+import { randomUUID } from "crypto";
 
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL!,
@@ -115,6 +116,112 @@ async function main() {
     prisma.customer.create({ data: { tenantId: tenant.id, name: "رضا عباسی", phone: "09195678901", pakAccount: "PK-1005" } }),
   ]);
   console.log("Customers:", customers.length);
+
+  const [ahmad, fatemeh, ali, zahra, reza] = customers;
+
+  const ordersData = [
+    {
+      id: randomUUID(), tenantId: tenant.id, customerId: ahmad.id, userId: cashier.id, currencyId: pkr.id,
+      orderType: OrderType.IR_TO_PK, status: OrderStatus.COMPLETED, amount: BigInt(50000), rate: BigInt(2950),
+      totalToman: BigInt(147500000), fee: BigInt(500000), profit: BigInt(250000),
+      recipientName: "احمد محمدی", recipientMethod: "BANK_TRANSFER" as const,
+      description: "حواله به حساب بانکی", completedAt: new Date(Date.now() - 86400000 * 2),
+    },
+    {
+      id: randomUUID(), tenantId: tenant.id, customerId: fatemeh.id, userId: cashier.id, currencyId: pkr.id,
+      orderType: OrderType.PK_TO_IR, status: OrderStatus.REGISTERED, amount: BigInt(30000), rate: BigInt(3000),
+      totalToman: BigInt(90000000), fee: BigInt(300000), profit: BigInt(150000),
+      recipientName: "فاطمه رضایی", recipientMethod: "EASYPAISA" as const,
+      description: "حواله از پاکستان به ایران",
+    },
+    {
+      id: randomUUID(), tenantId: tenant.id, customerId: ali.id, userId: manager.id, currencyId: pkr.id,
+      orderType: OrderType.BUY_PKR, status: OrderStatus.TOMAN_RECEIVED, amount: BigInt(100000), rate: BigInt(2950),
+      totalToman: BigInt(295000000), fee: BigInt(800000), profit: BigInt(400000),
+      recipientName: "علی کریمی", recipientMethod: "CASH" as const,
+      description: "خرید روپیه نقدی",
+    },
+    {
+      id: randomUUID(), tenantId: tenant.id, customerId: zahra.id, userId: cashier.id, currencyId: pkr.id,
+      orderType: OrderType.SELL_PKR, status: OrderStatus.IN_PROGRESS, amount: BigInt(25000), rate: BigInt(3000),
+      totalToman: BigInt(75000000), fee: BigInt(250000), profit: BigInt(125000),
+      recipientName: "زهرا حسینی", recipientMethod: "JAZZCASH" as const,
+      description: "فروش روپیه به مشتری",
+    },
+    {
+      id: randomUUID(), tenantId: tenant.id, customerId: reza.id, userId: manager.id, currencyId: pkr.id,
+      orderType: OrderType.IR_TO_PK, status: OrderStatus.PKR_TRANSFERRED, amount: BigInt(75000), rate: BigInt(2950),
+      totalToman: BigInt(221250000), fee: BigInt(600000), profit: BigInt(300000),
+      recipientName: "رضا عباسی", recipientMethod: "HAWALA" as const,
+      description: "حواله هواله به پاکستان",
+    },
+    {
+      id: randomUUID(), tenantId: tenant.id, customerId: ahmad.id, userId: cashier.id, currencyId: pkr.id,
+      orderType: OrderType.BUY_PKR, status: OrderStatus.COMPLETED, amount: BigInt(40000), rate: BigInt(2950),
+      totalToman: BigInt(118000000), fee: BigInt(400000), profit: BigInt(200000),
+      recipientName: "احمد محمدی", recipientMethod: "BANK_TRANSFER" as const,
+      description: "خرید روپیه واریز به حساب", completedAt: new Date(Date.now() - 86400000),
+    },
+    {
+      id: randomUUID(), tenantId: tenant.id, customerId: fatemeh.id, userId: manager.id, currencyId: pkr.id,
+      orderType: OrderType.SELL_PKR, status: OrderStatus.REGISTERED, amount: BigInt(20000), rate: BigInt(3000),
+      totalToman: BigInt(60000000), fee: BigInt(200000), profit: BigInt(100000),
+      recipientName: "فاطمه رضایی", recipientMethod: "CASH" as const,
+      description: "فروش روپیه نقدی",
+    },
+    {
+      id: randomUUID(), tenantId: tenant.id, customerId: ali.id, userId: cashier.id, currencyId: pkr.id,
+      orderType: OrderType.IR_TO_PK, status: OrderStatus.CANCELLED, amount: BigInt(15000), rate: BigInt(2950),
+      totalToman: BigInt(44250000), fee: BigInt(150000), profit: BigInt(0),
+      recipientName: "علی کریمی", recipientMethod: "EASYPAISA" as const,
+      description: "لغو شده - تغییر درخواست",
+    },
+    {
+      id: randomUUID(), tenantId: tenant.id, customerId: zahra.id, userId: manager.id, currencyId: pkr.id,
+      orderType: OrderType.PK_TO_IR, status: OrderStatus.COMPLETED, amount: BigInt(60000), rate: BigInt(3000),
+      totalToman: BigInt(180000000), fee: BigInt(500000), profit: BigInt(275000),
+      recipientName: "زهرا حسینی", recipientMethod: "BANK_TRANSFER" as const,
+      description: "حواله تکمیل شده", completedAt: new Date(Date.now() - 86400000 * 3),
+    },
+    {
+      id: randomUUID(), tenantId: tenant.id, customerId: reza.id, userId: cashier.id, currencyId: pkr.id,
+      orderType: OrderType.BUY_PKR, status: OrderStatus.REGISTERED, amount: BigInt(80000), rate: BigInt(2950),
+      totalToman: BigInt(236000000), fee: BigInt(700000), profit: BigInt(350000),
+      recipientName: "رضا عباسی", recipientMethod: "HAWALA" as const,
+      description: "خرید روپیه در انتظار تایید",
+    },
+  ];
+
+  const createdOrders = [];
+  for (const order of ordersData) {
+    createdOrders.push(await prisma.order.create({ data: order }));
+  }
+  console.log("Orders:", createdOrders.length);
+
+  const completedOrders = createdOrders.filter((o) => o.status === OrderStatus.COMPLETED);
+  const transactionsData = completedOrders.map((order, i) => ({
+    id: randomUUID(), tenantId: tenant.id, userId: order.userId, customerId: order.customerId,
+    orderId: order.id, type: order.orderType.toString(), currencyId: order.currencyId,
+    amount: order.amount, rate: order.rate, totalToman: order.totalToman,
+    profit: order.profit || BigInt(0), description: `تراکنش سفارش ${i + 1}`,
+  }));
+
+  for (const tx of transactionsData) {
+    await prisma.transaction.create({ data: tx });
+  }
+  console.log("Transactions:", transactionsData.length);
+
+  const ahmadTotalBuy = createdOrders
+    .filter((o) => o.customerId === ahmad.id && (o.orderType === OrderType.BUY_PKR))
+    .reduce((s, o) => s + Number(o.totalToman), 0);
+  const ahmadTotalSell = createdOrders
+    .filter((o) => o.customerId === ahmad.id && (o.orderType === OrderType.SELL_PKR))
+    .reduce((s, o) => s + Number(o.totalToman), 0);
+
+  await prisma.customer.update({
+    where: { id: ahmad.id },
+    data: { totalBuy: BigInt(ahmadTotalBuy), totalSell: BigInt(ahmadTotalSell) },
+  });
 
   console.log("\n--- Seed Complete ---");
   console.log("Password for all: 123456\n");
