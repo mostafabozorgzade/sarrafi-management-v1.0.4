@@ -391,6 +391,78 @@ export default function OrdersPage() {
                   <p className="text-[11px] font-bold text-emerald-700" dir="ltr">{currentRates.sellRate.toLocaleString("en-US")}</p>
                 </div>
               </div>
+              <p className="text-[9px] text-gray-400 text-center">نرخ‌ها از جدول currency_rates خوانده می‌شوند</p>
+            </div>
+          )}
+
+          {/* Profit Formula Info */}
+          {selectedType && (
+            <div className="rounded-xl bg-amber-50 p-3 space-y-2">
+              <p className="text-[10px] font-semibold text-amber-600 uppercase">نحوه محاسبه سود</p>
+              {selectedType === "BUY_PKR" && (
+                <div className="space-y-1.5">
+                  <p className="text-[10px] text-amber-700 font-medium">خرید روپیه از مشتری</p>
+                  <p className="text-[9px] text-amber-600 leading-relaxed">
+                    روپیه از مشتری دریافت می‌شود و تومان پرداخت می‌شود.
+                  </p>
+                  <div className="rounded-lg bg-white p-2 border border-amber-100">
+                    <p className="text-[9px] text-amber-700 font-medium mb-1">فرمول سود:</p>
+                    <p className="text-[9px] text-amber-600" dir="ltr">(نرخ فروش - نرخ خرید) × مقدار روپیه + کارمزد</p>
+                  </div>
+                  <div className="rounded-lg bg-white p-2 border border-amber-100">
+                    <p className="text-[9px] text-amber-700 font-medium mb-1">مثال:</p>
+                    <p className="text-[9px] text-amber-600" dir="ltr">(3000 - 2950) × 100,000 = 5,000,000 تومان</p>
+                  </div>
+                </div>
+              )}
+              {selectedType === "SELL_PKR" && (
+                <div className="space-y-1.5">
+                  <p className="text-[10px] text-amber-700 font-medium">فروش روپیه به مشتری</p>
+                  <p className="text-[9px] text-amber-600 leading-relaxed">
+                    تومان از مشتری دریافت می‌شود و روپیه تحویل داده می‌شود.
+                  </p>
+                  <div className="rounded-lg bg-white p-2 border border-amber-100">
+                    <p className="text-[9px] text-amber-700 font-medium mb-1">فرمول سود:</p>
+                    <p className="text-[9px] text-amber-600" dir="ltr">(نرخ فروش - نرخ خرید) × مقدار روپیه + کارمزد</p>
+                  </div>
+                  <div className="rounded-lg bg-white p-2 border border-amber-100">
+                    <p className="text-[9px] text-amber-700 font-medium mb-1">مثال:</p>
+                    <p className="text-[9px] text-amber-600" dir="ltr">(3000 - 2950) × 100,000 = 5,000,000 تومان</p>
+                  </div>
+                </div>
+              )}
+              {selectedType === "IR_TO_PK" && (
+                <div className="space-y-1.5">
+                  <p className="text-[10px] text-amber-700 font-medium">حواله ایران به پاکستان</p>
+                  <p className="text-[9px] text-amber-600 leading-relaxed">
+                    تومان از مشتری دریافت می‌شود و روپیه به حساب مقصد در پاکستان واریز می‌شود.
+                  </p>
+                  <div className="rounded-lg bg-white p-2 border border-amber-100">
+                    <p className="text-[9px] text-amber-700 font-medium mb-1">فرمول سود:</p>
+                    <p className="text-[9px] text-amber-600" dir="ltr">(نرخ فروش - نرخ سفارش) × مقدار روپیه + کارمزد</p>
+                  </div>
+                  <div className="rounded-lg bg-white p-2 border border-amber-100">
+                    <p className="text-[9px] text-amber-700 font-medium mb-1">محاسبه روپیه:</p>
+                    <p className="text-[9px] text-amber-600" dir="ltr">مبلغ تومان ÷ نرخ تبدیل = مقدار روپیه</p>
+                  </div>
+                </div>
+              )}
+              {selectedType === "PK_TO_IR" && (
+                <div className="space-y-1.5">
+                  <p className="text-[10px] text-amber-700 font-medium">حواله پاکستان به ایران</p>
+                  <p className="text-[9px] text-amber-600 leading-relaxed">
+                    روپیه از مشتری دریافت می‌شود و تومان به حساب بانکی ایران واریز می‌شود.
+                  </p>
+                  <div className="rounded-lg bg-white p-2 border border-amber-100">
+                    <p className="text-[9px] text-amber-700 font-medium mb-1">فرمول سود:</p>
+                    <p className="text-[9px] text-amber-600" dir="ltr">(نرخ سفارش - نرخ خرید) × مقدار روپیه + کارمزد</p>
+                  </div>
+                  <div className="rounded-lg bg-white p-2 border border-amber-100">
+                    <p className="text-[9px] text-amber-700 font-medium mb-1">محاسبه تومان:</p>
+                    <p className="text-[9px] text-amber-600" dir="ltr">مقدار روپیه × نرخ تبدیل = مبلغ تومان</p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
