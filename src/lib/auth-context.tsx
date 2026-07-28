@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 interface User {
   id: string;
@@ -27,26 +27,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
+  const pathname = usePathname();
+
+  const forceLogout = useCallback(async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
+    setUser(null);
+    window.location.href = "/login";
+  }, []);
 
   const refreshUser = useCallback(async () => {
+    if (pathname === "/login") {
+      setIsLoading(false);
+      return;
+    }
     try {
       const res = await fetch("/api/auth/me");
       if (res.ok) {
         const data = await res.json();
         setUser(data.user);
+        setIsLoading(false);
       } else {
-        document.cookie = "token=; path=/; max-age=0";
-        setUser(null);
-        router.push("/login");
+        await forceLogout();
       }
     } catch {
-      document.cookie = "token=; path=/; max-age=0";
-      setUser(null);
-      router.push("/login");
-    } finally {
-      setIsLoading(false);
+      await forceLogout();
     }
-  }, [router]);
+  }, [pathname, forceLogout]);
 
   useEffect(() => {
     refreshUser();
@@ -75,9 +81,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
-    document.cookie = "token=; path=/; max-age=0";
+    await fetch("/api/auth/logout", { method: "POST" });
     setUser(null);
-    router.push("/login");
+    window.location.href = "/login";
   };
 
   return (

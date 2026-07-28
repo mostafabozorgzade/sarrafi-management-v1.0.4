@@ -23,7 +23,7 @@ const roleColors: Record<string, string> = {
 export default function ProfilePage() {
   const { user, isLoading, logout } = useAuth();
 
-  if (isLoading) {
+  if (isLoading || !user) {
     return (
       <div className="px-4 py-4 space-y-4">
         <div className="flex flex-col items-center gap-3 rounded-xl border border-gray-100 bg-white p-4">
@@ -45,8 +45,6 @@ export default function ProfilePage() {
       </div>
     );
   }
-
-  if (!user) return null;
 
   return (
     <div className="px-4 py-4 space-y-4">
