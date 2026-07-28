@@ -2,31 +2,34 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, ArrowRight } from "lucide-react";
+import { CheckCircle2, ArrowRight, ChevronLeft, Send, ArrowDownToLine } from "lucide-react";
 import { api } from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ErrorAlert } from "@/components/ui/error-alert";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { cn } from "@/lib/utils";
+import {
+  DIRECTIONS,
+  SUB_TYPES,
+  ORDER_TYPE_LABELS,
+  isHawalaType,
+  isTomanAmountType,
+  type OrderTypeEnum,
+  type Direction,
+  type SubType,
+} from "@/lib/order-types";
 
 interface Customer { id: string; name: string; phone: string; }
 interface Rate { id: string; currencyId: string; buyRate: string; sellRate: string; currency: { code: string } }
 
-const orderTypes = [
-  { id: "IR_TO_PK", label: "حواله ایران → پاکستان", desc: "مشتری تومان می‌دهد، روپیه به پاکستان واریز می‌شود", color: "bg-blue-600", icon: "🇮🇷→🇵🇰", fields: "toman" },
-  { id: "PK_TO_IR", label: "حواله پاکستان → ایران", desc: "روپیه از پاکستان دریافت، تومان به مشتری پرداخت", color: "bg-emerald-600", icon: "🇵🇰→🇮🇷", fields: "hawala" },
-  { id: "BUY_PKR", label: "خرید روپیه از مشتری", desc: "روپیه از مشتری خرید، تومان پرداخت", color: "bg-violet-600", icon: "💰", fields: "card" },
-  { id: "SELL_PKR", label: "فروش روپیه به مشتری", desc: "تومان دریافت، روپیه به مشتری فروخته می‌شود", color: "bg-amber-600", icon: "💎", fields: "card" },
-] as const;
-
-type OrderType = typeof orderTypes[number]["id"];
-
 export default function NewOrderPage() {
   const router = useRouter();
-  const [typeSheetOpen, setTypeSheetOpen] = useState(false);
+  const [directionSheetOpen, setDirectionSheetOpen] = useState(false);
+  const [subTypeSheetOpen, setSubTypeSheetOpen] = useState(false);
   const [formSheetOpen, setFormSheetOpen] = useState(false);
-  const [selectedType, setSelectedType] = useState<OrderType | null>(null);
+  const [selectedDirection, setSelectedDirection] = useState<Direction | null>(null);
+  const [selectedType, setSelectedType] = useState<OrderTypeEnum | null>(null);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [customerId, setCustomerId] = useState("");
   const [currencyId, setCurrencyId] = useState("");
@@ -57,8 +60,8 @@ export default function NewOrderPage() {
   const amountNum = parseFloat(amount || "0");
   const rateNum = parseFloat(rate || "0");
   const feeNum = parseFloat(fee || "0");
-  const isTomanAmount = selectedType === "IR_TO_PK";
-  const isHawala = selectedType === "IR_TO_PK" || selectedType === "PK_TO_IR";
+  const isTomanAmount = selectedType ? isTomanAmountType(selectedType) : false;
+  const isHawala = selectedType ? isHawalaType(selectedType) : false;
 
   let totalToman = 0;
   let calculatedPkr = 0;
@@ -70,10 +73,16 @@ export default function NewOrderPage() {
     calculatedPkr = amountNum;
   }
 
-  const selectType = (type: OrderType) => {
-    setSelectedType(type);
-    setTypeSheetOpen(false);
+  const selectDirection = (direction: Direction) => {
+    setSelectedDirection(direction);
+    setDirectionSheetOpen(false);
     resetForm();
+    setTimeout(() => setSubTypeSheetOpen(true), 100);
+  };
+
+  const selectSubType = (type: OrderTypeEnum) => {
+    setSelectedType(type);
+    setSubTypeSheetOpen(false);
     setTimeout(() => setFormSheetOpen(true), 100);
   };
 
@@ -85,6 +94,7 @@ export default function NewOrderPage() {
     setDestinationCard("");
     setDestinationSheba("");
     setDescription("");
+    setSelectedType(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -106,7 +116,8 @@ export default function NewOrderPage() {
     setLoading(false);
   };
 
-  const typeInfo = orderTypes.find((t) => t.id === selectedType);
+  const typeInfo = selectedType ? ORDER_TYPE_LABELS[selectedType] : null;
+  const subTypes = selectedDirection ? SUB_TYPES[selectedDirection.id] || [] : [];
 
   return (
     <main className="min-h-dvh bg-white">
@@ -114,14 +125,28 @@ export default function NewOrderPage() {
         <h1 className="text-sm font-semibold text-gray-900">ثبت سفارش جدید</h1>
       </div>
 
-      <div className="flex flex-col items-center justify-center py-20 px-4">
-        <button
-          onClick={() => setTypeSheetOpen(true)}
-          className="flex h-16 w-full max-w-sm items-center justify-center gap-3 rounded-2xl bg-gray-900 text-white shadow-lg transition-all active:scale-[0.98]"
-        >
-          <span className="text-lg">+</span>
-          <span className="text-sm font-semibold">ثبت سفارش جدید</span>
-        </button>
+      {/* Direction Selection Cards */}
+      <div className="px-4 py-6 space-y-3">
+        <p className="text-xs font-medium text-gray-400 px-1">نوع تبدیل را انتخاب کنید</p>
+        {DIRECTIONS.map((d) => {
+          const Icon = d.icon;
+          return (
+            <button
+              key={d.id}
+              onClick={() => selectDirection(d)}
+              className="w-full flex items-center gap-4 rounded-2xl border border-gray-100 p-5 text-right transition-all active:bg-gray-50 hover:border-gray-200 shadow-sm"
+            >
+              <div className={cn("flex h-14 w-14 items-center justify-center rounded-2xl", d.color)}>
+                <Icon className="h-6 w-6" strokeWidth={1.5} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-base font-bold text-gray-900">{d.label}</p>
+                <p className="text-xs text-gray-400 mt-1">{d.sub}</p>
+              </div>
+              <ChevronLeft className="h-5 w-5 flex-shrink-0 text-gray-300" strokeWidth={1.5} />
+            </button>
+          );
+        })}
       </div>
 
       {success && (
@@ -133,20 +158,21 @@ export default function NewOrderPage() {
         </div>
       )}
 
-      <BottomSheet isOpen={typeSheetOpen} onClose={() => setTypeSheetOpen(false)} title="نوع سفارش">
+      {/* Sub-Type Selection BottomSheet */}
+      <BottomSheet isOpen={subTypeSheetOpen} onClose={() => setSubTypeSheetOpen(false)} title={selectedDirection?.label}>
         <div className="space-y-3">
-          {orderTypes.map((t) => (
+          {subTypes.map((st) => (
             <button
-              key={t.id}
-              onClick={() => selectType(t.id)}
+              key={st.id}
+              onClick={() => selectSubType(st.id)}
               className="w-full flex items-center gap-4 rounded-xl border border-gray-100 p-4 text-right transition-all active:bg-gray-50 hover:border-gray-200"
             >
-              <div className={cn("flex h-14 w-14 items-center justify-center rounded-2xl text-2xl", t.color)}>
-                {t.icon}
+              <div className={cn("flex h-14 w-14 items-center justify-center rounded-2xl text-white", st.color)}>
+                {st.id === "IR_TO_PK" || st.id === "SELL_PKR" ? <Send className="h-6 w-6" strokeWidth={1.5} /> : <ArrowDownToLine className="h-6 w-6" strokeWidth={1.5} />}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-gray-900">{t.label}</p>
-                <p className="text-[11px] text-gray-400 mt-1 leading-relaxed">{t.desc}</p>
+                <p className="text-sm font-bold text-gray-900">{st.label}</p>
+                <p className="text-[11px] text-gray-400 mt-1 leading-relaxed">{st.desc}</p>
               </div>
               <ArrowRight className="h-5 w-5 flex-shrink-0 text-gray-300" strokeWidth={1.5} />
             </button>
@@ -154,6 +180,7 @@ export default function NewOrderPage() {
         </div>
       </BottomSheet>
 
+      {/* Form BottomSheet */}
       <BottomSheet
         isOpen={formSheetOpen}
         onClose={() => setFormSheetOpen(false)}
@@ -177,7 +204,7 @@ export default function NewOrderPage() {
 
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-gray-500">
-              {isTomanAmount ? "مبلغ تومان دریافتی" : "مبلغ روپیه"}
+              {isTomanAmount ? "مبلغ پرداختی (تومان)" : "مبلغ پرداختی (روپیه)"}
             </label>
             <Input
               type="number"
@@ -202,20 +229,20 @@ export default function NewOrderPage() {
           </div>
 
           {amountNum > 0 && rateNum > 0 && (
-            <div className={cn("rounded-xl p-4", isTomanAmount ? "bg-blue-50" : "bg-emerald-50")}>
+            <div className={cn("rounded-xl p-4", isTomanAmount ? "bg-green-50" : "bg-blue-50")}>
               <div className="flex items-center justify-between mb-2">
-                <span className={cn("text-xs", isTomanAmount ? "text-blue-500" : "text-emerald-500")}>
-                  {isTomanAmount ? "مبلغ دریافتی (تومان)" : "مبلغ روپیه"}
+                <span className={cn("text-xs", isTomanAmount ? "text-green-500" : "text-blue-500")}>
+                  {isTomanAmount ? "مبلغ پرداختی (تومان)" : "مبلغ پرداختی (روپیه)"}
                 </span>
-                <span className={cn("text-base font-bold", isTomanAmount ? "text-blue-700" : "text-emerald-700")} dir="ltr">
+                <span className={cn("text-base font-bold", isTomanAmount ? "text-green-700" : "text-blue-700")} dir="ltr">
                   {isTomanAmount ? totalToman.toLocaleString("en-US") : calculatedPkr.toLocaleString("en-US")}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className={cn("text-xs", isTomanAmount ? "text-blue-500" : "text-emerald-500")}>
-                  {isTomanAmount ? "مبلغ واریزی (روپیه)" : "مبلغ دریافتی (تومان)"}
+                <span className={cn("text-xs", isTomanAmount ? "text-green-500" : "text-blue-500")}>
+                  {isTomanAmount ? "مبلغ دریافتی (روپیه)" : "مبلغ دریافتی (تومان)"}
                 </span>
-                <span className={cn("text-sm font-semibold", isTomanAmount ? "text-blue-600" : "text-emerald-600")} dir="ltr">
+                <span className={cn("text-sm font-semibold", isTomanAmount ? "text-green-600" : "text-blue-600")} dir="ltr">
                   {isTomanAmount ? calculatedPkr.toLocaleString("en-US") : totalToman.toLocaleString("en-US")}
                 </span>
               </div>
@@ -234,9 +261,10 @@ export default function NewOrderPage() {
             />
           </div>
 
+          {/* Hawala fields: IR_TO_PK and PK_TO_IR */}
           {isHawala && (<>
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-gray-500">نام دریافت‌کننده</label>
+              <label className="text-xs font-medium text-gray-500">{selectedType === "IR_TO_PK" ? "نام گیرنده" : "نام صاحب حساب"}</label>
               <Input
                 value={recipientName}
                 onChange={(e) => setRecipientName(e.target.value)}
@@ -246,38 +274,83 @@ export default function NewOrderPage() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-gray-500">نحوه واریز</label>
-              <select
-                value={recipientMethod}
-                onChange={(e) => setRecipientMethod(e.target.value)}
-                className="flex h-12 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              >
-                <option value="EASYPAISA">Easypaisa</option>
-                <option value="JAZZCASH">JazzCash</option>
-                <option value="BANK_TRANSFER">حواله بانکی</option>
-                <option value="CASH">نقدی</option>
-              </select>
+              <label className="text-xs font-medium text-gray-500">{selectedType === "IR_TO_PK" ? "نحوه واریز" : "شماره شبا"}</label>
+              {selectedType === "IR_TO_PK" ? (
+                <select
+                  value={recipientMethod}
+                  onChange={(e) => setRecipientMethod(e.target.value)}
+                  className="flex h-12 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                >
+                  <option value="EASYPAISA">Easypaisa</option>
+                  <option value="JAZZCASH">JazzCash</option>
+                  <option value="BANK_TRANSFER">حواله بانکی</option>
+                  <option value="CASH">نقدی</option>
+                </select>
+              ) : (
+                <Input
+                  value={recipientAccount}
+                  onChange={(e) => setRecipientAccount(e.target.value)}
+                  placeholder="IR..."
+                  className="h-12 rounded-xl"
+                  dir="ltr"
+                />
+              )}
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-gray-500">شماره حساب / IBAN</label>
-              <Input
-                value={recipientAccount}
-                onChange={(e) => setRecipientAccount(e.target.value)}
-                placeholder="شماره حساب"
-                className="h-12 rounded-xl"
-                dir="ltr"
-              />
-            </div>
+            {selectedType === "IR_TO_PK" ? (
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-500">شماره حساب / IBAN</label>
+                <Input
+                  value={recipientAccount}
+                  onChange={(e) => setRecipientAccount(e.target.value)}
+                  placeholder="شماره حساب"
+                  className="h-12 rounded-xl"
+                  dir="ltr"
+                />
+              </div>
+            ) : (
+              <>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-gray-500">شماره کارت</label>
+                  <Input
+                    value={destinationCard}
+                    onChange={(e) => setDestinationCard(e.target.value)}
+                    placeholder="شماره کارت"
+                    className="h-12 rounded-xl"
+                    dir="ltr"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-gray-500">بانک</label>
+                  <Input
+                    value={recipientMethod}
+                    onChange={(e) => setRecipientMethod(e.target.value)}
+                    placeholder="نام بانک"
+                    className="h-12 rounded-xl"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-gray-500">شماره موبایل</label>
+                  <Input
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="اختیاری"
+                    className="h-12 rounded-xl"
+                    dir="ltr"
+                  />
+                </div>
+              </>
+            )}
           </>)}
 
+          {/* Card fields: BUY_PKR and SELL_PKR */}
           {!isHawala && (<>
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-gray-500">شماره کارت مقصد</label>
+              <label className="text-xs font-medium text-gray-500">{selectedType === "BUY_PKR" ? "شماره حساب پاکستانی صراف" : "شماره کارت مقصد"}</label>
               <Input
                 value={destinationCard}
                 onChange={(e) => setDestinationCard(e.target.value)}
-                placeholder="شماره کارت"
+                placeholder={selectedType === "BUY_PKR" ? "شماره حساب پاکستانی" : "شماره کارت"}
                 className="h-12 rounded-xl"
                 dir="ltr"
               />

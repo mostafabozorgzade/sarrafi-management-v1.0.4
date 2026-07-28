@@ -13,6 +13,8 @@ import {
   User,
   FileText,
   ChevronLeft,
+  Send,
+  BanknoteIcon,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -21,6 +23,20 @@ import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ErrorAlert } from "@/components/ui/error-alert";
+import {
+  DIRECTIONS,
+  SUB_TYPES,
+  ORDER_TYPE_LABELS,
+  STATUS_LABELS,
+  STATUS_COLORS,
+  METHOD_LABELS,
+  ICON_MAP,
+  isHawalaType,
+  isTomanAmountType,
+  type OrderTypeEnum,
+  type Direction,
+  type SubType,
+} from "@/lib/order-types";
 
 interface Order {
   id: string;
@@ -47,47 +63,17 @@ interface Order {
 interface Customer { id: string; name: string; phone: string }
 interface Rate { id: string; currencyId: string; buyRate: string; sellRate: string; currency: { code: string } }
 
-const orderTypes = [
-  { id: "IR_TO_PK", label: "حواله ایران → پاکستان", desc: "تومان دریافت، روپیه واریز", icon: ArrowDownToLine, color: "bg-blue-50 text-blue-600" },
-  { id: "PK_TO_IR", label: "حواله پاکستان → ایران", desc: "روپیه دریافت، تومان پرداخت", icon: ArrowUpFromLine, color: "bg-emerald-50 text-emerald-600" },
-  { id: "BUY_PKR", label: "خرید روپیه", desc: "خرید روپیه از مشتری", icon: Banknote, color: "bg-violet-50 text-violet-600" },
-  { id: "SELL_PKR", label: "فروش روپیه", desc: "فروش روپیه به مشتری", icon: Coins, color: "bg-amber-50 text-amber-600" },
-] as const;
-
-type OrderType = typeof orderTypes[number]["id"];
-
-const typeLabels: Record<string, { label: string; color: string; icon: typeof ArrowDownToLine }> = {
-  IR_TO_PK: { label: "حواله ایران→پاکستان", color: "text-blue-600", icon: ArrowDownToLine },
-  PK_TO_IR: { label: "حواله پاکستان→ایران", color: "text-emerald-600", icon: ArrowUpFromLine },
-  BUY_PKR: { label: "خرید روپیه", color: "text-violet-600", icon: Banknote },
-  SELL_PKR: { label: "فروش روپیه", color: "text-amber-600", icon: Coins },
-};
-
-const statusLabels: Record<string, string> = {
-  DRAFT: "پیش‌نویس", REGISTERED: "ثبت شده", TOMAN_RECEIVED: "تومان دریافت",
-  AWAITING_PKR_TRANSFER: "انتظار روپیه", PKR_TRANSFERRED: "روپیه واریز",
-  IN_PROGRESS: "در حال انجام", COMPLETED: "تکمیل", CANCELLED: "لغو",
-};
-const statusColors: Record<string, string> = {
-  DRAFT: "bg-gray-100 text-gray-600", REGISTERED: "bg-blue-50 text-blue-600",
-  TOMAN_RECEIVED: "bg-amber-50 text-amber-600", AWAITING_PKR_TRANSFER: "bg-violet-50 text-violet-600",
-  PKR_TRANSFERRED: "bg-cyan-50 text-cyan-600", IN_PROGRESS: "bg-indigo-50 text-indigo-600",
-  COMPLETED: "bg-green-50 text-green-600", CANCELLED: "bg-red-50 text-red-600",
-};
-
-const methodLabels: Record<string, string> = {
-  EASYPAISA: "Easypaisa", JAZZCASH: "JazzCash", BANK_TRANSFER: "حواله بانکی", CASH: "نقدی", HAWALA: "حواله",
-};
-
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | string>("all");
 
-  const [typeSheetOpen, setTypeSheetOpen] = useState(false);
+  const [directionSheetOpen, setDirectionSheetOpen] = useState(false);
+  const [subTypeSheetOpen, setSubTypeSheetOpen] = useState(false);
   const [formSheetOpen, setFormSheetOpen] = useState(false);
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
-  const [selectedType, setSelectedType] = useState<OrderType | null>(null);
+  const [selectedDirection, setSelectedDirection] = useState<Direction | null>(null);
+  const [selectedType, setSelectedType] = useState<OrderTypeEnum | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -153,10 +139,16 @@ export default function OrdersPage() {
     return null;
   };
 
-  const selectType = (type: OrderType) => {
-    setSelectedType(type);
-    setTypeSheetOpen(false);
+  const selectDirection = (direction: Direction) => {
+    setSelectedDirection(direction);
+    setDirectionSheetOpen(false);
     resetForm();
+    setTimeout(() => setSubTypeSheetOpen(true), 100);
+  };
+
+  const selectSubType = (type: OrderTypeEnum) => {
+    setSelectedType(type);
+    setSubTypeSheetOpen(false);
     loadFormData();
     setTimeout(() => setFormSheetOpen(true), 100);
   };
@@ -164,10 +156,11 @@ export default function OrdersPage() {
   const resetForm = () => {
     setAmount(""); setFee(""); setRecipientName(""); setRecipientAccount("");
     setDestinationCard(""); setDestinationSheba(""); setDescription(""); setError(null);
+    setSelectedType(null);
   };
 
-  const isTomanAmount = selectedType === "IR_TO_PK";
-  const isHawala = selectedType === "IR_TO_PK" || selectedType === "PK_TO_IR";
+  const isTomanAmount = selectedType ? isTomanAmountType(selectedType) : false;
+  const isHawala = selectedType ? isHawalaType(selectedType) : false;
   const amountNum = parseFloat(amount || "0");
   const rateNum = parseFloat(rate || "0");
   const feeNum = parseFloat(fee || "0");
@@ -198,7 +191,7 @@ export default function OrdersPage() {
       setTimeout(() => setSuccess(false), 1500);
       setOrders((prev) => [newOrder, ...prev]);
       resetForm();
-      setSelectedType(null);
+      setSelectedDirection(null);
     } catch (err) { setError(err instanceof Error ? err.message : "خطا"); }
     setSubmitting(false);
   };
@@ -208,7 +201,8 @@ export default function OrdersPage() {
     setDetailSheetOpen(true);
   };
 
-  const typeInfo = orderTypes.find((t) => t.id === selectedType);
+  const typeInfo = selectedType ? ORDER_TYPE_LABELS[selectedType] : null;
+  const subTypes = selectedDirection ? SUB_TYPES[selectedDirection.id] || [] : [];
 
   return (
     <main className="min-h-dvh bg-white">
@@ -240,8 +234,8 @@ export default function OrdersPage() {
         ) : (
           <div className="space-y-3">
             {orders.map((o) => {
-              const typeInfo = typeLabels[o.orderType] || { label: o.orderType, color: "text-gray-600", icon: ArrowDownToLine };
-              const Icon = typeInfo.icon;
+              const typeInfo = ORDER_TYPE_LABELS[o.orderType] || { label: o.orderType, short: o.orderType, color: "text-gray-600", bg: "bg-gray-50 text-gray-600" };
+              const Icon = ICON_MAP[o.orderType] || ArrowDownToLine;
               const nextAction = getNextAction(o.status, o.orderType);
               return (
                 <div key={o.id} className="rounded-xl border border-gray-100 p-3 active:bg-gray-50" onClick={() => openDetail(o)}>
@@ -250,7 +244,7 @@ export default function OrdersPage() {
                       <Icon className={cn("h-4 w-4", typeInfo.color)} strokeWidth={1.5} />
                       <span className="text-xs font-medium text-gray-900">{typeInfo.label}</span>
                     </div>
-                    <span className={cn("rounded-md px-1.5 py-0.5 text-[9px] font-medium", statusColors[o.status])}>{statusLabels[o.status]}</span>
+                    <span className={cn("rounded-md px-1.5 py-0.5 text-[9px] font-medium", STATUS_COLORS[o.status])}>{STATUS_LABELS[o.status]}</span>
                   </div>
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-[10px] text-gray-400">{o.customer.name}</span>
@@ -275,7 +269,7 @@ export default function OrdersPage() {
 
       {/* Floating Action Button */}
       <button
-        onClick={() => setTypeSheetOpen(true)}
+        onClick={() => setDirectionSheetOpen(true)}
         className="fixed bottom-24 left-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-gray-900 text-white shadow-lg transition-all active:scale-95 hover:bg-gray-800"
       >
         <Plus className="h-6 w-6" strokeWidth={2} />
@@ -289,28 +283,50 @@ export default function OrdersPage() {
         </div>
       )}
 
-      {/* Type Selection BottomSheet */}
-      <BottomSheet isOpen={typeSheetOpen} onClose={() => setTypeSheetOpen(false)} title="انتخاب نوع سفارش">
+      {/* Direction Selection BottomSheet */}
+      <BottomSheet isOpen={directionSheetOpen} onClose={() => setDirectionSheetOpen(false)} title="نوع تبدیل">
         <div className="space-y-3">
-          {orderTypes.map((t) => {
-            const Icon = t.icon;
+          {DIRECTIONS.map((d) => {
+            const Icon = d.icon;
             return (
               <button
-                key={t.id}
-                onClick={() => selectType(t.id as OrderType)}
+                key={d.id}
+                onClick={() => selectDirection(d)}
                 className="w-full flex items-center gap-4 rounded-xl border border-gray-100 p-4 text-right transition-all active:bg-gray-50 hover:border-gray-200"
               >
-                <div className={cn("flex h-12 w-12 items-center justify-center rounded-xl", t.color)}>
+                <div className={cn("flex h-12 w-12 items-center justify-center rounded-xl", d.color)}>
                   <Icon className="h-5 w-5" strokeWidth={1.5} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-gray-900">{t.label}</p>
-                  <p className="text-[11px] text-gray-400 mt-0.5">{t.desc}</p>
+                  <p className="text-sm font-bold text-gray-900">{d.label}</p>
+                  <p className="text-[11px] text-gray-400 mt-0.5">{d.sub}</p>
                 </div>
                 <ChevronLeft className="h-5 w-5 flex-shrink-0 text-gray-300" strokeWidth={1.5} />
               </button>
             );
           })}
+        </div>
+      </BottomSheet>
+
+      {/* Sub-Type Selection BottomSheet */}
+      <BottomSheet isOpen={subTypeSheetOpen} onClose={() => setSubTypeSheetOpen(false)} title={selectedDirection?.label}>
+        <div className="space-y-3">
+          {subTypes.map((st) => (
+            <button
+              key={st.id}
+              onClick={() => selectSubType(st.id)}
+              className="w-full flex items-center gap-4 rounded-xl border border-gray-100 p-4 text-right transition-all active:bg-gray-50 hover:border-gray-200"
+            >
+              <div className={cn("flex h-12 w-12 items-center justify-center rounded-xl text-white", st.color)}>
+                {st.id === "IR_TO_PK" || st.id === "SELL_PKR" ? <Send className="h-5 w-5" strokeWidth={1.5} /> : <ArrowDownToLine className="h-5 w-5" strokeWidth={1.5} />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-gray-900">{st.label}</p>
+                <p className="text-[11px] text-gray-400 mt-0.5 leading-relaxed">{st.desc}</p>
+              </div>
+              <ChevronLeft className="h-5 w-5 flex-shrink-0 text-gray-300" strokeWidth={1.5} />
+            </button>
+          ))}
         </div>
       </BottomSheet>
 
@@ -328,7 +344,7 @@ export default function OrdersPage() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-gray-500">{isTomanAmount ? "مبلغ تومان دریافتی" : "مبلغ روپیه"}</label>
+            <label className="text-xs font-medium text-gray-500">{isTomanAmount ? "مبلغ پرداختی (تومان)" : "مبلغ پرداختی (روپیه)"}</label>
             <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" className="h-12 text-left rounded-xl" inputMode="decimal" />
           </div>
 
@@ -338,14 +354,14 @@ export default function OrdersPage() {
           </div>
 
           {amountNum > 0 && rateNum > 0 && (
-            <div className={cn("rounded-xl p-4", isTomanAmount ? "bg-blue-50" : "bg-emerald-50")}>
+            <div className={cn("rounded-xl p-4", isTomanAmount ? "bg-green-50" : "bg-blue-50")}>
               <div className="flex items-center justify-between mb-2">
-                <span className={cn("text-xs", isTomanAmount ? "text-blue-500" : "text-emerald-500")}>{isTomanAmount ? "مبلغ دریافتی (تومان)" : "مبلغ روپیه"}</span>
-                <span className={cn("text-base font-bold", isTomanAmount ? "text-blue-700" : "text-emerald-700")} dir="ltr">{isTomanAmount ? totalToman.toLocaleString("en-US") : calculatedPkr.toLocaleString("en-US")}</span>
+                <span className={cn("text-xs", isTomanAmount ? "text-green-500" : "text-blue-500")}>{isTomanAmount ? "مبلغ پرداختی (تومان)" : "مبلغ پرداختی (روپیه)"}</span>
+                <span className={cn("text-base font-bold", isTomanAmount ? "text-green-700" : "text-blue-700")} dir="ltr">{isTomanAmount ? totalToman.toLocaleString("en-US") : calculatedPkr.toLocaleString("en-US")}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className={cn("text-xs", isTomanAmount ? "text-blue-500" : "text-emerald-500")}>{isTomanAmount ? "مبلغ واریزی (روپیه)" : "مبلغ دریافتی (تومان)"}</span>
-                <span className={cn("text-sm font-semibold", isTomanAmount ? "text-blue-600" : "text-emerald-600")} dir="ltr">{isTomanAmount ? calculatedPkr.toLocaleString("en-US") : totalToman.toLocaleString("en-US")}</span>
+                <span className={cn("text-xs", isTomanAmount ? "text-green-500" : "text-blue-500")}>{isTomanAmount ? "مبلغ دریافتی (روپیه)" : "مبلغ دریافتی (تومان)"}</span>
+                <span className={cn("text-sm font-semibold", isTomanAmount ? "text-green-600" : "text-blue-600")} dir="ltr">{isTomanAmount ? calculatedPkr.toLocaleString("en-US") : totalToman.toLocaleString("en-US")}</span>
               </div>
             </div>
           )}
@@ -355,30 +371,53 @@ export default function OrdersPage() {
             <Input type="number" value={fee} onChange={(e) => setFee(e.target.value)} placeholder="0" className="h-12 text-left rounded-xl" inputMode="decimal" />
           </div>
 
+          {/* Hawala fields: IR_TO_PK and PK_TO_IR */}
           {isHawala && (<>
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-gray-500">نام دریافت‌کننده</label>
+              <label className="text-xs font-medium text-gray-500">{selectedType === "IR_TO_PK" ? "نام گیرنده" : "نام صاحب حساب"}</label>
               <Input value={recipientName} onChange={(e) => setRecipientName(e.target.value)} placeholder="نام کامل" className="h-12 rounded-xl" />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-gray-500">نحوه واریز</label>
-              <select value={recipientMethod} onChange={(e) => setRecipientMethod(e.target.value)} className="flex h-12 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
-                <option value="EASYPAISA">Easypaisa</option>
-                <option value="JAZZCASH">JazzCash</option>
-                <option value="BANK_TRANSFER">حواله بانکی</option>
-                <option value="CASH">نقدی</option>
-              </select>
+              <label className="text-xs font-medium text-gray-500">{selectedType === "IR_TO_PK" ? "نحوه واریز" : "شماره شبا"}</label>
+              {selectedType === "IR_TO_PK" ? (
+                <select value={recipientMethod} onChange={(e) => setRecipientMethod(e.target.value)} className="flex h-12 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                  <option value="EASYPAISA">Easypaisa</option>
+                  <option value="JAZZCASH">JazzCash</option>
+                  <option value="BANK_TRANSFER">حواله بانکی</option>
+                  <option value="CASH">نقدی</option>
+                </select>
+              ) : (
+                <Input value={recipientAccount} onChange={(e) => setRecipientAccount(e.target.value)} placeholder="IR..." className="h-12 rounded-xl" dir="ltr" />
+              )}
             </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-gray-500">شماره حساب / IBAN</label>
-              <Input value={recipientAccount} onChange={(e) => setRecipientAccount(e.target.value)} placeholder="شماره حساب" className="h-12 rounded-xl" dir="ltr" />
-            </div>
+            {selectedType === "IR_TO_PK" ? (
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-500">شماره حساب / IBAN</label>
+                <Input value={recipientAccount} onChange={(e) => setRecipientAccount(e.target.value)} placeholder="شماره حساب" className="h-12 rounded-xl" dir="ltr" />
+              </div>
+            ) : (
+              <>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-gray-500">شماره کارت</label>
+                  <Input value={destinationCard} onChange={(e) => setDestinationCard(e.target.value)} placeholder="شماره کارت" className="h-12 rounded-xl" dir="ltr" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-gray-500">بانک</label>
+                  <Input value={recipientMethod} onChange={(e) => setRecipientMethod(e.target.value)} placeholder="نام بانک" className="h-12 rounded-xl" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-gray-500">شماره موبایل</label>
+                  <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="اختیاری" className="h-12 rounded-xl" dir="ltr" />
+                </div>
+              </>
+            )}
           </>)}
 
+          {/* Card fields: BUY_PKR and SELL_PKR */}
           {!isHawala && (<>
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-gray-500">شماره کارت مقصد</label>
-              <Input value={destinationCard} onChange={(e) => setDestinationCard(e.target.value)} placeholder="شماره کارت" className="h-12 rounded-xl" dir="ltr" />
+              <label className="text-xs font-medium text-gray-500">{selectedType === "BUY_PKR" ? "شماره حساب پاکستانی صراف" : "شماره کارت مقصد"}</label>
+              <Input value={destinationCard} onChange={(e) => setDestinationCard(e.target.value)} placeholder={selectedType === "BUY_PKR" ? "شماره حساب پاکستانی" : "شماره کارت"} className="h-12 rounded-xl" dir="ltr" />
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-gray-500">شماره شبا (اختیاری)</label>
@@ -408,14 +447,14 @@ export default function OrdersPage() {
           <div className="space-y-4">
             {/* Header */}
             <div className="flex items-center gap-3">
-              {(() => { const ti = typeLabels[selectedOrder.orderType]; const Icon = ti?.icon || ArrowDownToLine; return (
-                <div className={cn("flex h-12 w-12 items-center justify-center rounded-xl", selectedOrder.orderType === "IR_TO_PK" ? "bg-blue-50" : selectedOrder.orderType === "PK_TO_IR" ? "bg-emerald-50" : selectedOrder.orderType === "BUY_PKR" ? "bg-violet-50" : "bg-amber-50")}>
+              {(() => { const ti = ORDER_TYPE_LABELS[selectedOrder.orderType]; const Icon = ICON_MAP[selectedOrder.orderType] || ArrowDownToLine; return (
+                <div className={cn("flex h-12 w-12 items-center justify-center rounded-xl", selectedOrder.orderType === "IR_TO_PK" ? "bg-green-50" : selectedOrder.orderType === "PK_TO_IR" ? "bg-blue-50" : selectedOrder.orderType === "BUY_PKR" ? "bg-violet-50" : "bg-amber-50")}>
                   <Icon className={cn("h-5 w-5", ti?.color)} strokeWidth={1.5} />
                 </div>
               ); })()}
               <div className="flex-1">
-                <p className="text-sm font-bold text-gray-900">{typeLabels[selectedOrder.orderType]?.label || selectedOrder.orderType}</p>
-                <span className={cn("inline-block mt-0.5 rounded-md px-1.5 py-0.5 text-[9px] font-medium", statusColors[selectedOrder.status])}>{statusLabels[selectedOrder.status]}</span>
+                <p className="text-sm font-bold text-gray-900">{ORDER_TYPE_LABELS[selectedOrder.orderType]?.label || selectedOrder.orderType}</p>
+                <span className={cn("inline-block mt-0.5 rounded-md px-1.5 py-0.5 text-[9px] font-medium", STATUS_COLORS[selectedOrder.status])}>{STATUS_LABELS[selectedOrder.status]}</span>
               </div>
             </div>
 
@@ -464,25 +503,25 @@ export default function OrdersPage() {
                 <p className="text-[10px] font-semibold text-gray-400 uppercase">اطلاعات واریز</p>
                 {selectedOrder.recipientName && (
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500">دریافت‌کننده</span>
+                    <span className="text-xs text-gray-500">{selectedOrder.orderType === "IR_TO_PK" ? "دریافت‌کننده" : "صاحب حساب"}</span>
                     <span className="text-xs font-medium text-gray-900">{selectedOrder.recipientName}</span>
                   </div>
                 )}
                 {selectedOrder.recipientAccount && (
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500">شماره حساب</span>
+                    <span className="text-xs text-gray-500">{selectedOrder.orderType === "IR_TO_PK" ? "شماره حساب" : "شماره شبا"}</span>
                     <span className="text-xs font-medium text-gray-900" dir="ltr">{selectedOrder.recipientAccount}</span>
                   </div>
                 )}
                 {selectedOrder.recipientMethod && (
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500">نحوه واریز</span>
-                    <span className="text-xs font-medium text-gray-900">{methodLabels[selectedOrder.recipientMethod] || selectedOrder.recipientMethod}</span>
+                    <span className="text-xs text-gray-500">{selectedOrder.orderType === "IR_TO_PK" ? "نحوه واریز" : "بانک"}</span>
+                    <span className="text-xs font-medium text-gray-900">{METHOD_LABELS[selectedOrder.recipientMethod] || selectedOrder.recipientMethod}</span>
                   </div>
                 )}
                 {selectedOrder.destinationCard && (
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500">کارت مقصد</span>
+                    <span className="text-xs text-gray-500">{selectedOrder.orderType === "BUY_PKR" ? "حساب پاکستانی" : "کارت مقصد"}</span>
                     <span className="text-xs font-medium text-gray-900" dir="ltr">{selectedOrder.destinationCard}</span>
                   </div>
                 )}
