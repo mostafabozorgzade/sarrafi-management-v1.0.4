@@ -71,14 +71,23 @@ export async function POST(request: NextRequest) {
     const sellRateAtTime = currencyRate ? Number(currencyRate.sellRate ?? 0) : 0;
 
     let profit = feeNum;
+    let buyProfitAmount = 0;
+    let sellProfitAmount = 0;
+
     if (currencyRate) {
       const pkrAmount = orderType === "IR_TO_PK" ? calculatedPkr : amountNum;
       if (orderType === "BUY_PKR" || orderType === "PK_TO_IR") {
-        profit += (rateNum - buyRateAtTime) * pkrAmount;
+        const spreadProfit = (rateNum - buyRateAtTime) * pkrAmount;
+        buyProfitAmount = spreadProfit + feeNum;
+        profit += spreadProfit;
       } else {
-        profit += (sellRateAtTime - rateNum) * pkrAmount;
+        const spreadProfit = (sellRateAtTime - rateNum) * pkrAmount;
+        sellProfitAmount = spreadProfit + feeNum;
+        profit += spreadProfit;
       }
     }
+
+    const totalProfitAmount = buyProfitAmount + sellProfitAmount;
 
     const order = await prisma.order.create({
       data: {
@@ -93,6 +102,9 @@ export async function POST(request: NextRequest) {
         calculatedPkr,
         fee: feeNum,
         profit,
+        buyProfitAmount,
+        sellProfitAmount,
+        totalProfitAmount,
         marketRateAtTime,
         buyRateAtTime,
         sellRateAtTime,

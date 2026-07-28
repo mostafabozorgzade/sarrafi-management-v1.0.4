@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { TrendingUp, Calendar, Filter, BarChart3, Wallet, Receipt, ArrowDownToLine, Send, Banknote, Coins } from "lucide-react";
+import { TrendingUp, Calendar, Filter, Wallet, Receipt, ArrowDownToLine, Send, Banknote, Coins } from "lucide-react";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,6 +11,9 @@ interface Summary {
   profit: bigint;
   totalToman: bigint;
   totalPkr: bigint;
+  buyProfit: bigint;
+  sellProfit: bigint;
+  totalProfit: bigint;
   orderCount: number;
 }
 
@@ -19,6 +22,9 @@ interface ProfitByType {
   profit: bigint;
   totalToman: bigint;
   totalPkr: bigint;
+  buyProfit: bigint;
+  sellProfit: bigint;
+  totalProfit: bigint;
   count: number;
 }
 
@@ -26,6 +32,9 @@ interface DailyProfit {
   date: string;
   orderCount: number;
   profit: bigint;
+  buyProfit: bigint;
+  sellProfit: bigint;
+  totalProfit: bigint;
   totalToman: bigint;
 }
 
@@ -39,6 +48,9 @@ interface FilteredOrder {
   calculatedPkr: bigint | null;
   fee: bigint;
   profit: bigint | null;
+  buyProfitAmount: bigint;
+  sellProfitAmount: bigint;
+  totalProfitAmount: bigint;
   createdAt: string;
   customer: { name: string };
 }
@@ -134,8 +146,13 @@ export default function ReportsPage() {
           <section className="space-y-2">
             <div className="grid grid-cols-2 gap-2">
               <div className="rounded-xl border border-gray-100 bg-white p-3">
-                <div className="flex items-center gap-1.5 mb-1"><TrendingUp className="h-3.5 w-3.5 text-green-500" strokeWidth={1.5} /><span className="text-[10px] text-gray-400">سود خالص</span></div>
-                <p className="text-lg font-bold text-green-700" dir="ltr">{Number(currentSummary.profit).toLocaleString("en-US")}</p>
+                <div className="flex items-center gap-1.5 mb-1"><TrendingUp className="h-3.5 w-3.5 text-green-500" strokeWidth={1.5} /><span className="text-[10px] text-gray-400">سود خرید</span></div>
+                <p className="text-lg font-bold text-green-700" dir="ltr">{Number(currentSummary.buyProfit).toLocaleString("en-US")}</p>
+                <p className="text-[9px] text-gray-300 mt-0.5">تومان</p>
+              </div>
+              <div className="rounded-xl border border-gray-100 bg-white p-3">
+                <div className="flex items-center gap-1.5 mb-1"><TrendingUp className="h-3.5 w-3.5 text-emerald-500" strokeWidth={1.5} /><span className="text-[10px] text-gray-400">سود فروش</span></div>
+                <p className="text-lg font-bold text-emerald-700" dir="ltr">{Number(currentSummary.sellProfit).toLocaleString("en-US")}</p>
                 <p className="text-[9px] text-gray-300 mt-0.5">تومان</p>
               </div>
               <div className="rounded-xl border border-gray-100 bg-white p-3">
@@ -148,11 +165,10 @@ export default function ReportsPage() {
                 <p className="text-sm font-bold text-amber-700" dir="ltr">{Number(currentSummary.totalToman).toLocaleString("en-US")}</p>
                 <p className="text-[9px] text-gray-300 mt-0.5">تومان</p>
               </div>
-              <div className="rounded-xl border border-gray-100 bg-white p-3">
-                <div className="flex items-center gap-1.5 mb-1"><BarChart3 className="h-3.5 w-3.5 text-violet-500" strokeWidth={1.5} /><span className="text-[10px] text-gray-400">گردش روپیه</span></div>
-                <p className="text-sm font-bold text-violet-700" dir="ltr">{Number(currentSummary.totalPkr).toLocaleString("en-US")}</p>
-                <p className="text-[9px] text-gray-300 mt-0.5">روپیه</p>
-              </div>
+            </div>
+            <div className="rounded-xl bg-green-50 p-3 flex items-center justify-between">
+              <span className="text-xs text-green-600">سود کل</span>
+              <span className="text-base font-bold text-green-800" dir="ltr">{Number(currentSummary.totalProfit).toLocaleString("en-US")} تومان</span>
             </div>
           </section>
         )}
@@ -174,10 +190,14 @@ export default function ReportsPage() {
                       </div>
                       <span className="text-[10px] text-gray-300">{p.count} سفارش</span>
                     </div>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 gap-2">
                       <div className="text-center">
-                        <p className="text-[9px] text-gray-400">سود</p>
-                        <p className="text-xs font-bold text-green-600" dir="ltr">{Number(p.profit).toLocaleString("en-US")}</p>
+                        <p className="text-[9px] text-gray-400">سود خرید</p>
+                        <p className="text-xs font-bold text-green-600" dir="ltr">{Number(p.buyProfit).toLocaleString("en-US")}</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-[9px] text-gray-400">سود فروش</p>
+                        <p className="text-xs font-bold text-emerald-600" dir="ltr">{Number(p.sellProfit).toLocaleString("en-US")}</p>
                       </div>
                       <div className="text-center">
                         <p className="text-[9px] text-gray-400">تومان</p>
@@ -187,6 +207,10 @@ export default function ReportsPage() {
                         <p className="text-[9px] text-gray-400">روپیه</p>
                         <p className="text-xs font-bold text-violet-600" dir="ltr">{Number(p.totalPkr).toLocaleString("en-US")}</p>
                       </div>
+                    </div>
+                    <div className="mt-2 rounded-lg bg-green-50 p-2 flex items-center justify-between">
+                      <span className="text-[10px] text-green-600">سود کل</span>
+                      <span className="text-xs font-bold text-green-700" dir="ltr">{Number(p.totalProfit).toLocaleString("en-US")} تومان</span>
                     </div>
                   </div>
                 );
@@ -208,7 +232,9 @@ export default function ReportsPage() {
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-[10px] text-gray-400">{d.orderCount} سفارش</span>
-                    <span className="text-xs font-bold text-green-600" dir="ltr">{Number(d.profit).toLocaleString("en-US")}</span>
+                    <span className="text-[10px] text-green-500" dir="ltr">{Number(d.buyProfit).toLocaleString("en-US")}</span>
+                    <span className="text-[10px] text-emerald-500" dir="ltr">{Number(d.sellProfit).toLocaleString("en-US")}</span>
+                    <span className="text-xs font-bold text-green-600" dir="ltr">{Number(d.totalProfit).toLocaleString("en-US")}</span>
                   </div>
                 </div>
               ))}
@@ -253,9 +279,17 @@ export default function ReportsPage() {
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] text-gray-400" dir="ltr">{Number(o.amount).toLocaleString("en-US")} × {Number(o.rate).toLocaleString("en-US")}</span>
-                      <span className={cn("text-xs font-bold", o.profit && Number(o.profit) > 0 ? "text-green-600" : "text-red-500")} dir="ltr">
-                        {o.profit ? Number(o.profit).toLocaleString("en-US") : "0"} تومان
-                      </span>
+                      <div className="flex items-center gap-2">
+                        {Number(o.buyProfitAmount) > 0 && (
+                          <span className="text-[10px] font-medium text-green-500" dir="ltr">{Number(o.buyProfitAmount).toLocaleString("en-US")}</span>
+                        )}
+                        {Number(o.sellProfitAmount) > 0 && (
+                          <span className="text-[10px] font-medium text-emerald-500" dir="ltr">{Number(o.sellProfitAmount).toLocaleString("en-US")}</span>
+                        )}
+                        <span className={cn("text-xs font-bold", o.totalProfitAmount && Number(o.totalProfitAmount) > 0 ? "text-green-600" : "text-red-500")} dir="ltr">
+                          {o.totalProfitAmount ? Number(o.totalProfitAmount).toLocaleString("en-US") : "0"} تومان
+                        </span>
+                      </div>
                     </div>
                   </div>
                 );

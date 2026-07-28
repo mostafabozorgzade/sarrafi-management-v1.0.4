@@ -44,6 +44,9 @@ interface Order {
   fee: bigint;
   calculatedPkr: bigint | null;
   profit: bigint | null;
+  buyProfitAmount: bigint;
+  sellProfitAmount: bigint;
+  totalProfitAmount: bigint;
   marketRateAtTime: bigint | null;
   buyRateAtTime: bigint | null;
   sellRateAtTime: bigint | null;
@@ -60,7 +63,7 @@ interface Order {
 }
 
 interface Customer { id: string; name: string; phone: string }
-interface Rate { id: string; currencyId: string; buyRate: string; sellRate: string; currency: { code: string } }
+interface Rate { id: string; currencyId: string; buyRate: string; sellRate: string; marketRate: string; currency: { code: string } }
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -91,6 +94,7 @@ export default function OrdersPage() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [errorToast, setErrorToast] = useState<string | null>(null);
+  const [currentRates, setCurrentRates] = useState<{ buyRate: number; sellRate: number; marketRate: number } | null>(null);
 
   useEffect(() => {
     const params = filter === "all" ? "" : `?status=${filter}`;
@@ -104,7 +108,14 @@ export default function OrdersPage() {
       const pkrCurrency = cur.find((x: { code: string; id: string }) => x.code === "PKR");
       if (pkrCurrency) setCurrencyId(pkrCurrency.id);
       const pkrRate = rates.find((r: Rate) => r.currency?.code === "PKR");
-      if (pkrRate) setRate(String(pkrRate.sellRate));
+      if (pkrRate) {
+        setRate(String(pkrRate.sellRate));
+        setCurrentRates({
+          buyRate: Number(pkrRate.buyRate),
+          sellRate: Number(pkrRate.sellRate),
+          marketRate: Number(pkrRate.marketRate),
+        });
+      }
     }).catch(() => {});
   };
 
@@ -156,7 +167,7 @@ export default function OrdersPage() {
   const resetForm = () => {
     setAmount(""); setFee(""); setRecipientName(""); setRecipientAccount("");
     setDestinationCard(""); setDestinationSheba(""); setDescription(""); setError(null);
-    setSelectedType(null);
+    setSelectedType(null); setCurrentRates(null);
   };
 
   const isTomanAmount = selectedType ? isTomanAmountType(selectedType) : false;
@@ -173,6 +184,18 @@ export default function OrdersPage() {
     totalToman = amountNum * rateNum;
     calculatedPkr = amountNum;
   }
+
+  const pkrAmount = isTomanAmount ? calculatedPkr : amountNum;
+  let previewBuyProfit = 0;
+  let previewSellProfit = 0;
+  if (currentRates && pkrAmount > 0) {
+    if (selectedType === "BUY_PKR" || selectedType === "PK_TO_IR") {
+      previewBuyProfit = (rateNum - currentRates.buyRate) * pkrAmount + feeNum;
+    } else {
+      previewSellProfit = (currentRates.sellRate - rateNum) * pkrAmount + feeNum;
+    }
+  }
+  const previewTotalProfit = previewBuyProfit + previewSellProfit;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -348,6 +371,29 @@ export default function OrdersPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && <ErrorAlert message={error} />}
 
+          {/* Rate Display Card */}
+          {currentRates && (
+            <div className="rounded-xl bg-gray-50 p-3 space-y-2">
+              <p className="text-[10px] font-semibold text-gray-400 uppercase">نرخ لحظه معامله</p>
+              <div className="grid grid-cols-3 gap-2">
+                {currentRates.marketRate > 0 && (
+                  <div className="rounded-lg bg-white p-2 text-center border border-gray-100">
+                    <span className="text-[8px] text-gray-400">بازار</span>
+                    <p className="text-[11px] font-bold text-gray-700" dir="ltr">{currentRates.marketRate.toLocaleString("en-US")}</p>
+                  </div>
+                )}
+                <div className="rounded-lg bg-blue-50 p-2 text-center">
+                  <span className="text-[8px] text-blue-500">خرید</span>
+                  <p className="text-[11px] font-bold text-blue-700" dir="ltr">{currentRates.buyRate.toLocaleString("en-US")}</p>
+                </div>
+                <div className="rounded-lg bg-emerald-50 p-2 text-center">
+                  <span className="text-[8px] text-emerald-500">فروش</span>
+                  <p className="text-[11px] font-bold text-emerald-700" dir="ltr">{currentRates.sellRate.toLocaleString("en-US")}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-gray-500">مشتری</label>
             <select value={customerId} onChange={(e) => setCustomerId(e.target.value)} className="flex h-12 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
@@ -375,6 +421,29 @@ export default function OrdersPage() {
               <div className="flex items-center justify-between">
                 <span className={cn("text-xs", isTomanAmount ? "text-green-500" : "text-blue-500")}>{isTomanAmount ? "مبلغ دریافتی (روپیه)" : "مبلغ دریافتی (تومان)"}</span>
                 <span className={cn("text-sm font-semibold", isTomanAmount ? "text-green-600" : "text-blue-600")} dir="ltr">{isTomanAmount ? calculatedPkr.toLocaleString("en-US") : totalToman.toLocaleString("en-US")}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Profit Preview */}
+          {amountNum > 0 && rateNum > 0 && (
+            <div className="rounded-xl bg-green-50 p-4 space-y-2">
+              <p className="text-[10px] font-semibold text-green-600 uppercase">پیش‌نمایش سود</p>
+              {previewBuyProfit > 0 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-green-600">سود خرید</span>
+                  <span className="text-sm font-bold text-green-700" dir="ltr">{previewBuyProfit.toLocaleString("en-US")} تومان</span>
+                </div>
+              )}
+              {previewSellProfit > 0 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-green-600">سود فروش</span>
+                  <span className="text-sm font-bold text-green-700" dir="ltr">{previewSellProfit.toLocaleString("en-US")} تومان</span>
+                </div>
+              )}
+              <div className="flex items-center justify-between border-t border-green-200 pt-2">
+                <span className="text-xs text-green-600">سود تقریبی</span>
+                <span className="text-base font-bold text-green-800" dir="ltr">{previewTotalProfit.toLocaleString("en-US")} تومان</span>
               </div>
             </div>
           )}
@@ -443,13 +512,6 @@ export default function OrdersPage() {
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="اختیاری" rows={2} className="flex w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm placeholder:text-gray-300 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
           </div>
 
-          {feeNum > 0 && (
-            <div className="rounded-xl bg-green-50 p-3 flex items-center justify-between">
-              <span className="text-xs text-green-600">سود خالص</span>
-              <span className="text-sm font-bold text-green-700" dir="ltr">{feeNum.toLocaleString("en-US")} تومان</span>
-            </div>
-          )}
-
           <Button type="submit" isLoading={submitting} className="w-full h-12 rounded-xl">ثبت سفارش</Button>
         </form>
       </BottomSheet>
@@ -513,22 +575,22 @@ export default function OrdersPage() {
             {/* Financial Details */}
             {(selectedOrder.marketRateAtTime || selectedOrder.buyRateAtTime || selectedOrder.sellRateAtTime) && (
               <div className="rounded-xl bg-green-50 p-3 space-y-2">
-                <p className="text-[10px] font-semibold text-green-600 uppercase">جزئیات مالی سفارش</p>
+                <p className="text-[10px] font-semibold text-green-600 uppercase">نرخ معامله</p>
                 {selectedOrder.marketRateAtTime && Number(selectedOrder.marketRateAtTime) > 0 && (
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-green-600">نرخ بازار هنگام ثبت</span>
+                    <span className="text-xs text-green-600">نرخ بازار</span>
                     <span className="text-xs font-bold text-green-700" dir="ltr">{Number(selectedOrder.marketRateAtTime).toLocaleString("en-US")} تومان</span>
                   </div>
                 )}
                 {selectedOrder.buyRateAtTime && Number(selectedOrder.buyRateAtTime) > 0 && (
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-green-600">نرخ خرید هنگام ثبت</span>
+                    <span className="text-xs text-green-600">نرخ خرید</span>
                     <span className="text-xs font-bold text-green-700" dir="ltr">{Number(selectedOrder.buyRateAtTime).toLocaleString("en-US")} تومان</span>
                   </div>
                 )}
                 {selectedOrder.sellRateAtTime && Number(selectedOrder.sellRateAtTime) > 0 && (
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-green-600">نرخ فروش هنگام ثبت</span>
+                    <span className="text-xs text-green-600">نرخ فروش</span>
                     <span className="text-xs font-bold text-green-700" dir="ltr">{Number(selectedOrder.sellRateAtTime).toLocaleString("en-US")} تومان</span>
                   </div>
                 )}
@@ -538,12 +600,29 @@ export default function OrdersPage() {
                     <span className="text-xs font-bold text-green-700" dir="ltr">{(Number(selectedOrder.calculatedPkr) * Number(selectedOrder.buyRateAtTime)).toLocaleString("en-US")} تومان</span>
                   </div>
                 )}
-                {selectedOrder.profit && Number(selectedOrder.profit) > 0 && (
+              </div>
+            )}
+
+            {/* Profit Details */}
+            {(Number(selectedOrder.buyProfitAmount) > 0 || Number(selectedOrder.sellProfitAmount) > 0) && (
+              <div className="rounded-xl bg-green-50 p-3 space-y-2">
+                <p className="text-[10px] font-semibold text-green-600 uppercase">سود</p>
+                {Number(selectedOrder.buyProfitAmount) > 0 && (
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-green-600">سود خالص</span>
-                    <span className="text-sm font-bold text-green-800" dir="ltr">{Number(selectedOrder.profit).toLocaleString("en-US")} تومان</span>
+                    <span className="text-xs text-green-600">سود خرید</span>
+                    <span className="text-xs font-bold text-green-700" dir="ltr">{Number(selectedOrder.buyProfitAmount).toLocaleString("en-US")} تومان</span>
                   </div>
                 )}
+                {Number(selectedOrder.sellProfitAmount) > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-green-600">سود فروش</span>
+                    <span className="text-xs font-bold text-green-700" dir="ltr">{Number(selectedOrder.sellProfitAmount).toLocaleString("en-US")} تومان</span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between border-t border-green-200 pt-2">
+                  <span className="text-xs text-green-600">سود کل</span>
+                  <span className="text-sm font-bold text-green-800" dir="ltr">{Number(selectedOrder.totalProfitAmount).toLocaleString("en-US")} تومان</span>
+                </div>
               </div>
             )}
 

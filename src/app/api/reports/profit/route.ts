@@ -52,29 +52,30 @@ export async function GET(request: NextRequest) {
   ] = await Promise.all([
     prisma.order.aggregate({
       where: todayWhere,
-      _sum: { profit: true, totalToman: true, calculatedPkr: true },
+      _sum: { profit: true, totalToman: true, calculatedPkr: true, buyProfitAmount: true, sellProfitAmount: true, totalProfitAmount: true },
       _count: true,
     }),
     prisma.order.aggregate({
       where: weekWhere,
-      _sum: { profit: true, totalToman: true, calculatedPkr: true },
+      _sum: { profit: true, totalToman: true, calculatedPkr: true, buyProfitAmount: true, sellProfitAmount: true, totalProfitAmount: true },
       _count: true,
     }),
     prisma.order.aggregate({
       where: monthWhere,
-      _sum: { profit: true, totalToman: true, calculatedPkr: true },
+      _sum: { profit: true, totalToman: true, calculatedPkr: true, buyProfitAmount: true, sellProfitAmount: true, totalProfitAmount: true },
       _count: true,
     }),
     prisma.order.aggregate({
       where: allTimeWhere,
-      _sum: { profit: true, totalToman: true, calculatedPkr: true },
+      _sum: { profit: true, totalToman: true, calculatedPkr: true, buyProfitAmount: true, sellProfitAmount: true, totalProfitAmount: true },
       _count: true,
     }),
     prisma.order.findMany({
       where,
       select: {
         id: true, orderType: true, status: true, amount: true, rate: true, totalToman: true,
-        calculatedPkr: true, fee: true, profit: true, createdAt: true,
+        calculatedPkr: true, fee: true, profit: true, buyProfitAmount: true, sellProfitAmount: true, totalProfitAmount: true,
+        createdAt: true,
         customer: { select: { name: true } },
       },
       orderBy: { createdAt: "desc" },
@@ -83,7 +84,7 @@ export async function GET(request: NextRequest) {
     prisma.order.groupBy({
       by: ["orderType"],
       where: allTimeWhere,
-      _sum: { profit: true, totalToman: true, calculatedPkr: true },
+      _sum: { profit: true, totalToman: true, calculatedPkr: true, buyProfitAmount: true, sellProfitAmount: true, totalProfitAmount: true },
       _count: true,
     }),
     prisma.$queryRaw`
@@ -91,6 +92,9 @@ export async function GET(request: NextRequest) {
         DATE(created_at) as date,
         COUNT(*)::int as "orderCount",
         COALESCE(SUM(profit), 0)::bigint as profit,
+        COALESCE(SUM(buy_profit_amount), 0)::bigint as "buyProfit",
+        COALESCE(SUM(sell_profit_amount), 0)::bigint as "sellProfit",
+        COALESCE(SUM(total_profit_amount), 0)::bigint as "totalProfit",
         COALESCE(SUM(total_toman), 0)::bigint as "totalToman"
       FROM orders
       WHERE tenant_id = ${user.tenantId}::uuid
@@ -105,6 +109,9 @@ export async function GET(request: NextRequest) {
     profit: sum?.profit || 0,
     totalToman: sum?.totalToman || 0,
     totalPkr: sum?.calculatedPkr || 0,
+    buyProfit: sum?.buyProfitAmount || 0,
+    sellProfit: sum?.sellProfitAmount || 0,
+    totalProfit: sum?.totalProfitAmount || 0,
   });
 
   return safeJson({
@@ -119,6 +126,9 @@ export async function GET(request: NextRequest) {
       profit: p._sum?.profit || 0,
       totalToman: p._sum?.totalToman || 0,
       totalPkr: p._sum?.calculatedPkr || 0,
+      buyProfit: p._sum?.buyProfitAmount || 0,
+      sellProfit: p._sum?.sellProfitAmount || 0,
+      totalProfit: p._sum?.totalProfitAmount || 0,
       count: p._count,
     })),
     dailyProfit: dailyProfit,

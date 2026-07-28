@@ -138,6 +138,9 @@ model Order {
   calculatedPkr    BigInt?
   fee              BigInt         @default(0)
   profit           BigInt?
+  buyProfitAmount  BigInt         @default(0)
+  sellProfitAmount BigInt         @default(0)
+  totalProfitAmount BigInt        @default(0)
 
   marketRateAtTime  BigInt?
   buyRateAtTime     BigInt?
@@ -233,8 +236,10 @@ model CurrencyRate {
   marketRate  BigInt   @default(0)
   buyRate     BigInt
   sellRate    BigInt
+  isActive    Boolean  @default(true)
   changedById String   @db.Uuid
   createdAt   DateTime @default(now())
+  updatedAt   DateTime? @updatedAt
   changedBy   User     @relation(fields: [changedById], references: [id])
   currency    Currency @relation(fields: [currencyId], references: [id])
   tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
