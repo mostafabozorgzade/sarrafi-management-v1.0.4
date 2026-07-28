@@ -1,25 +1,25 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser, unauthorized } from "@/lib/api-helpers";
+import { safeJson } from "@/lib/safe-json";
 
 export async function GET(request: NextRequest) {
   const user = await getAuthUser(request);
   if (!user) return unauthorized();
-
-  const where = user.role === "OWNER" ? {} : { tenantId: user.tenantId! };
+  if (!user.tenantId) return safeJson([]);
 
   const registers = await prisma.cashRegister.findMany({
-    where,
+    where: { tenantId: user.tenantId },
     include: { entries: { orderBy: { createdAt: "desc" }, take: 20 } },
   });
 
-  return NextResponse.json(registers);
+  return safeJson(registers);
 }
 
 export async function POST(request: NextRequest) {
   const user = await getAuthUser(request);
   if (!user) return unauthorized();
-  if (!user.tenantId) return NextResponse.json({ error: "tenant required" }, { status: 400 });
+  if (!user.tenantId) return safeJson({ error: "tenant required" }, { status: 400 });
 
   const body = await request.json();
   const { name, type } = body;
@@ -28,5 +28,5 @@ export async function POST(request: NextRequest) {
     data: { tenantId: user.tenantId, name, type },
   });
 
-  return NextResponse.json(register);
+  return safeJson(register);
 }

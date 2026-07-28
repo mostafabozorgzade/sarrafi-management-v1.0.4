@@ -1,27 +1,22 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser, unauthorized } from "@/lib/api-helpers";
+import { safeJson } from "@/lib/safe-json";
 
 export async function GET(request: NextRequest) {
   const user = await getAuthUser(request);
   if (!user) return unauthorized();
+  if (!user.tenantId) return safeJson([]);
 
   const { searchParams } = new URL(request.url);
   const type = searchParams.get("type");
   const customerId = searchParams.get("customerId");
   const currencyId = searchParams.get("currencyId");
-  const dateFrom = searchParams.get("dateFrom");
-  const dateTo = searchParams.get("dateTo");
 
-  const where: Record<string, unknown> = user.role === "OWNER" ? {} : { tenantId: user.tenantId! };
+  const where: Record<string, unknown> = { tenantId: user.tenantId };
   if (type && type !== "all") where.type = type;
   if (customerId) where.customerId = customerId;
   if (currencyId) where.currencyId = currencyId;
-  if (dateFrom || dateTo) {
-    where.createdAt = {};
-    if (dateFrom) (where.createdAt as Record<string, unknown>).gte = new Date(dateFrom);
-    if (dateTo) (where.createdAt as Record<string, unknown>).lte = new Date(dateTo + "T23:59:59.999Z");
-  }
 
   const transactions = await prisma.transaction.findMany({
     where,
@@ -34,19 +29,19 @@ export async function GET(request: NextRequest) {
     take: 100,
   });
 
-  return NextResponse.json(transactions);
+  return safeJson(transactions);
 }
 
 export async function POST(request: NextRequest) {
   const user = await getAuthUser(request);
   if (!user) return unauthorized();
-  if (!user.tenantId) return NextResponse.json({ error: "tenant required" }, { status: 400 });
+  if (!user.tenantId) return safeJson({ error: "tenant required" }, { status: 400 });
 
   const body = await request.json();
   const { type, customerId, currencyId, amount, rate, description } = body;
 
   if (!type || !customerId || !currencyId || !amount || !rate) {
-    return NextResponse.json({ error: "فیلدهای الزامی را پر کنید" }, { status: 400 });
+    return safeJson({ error: "فیلدهای الزامی را پر کنید" }, { status: 400 });
   }
 
   const amountNum = Number(amount);
@@ -98,5 +93,5 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  return NextResponse.json(transaction);
+  return safeJson(transaction);
 }

@@ -1,12 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser, unauthorized } from "@/lib/api-helpers";
+import { safeJson } from "@/lib/safe-json";
 
 export async function GET(request: NextRequest) {
   const user = await getAuthUser(request);
   if (!user) return unauthorized();
+  if (!user.tenantId) return safeJson([]);
 
-  const where = user.role === "OWNER" ? {} : { tenantId: user.tenantId! };
+  const where = { tenantId: user.tenantId };
 
   const now = new Date();
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -22,7 +24,6 @@ export async function GET(request: NextRequest) {
     registers,
     rates,
     recentOrders,
-    profitByEmployee,
   ] = await Promise.all([
     prisma.transaction.count({ where: { ...where, createdAt: { gte: startOfDay } } }),
     prisma.transaction.aggregate({ where: { ...where, createdAt: { gte: startOfDay } }, _sum: { profit: true } }),
@@ -45,22 +46,9 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: "desc" },
       take: 10,
     }),
-    prisma.transaction.groupBy({
-      by: ["userId"],
-      where,
-      _sum: { profit: true },
-      _count: true,
-    }),
   ]);
 
-  const employeeIds = profitByEmployee.map((e) => e.userId);
-  const employees = await prisma.user.findMany({
-    where: { id: { in: employeeIds } },
-    select: { id: true, firstName: true, lastName: true },
-  });
-  const employeeMap = new Map(employees.map((e) => [e.id, `${e.firstName} ${e.lastName}`]));
-
-  return NextResponse.json({
+  return safeJson({
     stats: {
       todayTransactions,
       todayProfit: todayProfit._sum.profit || 0,
@@ -73,10 +61,6 @@ export async function GET(request: NextRequest) {
     registers,
     rates,
     recentOrders,
-    profitByEmployee: profitByEmployee.map((e) => ({
-      name: employeeMap.get(e.userId) || "ناشناخته",
-      profit: e._sum.profit || 0,
-      count: e._count,
-    })),
+    profitByEmployee: [],
   });
 }

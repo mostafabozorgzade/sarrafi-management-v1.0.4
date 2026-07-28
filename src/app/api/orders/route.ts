@@ -1,16 +1,18 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser, unauthorized } from "@/lib/api-helpers";
+import { safeJson } from "@/lib/safe-json";
 
 export async function GET(request: NextRequest) {
   const user = await getAuthUser(request);
   if (!user) return unauthorized();
+  if (!user.tenantId) return safeJson({ error: "tenant required" }, { status: 400 });
 
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status");
   const orderType = searchParams.get("orderType");
 
-  const where: Record<string, unknown> = user.role === "OWNER" ? {} : { tenantId: user.tenantId! };
+  const where: Record<string, unknown> = user.role === "OWNER" ? { tenantId: user.tenantId } : { tenantId: user.tenantId };
   if (status && status !== "all") where.status = status;
   if (orderType && orderType !== "all") where.orderType = orderType;
 
@@ -25,13 +27,13 @@ export async function GET(request: NextRequest) {
     take: 100,
   });
 
-  return NextResponse.json(orders);
+  return safeJson(orders);
 }
 
 export async function POST(request: NextRequest) {
   const user = await getAuthUser(request);
   if (!user) return unauthorized();
-  if (!user.tenantId) return NextResponse.json({ error: "tenant required" }, { status: 400 });
+  if (!user.tenantId) return safeJson({ error: "tenant required" }, { status: 400 });
 
   const body = await request.json();
   const {
@@ -41,7 +43,7 @@ export async function POST(request: NextRequest) {
   } = body;
 
   if (!customerId || !currencyId || !orderType || !amount || !rate) {
-    return NextResponse.json({ error: "فیلدهای الزامی را پر کنید" }, { status: 400 });
+    return safeJson({ error: "فیلدهای الزامی را پر کنید" }, { status: 400 });
   }
 
   const amountNum = Number(amount);
@@ -99,23 +101,23 @@ export async function POST(request: NextRequest) {
     },
   });
 
-  return NextResponse.json(order);
+  return safeJson(order);
 }
 
 export async function PATCH(request: NextRequest) {
   const user = await getAuthUser(request);
   if (!user) return unauthorized();
-  if (!user.tenantId) return NextResponse.json({ error: "tenant required" }, { status: 400 });
+  if (!user.tenantId) return safeJson({ error: "tenant required" }, { status: 400 });
 
   const body = await request.json();
   const { id, status } = body;
 
   if (!id || !status) {
-    return NextResponse.json({ error: "id و status الزامی است" }, { status: 400 });
+    return safeJson({ error: "id و status الزامی است" }, { status: 400 });
   }
 
   const order = await prisma.order.findUnique({ where: { id } });
-  if (!order) return NextResponse.json({ error: "سفارش یافت نشد" }, { status: 404 });
+  if (!order) return safeJson({ error: "سفارش یافت نشد" }, { status: 404 });
 
   const updated = await prisma.order.update({
     where: { id },
@@ -172,5 +174,5 @@ export async function PATCH(request: NextRequest) {
     }
   }
 
-  return NextResponse.json(updated);
+  return safeJson(updated);
 }

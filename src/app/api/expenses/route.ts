@@ -1,12 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser, unauthorized } from "@/lib/api-helpers";
+import { safeJson } from "@/lib/safe-json";
 
 export async function GET(request: NextRequest) {
   const user = await getAuthUser(request);
   if (!user) return unauthorized();
+  if (!user.tenantId) return safeJson([]);
 
-  const where = user.role === "OWNER" ? {} : { tenantId: user.tenantId! };
+  const where = { tenantId: user.tenantId };
 
   const expenses = await prisma.expense.findMany({
     where,
@@ -15,19 +17,19 @@ export async function GET(request: NextRequest) {
     take: 100,
   });
 
-  return NextResponse.json(expenses);
+  return safeJson(expenses);
 }
 
 export async function POST(request: NextRequest) {
   const user = await getAuthUser(request);
   if (!user) return unauthorized();
-  if (!user.tenantId) return NextResponse.json({ error: "tenant required" }, { status: 400 });
+  if (!user.tenantId) return safeJson({ error: "tenant required" }, { status: 400 });
 
   const body = await request.json();
   const { category, amount, description } = body;
 
   if (!category || !amount) {
-    return NextResponse.json({ error: "فیلدهای الزامی را پر کنید" }, { status: 400 });
+    return safeJson({ error: "فیلدهای الزامی را پر کنید" }, { status: 400 });
   }
 
   const expense = await prisma.expense.create({
@@ -41,5 +43,5 @@ export async function POST(request: NextRequest) {
     include: { user: { select: { firstName: true, lastName: true } } },
   });
 
-  return NextResponse.json(expense);
+  return safeJson(expense);
 }

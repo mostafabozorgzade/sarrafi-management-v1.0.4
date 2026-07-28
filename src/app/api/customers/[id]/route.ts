@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser, unauthorized } from "@/lib/api-helpers";
+import { safeJson } from "@/lib/safe-json";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getAuthUser(request);
@@ -23,6 +24,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     },
   });
 
-  if (!customer) return NextResponse.json({ error: "یافت نشد" }, { status: 404 });
-  return NextResponse.json(customer);
+  if (!customer) return safeJson({ error: "یافت نشد" }, { status: 404 });
+  return safeJson(customer);
 }

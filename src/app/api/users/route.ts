@@ -1,32 +1,33 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser, unauthorized } from "@/lib/api-helpers";
+import { safeJson } from "@/lib/safe-json";
 
 export async function GET(request: NextRequest) {
   const user = await getAuthUser(request);
   if (!user) return unauthorized();
-
-  const where = user.role === "OWNER" ? {} : { tenantId: user.tenantId! };
+  if (!user.tenantId) return safeJson([]);
 
   const users = await prisma.user.findMany({
-    where,
+    where: { tenantId: user.tenantId },
     select: { id: true, mobile: true, firstName: true, lastName: true, role: true, isActive: true, lastLogin: true, createdAt: true },
     orderBy: { createdAt: "desc" },
   });
 
-  return NextResponse.json(users);
+  return safeJson(users);
 }
 
 export async function POST(request: NextRequest) {
   const user = await getAuthUser(request);
   if (!user) return unauthorized();
-  if (user.role !== "OWNER" && user.role !== "MANAGER") return NextResponse.json({ error: "دسترسی ندارید" }, { status: 403 });
+  if (user.role !== "OWNER" && user.role !== "MANAGER") return safeJson({ error: "دسترسی ندارید" }, { status: 403 });
+  if (!user.tenantId) return safeJson({ error: "tenant required" }, { status: 400 });
 
   const body = await request.json();
   const { mobile, firstName, lastName, role, password } = body;
 
   if (!mobile || !firstName || !lastName || !password) {
-    return NextResponse.json({ error: "فیلدهای الزامی را پر کنید" }, { status: 400 });
+    return safeJson({ error: "فیلدهای الزامی را پر کنید" }, { status: 400 });
   }
 
   const bcrypt = await import("bcryptjs");
@@ -44,5 +45,5 @@ export async function POST(request: NextRequest) {
     select: { id: true, mobile: true, firstName: true, lastName: true, role: true, isActive: true },
   });
 
-  return NextResponse.json(newUser);
+  return safeJson(newUser);
 }

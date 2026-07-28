@@ -1,15 +1,15 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser, unauthorized } from "@/lib/api-helpers";
+import { safeJson } from "@/lib/safe-json";
 
 export async function GET(request: NextRequest) {
   const user = await getAuthUser(request);
   if (!user) return unauthorized();
-
-  const where = user.role === "OWNER" ? {} : { tenantId: user.tenantId! };
+  if (!user.tenantId) return safeJson([]);
 
   const rates = await prisma.currencyRate.findMany({
-    where,
+    where: { tenantId: user.tenantId },
     include: {
       currency: { select: { code: true, name: true } },
       changedBy: { select: { firstName: true, lastName: true } },
@@ -17,19 +17,19 @@ export async function GET(request: NextRequest) {
     orderBy: { createdAt: "desc" },
   });
 
-  return NextResponse.json(rates);
+  return safeJson(rates);
 }
 
 export async function POST(request: NextRequest) {
   const user = await getAuthUser(request);
   if (!user) return unauthorized();
-  if (!user.tenantId) return NextResponse.json({ error: "tenant required" }, { status: 400 });
+  if (!user.tenantId) return safeJson({ error: "tenant required" }, { status: 400 });
 
   const body = await request.json();
   const { currencyId, buyRate, sellRate } = body;
 
   if (!currencyId || !buyRate || !sellRate) {
-    return NextResponse.json({ error: "فیلدهای الزامی را پر کنید" }, { status: 400 });
+    return safeJson({ error: "فیلدهای الزامی را پر کنید" }, { status: 400 });
   }
 
   const rate = await prisma.currencyRate.upsert({
@@ -39,5 +39,5 @@ export async function POST(request: NextRequest) {
     include: { currency: { select: { code: true, name: true } }, changedBy: { select: { firstName: true, lastName: true } } },
   });
 
-  return NextResponse.json(rate);
+  return safeJson(rate);
 }
