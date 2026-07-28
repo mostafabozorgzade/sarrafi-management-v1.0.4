@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const {
-      customerId, currencyId, orderType, amount, rate, fee,
+      customerId, currencyId, orderType, amount, rate, fee, transferCost,
       recipientName, recipientAccount, recipientMethod,
       destinationCard, destinationSheba, description,
     } = body;
@@ -50,6 +50,7 @@ export async function POST(request: NextRequest) {
     const amountNum = Number(amount);
     const rateNum = Number(rate);
     const feeNum = Number(fee || 0);
+    const transferCostNum = Number(transferCost || 0);
 
     let totalToman: number;
     let calculatedPkr: number;
@@ -70,24 +71,27 @@ export async function POST(request: NextRequest) {
     const buyRateAtTime = currencyRate ? Number(currencyRate.buyRate ?? 0) : 0;
     const sellRateAtTime = currencyRate ? Number(currencyRate.sellRate ?? 0) : 0;
 
-    let profit = feeNum;
-    let buyProfitAmount = 0;
-    let sellProfitAmount = 0;
+    const pkrAmount = orderType === "IR_TO_PK" ? calculatedPkr : amountNum;
 
-    if (currencyRate) {
-      const pkrAmount = orderType === "IR_TO_PK" ? calculatedPkr : amountNum;
-      if (orderType === "BUY_PKR" || orderType === "PK_TO_IR") {
-        const spreadProfit = (rateNum - buyRateAtTime) * pkrAmount;
-        buyProfitAmount = spreadProfit + feeNum;
-        profit += spreadProfit;
-      } else {
-        const spreadProfit = (sellRateAtTime - rateNum) * pkrAmount;
-        sellProfitAmount = spreadProfit + feeNum;
-        profit += spreadProfit;
-      }
+    let buyMarketProfit = 0;
+    let sellMarketProfit = 0;
+    let spreadProfit = 0;
+
+    if (orderType === "BUY_PKR") {
+      buyMarketProfit = (marketRateAtTime - buyRateAtTime) * pkrAmount;
+      spreadProfit = (sellRateAtTime - buyRateAtTime) * pkrAmount;
+    } else if (orderType === "SELL_PKR") {
+      sellMarketProfit = (sellRateAtTime - marketRateAtTime) * pkrAmount;
+      spreadProfit = (sellRateAtTime - buyRateAtTime) * pkrAmount;
+    } else if (orderType === "IR_TO_PK") {
+      sellMarketProfit = (sellRateAtTime - marketRateAtTime) * pkrAmount;
+      spreadProfit = (sellRateAtTime - buyRateAtTime) * pkrAmount;
+    } else if (orderType === "PK_TO_IR") {
+      buyMarketProfit = (marketRateAtTime - buyRateAtTime) * pkrAmount;
+      spreadProfit = (sellRateAtTime - buyRateAtTime) * pkrAmount;
     }
 
-    const totalProfitAmount = buyProfitAmount + sellProfitAmount;
+    const totalProfit = buyMarketProfit + sellMarketProfit + feeNum - transferCostNum;
 
     const order = await prisma.order.create({
       data: {
@@ -101,10 +105,12 @@ export async function POST(request: NextRequest) {
         totalToman,
         calculatedPkr,
         fee: feeNum,
-        profit,
-        buyProfitAmount,
-        sellProfitAmount,
-        totalProfitAmount,
+        transferCost: transferCostNum,
+        buyMarketProfitAmount: buyMarketProfit,
+        sellMarketProfitAmount: sellMarketProfit,
+        spreadProfitAmount: spreadProfit,
+        feeAmount: feeNum,
+        totalProfitAmount: totalProfit,
         marketRateAtTime,
         buyRateAtTime,
         sellRateAtTime,
@@ -117,8 +123,9 @@ export async function POST(request: NextRequest) {
         status: "REGISTERED",
       },
       include: {
-        customer: { select: { name: true } },
+        customer: { select: { name: true, phone: true } },
         currency: { select: { code: true, name: true } },
+        user: { select: { firstName: true, lastName: true } },
       },
     });
 
@@ -189,7 +196,7 @@ export async function PATCH(request: NextRequest) {
           amount: order.orderType === "IR_TO_PK" ? order.calculatedPkr || BigInt(0) : order.amount,
           rate: order.rate,
           totalToman: order.totalToman,
-          profit: order.profit || BigInt(0),
+          profit: order.totalProfitAmount || BigInt(0),
           description: `تکمیل سفارش ${order.orderType}`,
         },
       });

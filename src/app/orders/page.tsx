@@ -42,10 +42,12 @@ interface Order {
   rate: bigint;
   totalToman: bigint;
   fee: bigint;
+  transferCost: bigint;
   calculatedPkr: bigint | null;
-  profit: bigint | null;
-  buyProfitAmount: bigint;
-  sellProfitAmount: bigint;
+  buyMarketProfitAmount: bigint;
+  sellMarketProfitAmount: bigint;
+  spreadProfitAmount: bigint;
+  feeAmount: bigint;
   totalProfitAmount: bigint;
   marketRateAtTime: bigint | null;
   buyRateAtTime: bigint | null;
@@ -84,6 +86,7 @@ export default function OrdersPage() {
   const [amount, setAmount] = useState("");
   const [rate, setRate] = useState("");
   const [fee, setFee] = useState("");
+  const [transferCost, setTransferCost] = useState("");
   const [recipientName, setRecipientName] = useState("");
   const [recipientAccount, setRecipientAccount] = useState("");
   const [recipientMethod, setRecipientMethod] = useState("EASYPAISA");
@@ -165,7 +168,7 @@ export default function OrdersPage() {
   };
 
   const resetForm = () => {
-    setAmount(""); setFee(""); setRecipientName(""); setRecipientAccount("");
+    setAmount(""); setFee(""); setTransferCost(""); setRecipientName(""); setRecipientAccount("");
     setDestinationCard(""); setDestinationSheba(""); setDescription(""); setError(null);
     setSelectedType(null); setCurrentRates(null);
   };
@@ -186,16 +189,37 @@ export default function OrdersPage() {
   }
 
   const pkrAmount = isTomanAmount ? calculatedPkr : amountNum;
-  let previewBuyProfit = 0;
-  let previewSellProfit = 0;
+  const transferCostNum = parseFloat(transferCost || "0");
+
+  let previewMainProfit = 0;
+  let previewSpreadProfit = 0;
+  let previewTotalProfit = 0;
+  let mainProfitLabel = "";
+  let mainProfitFormula = "";
+
   if (currentRates && pkrAmount > 0) {
-    if (selectedType === "BUY_PKR" || selectedType === "PK_TO_IR") {
-      previewBuyProfit = (rateNum - currentRates.buyRate) * pkrAmount + feeNum;
-    } else {
-      previewSellProfit = (currentRates.sellRate - rateNum) * pkrAmount + feeNum;
+    previewSpreadProfit = (currentRates.sellRate - currentRates.buyRate) * pkrAmount;
+
+    if (selectedType === "BUY_PKR") {
+      previewMainProfit = (currentRates.marketRate - currentRates.buyRate) * pkrAmount;
+      mainProfitLabel = "سود خرید روپیه نسبت به بازار";
+      mainProfitFormula = `(بازار ${currentRates.marketRate.toLocaleString("en-US")} - خرید ${currentRates.buyRate.toLocaleString("en-US")}) × ${pkrAmount.toLocaleString("en-US")}`;
+    } else if (selectedType === "SELL_PKR") {
+      previewMainProfit = (currentRates.sellRate - currentRates.marketRate) * pkrAmount;
+      mainProfitLabel = "سود فروش روپیه نسبت به بازار";
+      mainProfitFormula = `(فروش ${currentRates.sellRate.toLocaleString("en-US")} - بازار ${currentRates.marketRate.toLocaleString("en-US")}) × ${pkrAmount.toLocaleString("en-US")}`;
+    } else if (selectedType === "IR_TO_PK") {
+      previewMainProfit = (currentRates.sellRate - currentRates.marketRate) * pkrAmount;
+      mainProfitLabel = "سود حواله ایران به پاکستان";
+      mainProfitFormula = `(فروش ${currentRates.sellRate.toLocaleString("en-US")} - بازار ${currentRates.marketRate.toLocaleString("en-US")}) × ${pkrAmount.toLocaleString("en-US")}`;
+    } else if (selectedType === "PK_TO_IR") {
+      previewMainProfit = (currentRates.marketRate - currentRates.buyRate) * pkrAmount;
+      mainProfitLabel = "سود دریافت روپیه";
+      mainProfitFormula = `(بازار ${currentRates.marketRate.toLocaleString("en-US")} - خرید ${currentRates.buyRate.toLocaleString("en-US")}) × ${pkrAmount.toLocaleString("en-US")}`;
     }
+
+    previewTotalProfit = previewMainProfit + feeNum - transferCostNum;
   }
-  const previewTotalProfit = previewBuyProfit + previewSellProfit;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -205,7 +229,7 @@ export default function OrdersPage() {
     setSubmitting(true);
     try {
       const newOrder = await api.post("/api/orders", {
-        customerId, currencyId, orderType: selectedType, amount, rate, fee,
+        customerId, currencyId, orderType: selectedType, amount, rate, fee, transferCost,
         recipientName, recipientAccount, recipientMethod,
         destinationCard, destinationSheba, description,
       });
@@ -403,15 +427,23 @@ export default function OrdersPage() {
                 <div className="space-y-1.5">
                   <p className="text-[10px] text-amber-700 font-medium">خرید روپیه از مشتری</p>
                   <p className="text-[9px] text-amber-600 leading-relaxed">
-                    روپیه از مشتری دریافت می‌شود و تومان پرداخت می‌شود.
+                    روپیه از مشتری دریافت می‌شود و تومان پرداخت می‌شود. سود از اختلاف نرخ بازار و نرخ خرید محاسبه می‌شود.
                   </p>
                   <div className="rounded-lg bg-white p-2 border border-amber-100">
-                    <p className="text-[9px] text-amber-700 font-medium mb-1">فرمول سود:</p>
-                    <p className="text-[9px] text-amber-600" dir="ltr">(نرخ فروش - نرخ خرید) × مقدار روپیه + کارمزد</p>
+                    <p className="text-[9px] text-amber-700 font-medium mb-1">سود خرید:</p>
+                    <p className="text-[9px] text-amber-600" dir="ltr">(نرخ بازار - نرخ خرید) × مقدار روپیه</p>
+                  </div>
+                  <div className="rounded-lg bg-white p-2 border border-amber-100">
+                    <p className="text-[9px] text-amber-700 font-medium mb-1">سود بالقوه (Spread):</p>
+                    <p className="text-[9px] text-amber-600" dir="ltr">(نرخ فروش - نرخ خرید) × مقدار روپیه</p>
+                  </div>
+                  <div className="rounded-lg bg-white p-2 border border-amber-100">
+                    <p className="text-[9px] text-amber-700 font-medium mb-1">سود نهایی:</p>
+                    <p className="text-[9px] text-amber-600" dir="ltr">سود خرید + کارمزد - هزینه انتقال</p>
                   </div>
                   <div className="rounded-lg bg-white p-2 border border-amber-100">
                     <p className="text-[9px] text-amber-700 font-medium mb-1">مثال:</p>
-                    <p className="text-[9px] text-amber-600" dir="ltr">(3000 - 2950) × 100,000 = 5,000,000 تومان</p>
+                    <p className="text-[9px] text-amber-600" dir="ltr">(2980 - 2950) × 100,000 = 3,000,000 تومان</p>
                   </div>
                 </div>
               )}
@@ -419,15 +451,23 @@ export default function OrdersPage() {
                 <div className="space-y-1.5">
                   <p className="text-[10px] text-amber-700 font-medium">فروش روپیه به مشتری</p>
                   <p className="text-[9px] text-amber-600 leading-relaxed">
-                    تومان از مشتری دریافت می‌شود و روپیه تحویل داده می‌شود.
+                    تومان از مشتری دریافت می‌شود و روپیه تحویل داده می‌شود. سود از اختلاف نرخ فروش و نرخ بازار محاسبه می‌شود.
                   </p>
                   <div className="rounded-lg bg-white p-2 border border-amber-100">
-                    <p className="text-[9px] text-amber-700 font-medium mb-1">فرمول سود:</p>
-                    <p className="text-[9px] text-amber-600" dir="ltr">(نرخ فروش - نرخ خرید) × مقدار روپیه + کارمزد</p>
+                    <p className="text-[9px] text-amber-700 font-medium mb-1">سود فروش:</p>
+                    <p className="text-[9px] text-amber-600" dir="ltr">(نرخ فروش - نرخ بازار) × مقدار روپیه</p>
+                  </div>
+                  <div className="rounded-lg bg-white p-2 border border-amber-100">
+                    <p className="text-[9px] text-amber-700 font-medium mb-1">سود بالقوه (Spread):</p>
+                    <p className="text-[9px] text-amber-600" dir="ltr">(نرخ فروش - نرخ خرید) × مقدار روپیه</p>
+                  </div>
+                  <div className="rounded-lg bg-white p-2 border border-amber-100">
+                    <p className="text-[9px] text-amber-700 font-medium mb-1">سود نهایی:</p>
+                    <p className="text-[9px] text-amber-600" dir="ltr">سود فروش + کارمزد - هزینه انتقال</p>
                   </div>
                   <div className="rounded-lg bg-white p-2 border border-amber-100">
                     <p className="text-[9px] text-amber-700 font-medium mb-1">مثال:</p>
-                    <p className="text-[9px] text-amber-600" dir="ltr">(3000 - 2950) × 100,000 = 5,000,000 تومان</p>
+                    <p className="text-[9px] text-amber-600" dir="ltr">(3000 - 2980) × 100,000 = 2,000,000 تومان</p>
                   </div>
                 </div>
               )}
@@ -435,15 +475,23 @@ export default function OrdersPage() {
                 <div className="space-y-1.5">
                   <p className="text-[10px] text-amber-700 font-medium">حواله ایران به پاکستان</p>
                   <p className="text-[9px] text-amber-600 leading-relaxed">
-                    تومان از مشتری دریافت می‌شود و روپیه به حساب مقصد در پاکستان واریز می‌شود.
+                    تومان از مشتری دریافت می‌شود و روپیه به حساب مقصد در پاکستان واریز می‌شود. سود از اختلاف نرخ فروش و نرخ بازار محاسبه می‌شود.
                   </p>
-                  <div className="rounded-lg bg-white p-2 border border-amber-100">
-                    <p className="text-[9px] text-amber-700 font-medium mb-1">فرمول سود:</p>
-                    <p className="text-[9px] text-amber-600" dir="ltr">(نرخ فروش - نرخ سفارش) × مقدار روپیه + کارمزد</p>
-                  </div>
                   <div className="rounded-lg bg-white p-2 border border-amber-100">
                     <p className="text-[9px] text-amber-700 font-medium mb-1">محاسبه روپیه:</p>
                     <p className="text-[9px] text-amber-600" dir="ltr">مبلغ تومان ÷ نرخ تبدیل = مقدار روپیه</p>
+                  </div>
+                  <div className="rounded-lg bg-white p-2 border border-amber-100">
+                    <p className="text-[9px] text-amber-700 font-medium mb-1">سود حواله:</p>
+                    <p className="text-[9px] text-amber-600" dir="ltr">(نرخ فروش - نرخ بازار) × مقدار روپیه</p>
+                  </div>
+                  <div className="rounded-lg bg-white p-2 border border-amber-100">
+                    <p className="text-[9px] text-amber-700 font-medium mb-1">سود بالقوه (Spread):</p>
+                    <p className="text-[9px] text-amber-600" dir="ltr">(نرخ فروش - نرخ خرید) × مقدار روپیه</p>
+                  </div>
+                  <div className="rounded-lg bg-white p-2 border border-amber-100">
+                    <p className="text-[9px] text-amber-700 font-medium mb-1">سود نهایی:</p>
+                    <p className="text-[9px] text-amber-600" dir="ltr">سود حواله + کارمزد - هزینه انتقال</p>
                   </div>
                 </div>
               )}
@@ -451,15 +499,23 @@ export default function OrdersPage() {
                 <div className="space-y-1.5">
                   <p className="text-[10px] text-amber-700 font-medium">حواله پاکستان به ایران</p>
                   <p className="text-[9px] text-amber-600 leading-relaxed">
-                    روپیه از مشتری دریافت می‌شود و تومان به حساب بانکی ایران واریز می‌شود.
+                    روپیه از مشتری دریافت می‌شود و تومان به حساب بانکی ایران واریز می‌شود. سود از اختلاف نرخ بازار و نرخ خرید محاسبه می‌شود.
                   </p>
-                  <div className="rounded-lg bg-white p-2 border border-amber-100">
-                    <p className="text-[9px] text-amber-700 font-medium mb-1">فرمول سود:</p>
-                    <p className="text-[9px] text-amber-600" dir="ltr">(نرخ سفارش - نرخ خرید) × مقدار روپیه + کارمزد</p>
-                  </div>
                   <div className="rounded-lg bg-white p-2 border border-amber-100">
                     <p className="text-[9px] text-amber-700 font-medium mb-1">محاسبه تومان:</p>
                     <p className="text-[9px] text-amber-600" dir="ltr">مقدار روپیه × نرخ تبدیل = مبلغ تومان</p>
+                  </div>
+                  <div className="rounded-lg bg-white p-2 border border-amber-100">
+                    <p className="text-[9px] text-amber-700 font-medium mb-1">سود دریافت:</p>
+                    <p className="text-[9px] text-amber-600" dir="ltr">(نرخ بازار - نرخ خرید) × مقدار روپیه</p>
+                  </div>
+                  <div className="rounded-lg bg-white p-2 border border-amber-100">
+                    <p className="text-[9px] text-amber-700 font-medium mb-1">سود بالقوه (Spread):</p>
+                    <p className="text-[9px] text-amber-600" dir="ltr">(نرخ فروش - نرخ خرید) × مقدار روپیه</p>
+                  </div>
+                  <div className="rounded-lg bg-white p-2 border border-amber-100">
+                    <p className="text-[9px] text-amber-700 font-medium mb-1">سود نهایی:</p>
+                    <p className="text-[9px] text-amber-600" dir="ltr">سود دریافت + کارمزد - هزینه انتقال</p>
                   </div>
                 </div>
               )}
@@ -498,23 +554,45 @@ export default function OrdersPage() {
           )}
 
           {/* Profit Preview */}
-          {amountNum > 0 && rateNum > 0 && (
-            <div className="rounded-xl bg-green-50 p-4 space-y-2">
+          {amountNum > 0 && rateNum > 0 && currentRates && (
+            <div className="rounded-xl bg-green-50 p-4 space-y-3">
               <p className="text-[10px] font-semibold text-green-600 uppercase">پیش‌نمایش سود</p>
-              {previewBuyProfit > 0 && (
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-green-600">سود خرید</span>
-                  <span className="text-sm font-bold text-green-700" dir="ltr">{previewBuyProfit.toLocaleString("en-US")} تومان</span>
+              <div className="space-y-2">
+                {previewMainProfit > 0 && (
+                  <div className="rounded-lg bg-white p-2 border border-green-100">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] text-green-600">{mainProfitLabel}</span>
+                      <span className="text-xs font-bold text-green-700" dir="ltr">{previewMainProfit.toLocaleString("en-US")} تومان</span>
+                    </div>
+                    <p className="text-[9px] text-green-500" dir="ltr">{mainProfitFormula}</p>
+                  </div>
+                )}
+                <div className="rounded-lg bg-white p-2 border border-green-100">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] text-green-600">سود بالقوه (Spread)</span>
+                    <span className="text-xs font-bold text-green-700" dir="ltr">{previewSpreadProfit.toLocaleString("en-US")} تومان</span>
+                  </div>
+                  <p className="text-[9px] text-green-500" dir="ltr">(فروش {currentRates.sellRate.toLocaleString("en-US")} - خرید {currentRates.buyRate.toLocaleString("en-US")}) × {pkrAmount.toLocaleString("en-US")}</p>
                 </div>
-              )}
-              {previewSellProfit > 0 && (
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-green-600">سود فروش</span>
-                  <span className="text-sm font-bold text-green-700" dir="ltr">{previewSellProfit.toLocaleString("en-US")} تومان</span>
-                </div>
-              )}
+                {feeNum > 0 && (
+                  <div className="rounded-lg bg-white p-2 border border-green-100">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-green-600">کارمزد</span>
+                      <span className="text-xs font-bold text-green-700" dir="ltr">{feeNum.toLocaleString("en-US")} تومان</span>
+                    </div>
+                  </div>
+                )}
+                {transferCostNum > 0 && (
+                  <div className="rounded-lg bg-white p-2 border border-red-100">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-red-500">هزینه انتقال</span>
+                      <span className="text-xs font-bold text-red-600" dir="ltr">-{transferCostNum.toLocaleString("en-US")} تومان</span>
+                    </div>
+                  </div>
+                )}
+              </div>
               <div className="flex items-center justify-between border-t border-green-200 pt-2">
-                <span className="text-xs text-green-600">سود تقریبی</span>
+                <span className="text-xs font-medium text-green-600">سود کل</span>
                 <span className="text-base font-bold text-green-800" dir="ltr">{previewTotalProfit.toLocaleString("en-US")} تومان</span>
               </div>
             </div>
@@ -524,6 +602,13 @@ export default function OrdersPage() {
             <label className="text-xs font-medium text-gray-500">کارمزد (تومان)</label>
             <Input type="number" value={fee} onChange={(e) => setFee(e.target.value)} placeholder="0" className="h-12 text-left rounded-xl" inputMode="decimal" />
           </div>
+
+          {isHawala && (
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-gray-500">هزینه انتقال (تومان)</label>
+              <Input type="number" value={transferCost} onChange={(e) => setTransferCost(e.target.value)} placeholder="0" className="h-12 text-left rounded-xl" inputMode="decimal" />
+            </div>
+          )}
 
           {/* Hawala fields: IR_TO_PK and PK_TO_IR */}
           {isHawala && (<>
@@ -619,84 +704,103 @@ export default function OrdersPage() {
             </div>
 
             {/* Amounts */}
-            <div className="grid grid-cols-2 gap-2">
-              <div className="rounded-xl border border-gray-100 p-3 text-center">
-                <p className="text-[10px] text-gray-400">مبلغ</p>
-                <p className="text-sm font-bold text-gray-900" dir="ltr">{Number(selectedOrder.amount).toLocaleString("en-US")}</p>
-              </div>
-              <div className="rounded-xl border border-gray-100 p-3 text-center">
-                <p className="text-[10px] text-gray-400">نرخ</p>
-                <p className="text-sm font-bold text-gray-900" dir="ltr">{Number(selectedOrder.rate).toLocaleString("en-US")}</p>
-              </div>
-              <div className="rounded-xl border border-gray-100 p-3 text-center">
-                <p className="text-[10px] text-gray-400">جمع کل</p>
-                <p className="text-sm font-bold text-blue-600" dir="ltr">{Number(selectedOrder.totalToman).toLocaleString("en-US")} تومان</p>
-              </div>
-              <div className="rounded-xl border border-gray-100 p-3 text-center">
-                <p className="text-[10px] text-gray-400">کارمزد</p>
-                <p className="text-sm font-bold text-gray-900" dir="ltr">{Number(selectedOrder.fee).toLocaleString("en-US")} تومان</p>
-              </div>
-              {selectedOrder.calculatedPkr && Number(selectedOrder.calculatedPkr) > 0 && (
-                <div className="col-span-2 rounded-xl border border-gray-100 p-3 text-center">
-                  <p className="text-[10px] text-gray-400">روپیه محاسبه شده</p>
-                  <p className="text-sm font-bold text-emerald-600" dir="ltr">{Number(selectedOrder.calculatedPkr).toLocaleString("en-US")} روپیه</p>
+            {(() => {
+              const ot = selectedOrder.orderType;
+              const isTomanAmt = ot === "IR_TO_PK";
+              return (
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="rounded-xl border border-gray-100 p-3 text-center">
+                    <p className="text-[10px] text-gray-400">{isTomanAmt ? "مبلغ (تومان)" : "مبلغ (روپیه)"}</p>
+                    <p className="text-sm font-bold text-gray-900" dir="ltr">{Number(selectedOrder.amount).toLocaleString("en-US")}</p>
+                  </div>
+                  <div className="rounded-xl border border-gray-100 p-3 text-center">
+                    <p className="text-[10px] text-gray-400">نرخ تبدیل</p>
+                    <p className="text-sm font-bold text-gray-900" dir="ltr">{Number(selectedOrder.rate).toLocaleString("en-US")} <span className="text-[9px] font-normal text-gray-400">تومان/روپیه</span></p>
+                  </div>
+                  <div className="rounded-xl border border-gray-100 p-3 text-center">
+                    <p className="text-[10px] text-gray-400">جمع کل (تومان)</p>
+                    <p className="text-sm font-bold text-blue-600" dir="ltr">{Number(selectedOrder.totalToman).toLocaleString("en-US")} <span className="text-[9px] font-normal">تومان</span></p>
+                  </div>
+                  <div className="rounded-xl border border-gray-100 p-3 text-center">
+                    <p className="text-[10px] text-gray-400">کارمزد (تومان)</p>
+                    <p className="text-sm font-bold text-gray-900" dir="ltr">{Number(selectedOrder.fee).toLocaleString("en-US")} <span className="text-[9px] font-normal text-gray-400">تومان</span></p>
+                  </div>
+                  {selectedOrder.calculatedPkr && Number(selectedOrder.calculatedPkr) > 0 && (
+                    <div className="col-span-2 rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-center">
+                      <p className="text-[10px] text-emerald-500">روپیه محاسبه شده</p>
+                      <p className="text-sm font-bold text-emerald-600" dir="ltr">{Number(selectedOrder.calculatedPkr).toLocaleString("en-US")} <span className="text-[9px] font-normal text-emerald-500">روپیه</span></p>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              );
+            })()}
 
             {/* Financial Details */}
             {(selectedOrder.marketRateAtTime || selectedOrder.buyRateAtTime || selectedOrder.sellRateAtTime) && (
               <div className="rounded-xl bg-green-50 p-3 space-y-2">
-                <p className="text-[10px] font-semibold text-green-600 uppercase">نرخ معامله</p>
+                <p className="text-[10px] font-semibold text-green-600 uppercase">نرخ لحظه معامله</p>
                 {selectedOrder.marketRateAtTime && Number(selectedOrder.marketRateAtTime) > 0 && (
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-green-600">نرخ بازار</span>
-                    <span className="text-xs font-bold text-green-700" dir="ltr">{Number(selectedOrder.marketRateAtTime).toLocaleString("en-US")} تومان</span>
+                    <span className="text-xs font-bold text-green-700" dir="ltr">{Number(selectedOrder.marketRateAtTime).toLocaleString("en-US")} <span className="text-[9px] font-normal text-green-500">تومان</span></span>
                   </div>
                 )}
                 {selectedOrder.buyRateAtTime && Number(selectedOrder.buyRateAtTime) > 0 && (
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-green-600">نرخ خرید</span>
-                    <span className="text-xs font-bold text-green-700" dir="ltr">{Number(selectedOrder.buyRateAtTime).toLocaleString("en-US")} تومان</span>
+                    <span className="text-xs font-bold text-green-700" dir="ltr">{Number(selectedOrder.buyRateAtTime).toLocaleString("en-US")} <span className="text-[9px] font-normal text-green-500">تومان</span></span>
                   </div>
                 )}
                 {selectedOrder.sellRateAtTime && Number(selectedOrder.sellRateAtTime) > 0 && (
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-green-600">نرخ فروش</span>
-                    <span className="text-xs font-bold text-green-700" dir="ltr">{Number(selectedOrder.sellRateAtTime).toLocaleString("en-US")} تومان</span>
-                  </div>
-                )}
-                {selectedOrder.calculatedPkr && Number(selectedOrder.calculatedPkr) > 0 && selectedOrder.buyRateAtTime && Number(selectedOrder.buyRateAtTime) > 0 && (
-                  <div className="flex items-center justify-between border-t border-green-200 pt-2 mt-1">
-                    <span className="text-xs text-green-600">هزینه تامین</span>
-                    <span className="text-xs font-bold text-green-700" dir="ltr">{(Number(selectedOrder.calculatedPkr) * Number(selectedOrder.buyRateAtTime)).toLocaleString("en-US")} تومان</span>
+                    <span className="text-xs font-bold text-green-700" dir="ltr">{Number(selectedOrder.sellRateAtTime).toLocaleString("en-US")} <span className="text-[9px] font-normal text-green-500">تومان</span></span>
                   </div>
                 )}
               </div>
             )}
 
             {/* Profit Details */}
-            {(Number(selectedOrder.buyProfitAmount) > 0 || Number(selectedOrder.sellProfitAmount) > 0) && (
-              <div className="rounded-xl bg-green-50 p-3 space-y-2">
-                <p className="text-[10px] font-semibold text-green-600 uppercase">سود</p>
-                {Number(selectedOrder.buyProfitAmount) > 0 && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-green-600">سود خرید</span>
-                    <span className="text-xs font-bold text-green-700" dir="ltr">{Number(selectedOrder.buyProfitAmount).toLocaleString("en-US")} تومان</span>
+            {(() => {
+              const ot = selectedOrder.orderType;
+              const hasProfit = (ot === "BUY_PKR" || ot === "PK_TO_IR") ? Number(selectedOrder.buyMarketProfitAmount) !== 0 : Number(selectedOrder.sellMarketProfitAmount) !== 0;
+              const hasFee = Number(selectedOrder.feeAmount) > 0;
+              const hasTransfer = Number(selectedOrder.transferCost) > 0;
+              if (!hasProfit && !hasFee && !hasTransfer && !Number(selectedOrder.totalProfitAmount)) return null;
+              return (
+                <div className="rounded-xl bg-green-50 p-3 space-y-2">
+                  <p className="text-[10px] font-semibold text-green-600 uppercase">تحلیل سود</p>
+                  {(ot === "BUY_PKR" || ot === "PK_TO_IR") && Number(selectedOrder.buyMarketProfitAmount) !== 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-green-600">{ot === "BUY_PKR" ? "سود خرید روپیه" : "سود دریافت روپیه"}</span>
+                      <span className="text-xs font-bold text-green-700" dir="ltr">{Number(selectedOrder.buyMarketProfitAmount).toLocaleString("en-US")} <span className="text-[9px] font-normal text-green-500">تومان</span></span>
+                    </div>
+                  )}
+                  {(ot === "SELL_PKR" || ot === "IR_TO_PK") && Number(selectedOrder.sellMarketProfitAmount) !== 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-green-600">{ot === "SELL_PKR" ? "سود فروش روپیه" : "سود حواله"}</span>
+                      <span className="text-xs font-bold text-green-700" dir="ltr">{Number(selectedOrder.sellMarketProfitAmount).toLocaleString("en-US")} <span className="text-[9px] font-normal text-green-500">تومان</span></span>
+                    </div>
+                  )}
+                  {hasFee && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-green-600">کارمزد</span>
+                      <span className="text-xs font-bold text-green-700" dir="ltr">{Number(selectedOrder.feeAmount).toLocaleString("en-US")} <span className="text-[9px] font-normal text-green-500">تومان</span></span>
+                    </div>
+                  )}
+                  {hasTransfer && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-red-500">هزینه انتقال</span>
+                      <span className="text-xs font-bold text-red-600" dir="ltr">-{Number(selectedOrder.transferCost).toLocaleString("en-US")} <span className="text-[9px] font-normal text-red-400">تومان</span></span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between border-t border-green-200 pt-2">
+                    <span className="text-xs font-medium text-green-600">سود نهایی</span>
+                    <span className="text-sm font-bold text-green-800" dir="ltr">{Number(selectedOrder.totalProfitAmount).toLocaleString("en-US")} <span className="text-[9px] font-normal text-green-600">تومان</span></span>
                   </div>
-                )}
-                {Number(selectedOrder.sellProfitAmount) > 0 && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-green-600">سود فروش</span>
-                    <span className="text-xs font-bold text-green-700" dir="ltr">{Number(selectedOrder.sellProfitAmount).toLocaleString("en-US")} تومان</span>
-                  </div>
-                )}
-                <div className="flex items-center justify-between border-t border-green-200 pt-2">
-                  <span className="text-xs text-green-600">سود کل</span>
-                  <span className="text-sm font-bold text-green-800" dir="ltr">{Number(selectedOrder.totalProfitAmount).toLocaleString("en-US")} تومان</span>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* Recipient / Destination */}
             {(selectedOrder.recipientName || selectedOrder.destinationCard) && (
@@ -752,7 +856,7 @@ export default function OrdersPage() {
                 <Clock className="h-3.5 w-3.5 text-gray-400" strokeWidth={1.5} />
                 <span className="text-[10px] text-gray-400">{new Date(selectedOrder.createdAt).toLocaleDateString("fa-IR")} {new Date(selectedOrder.createdAt).toLocaleTimeString("fa-IR", { hour: "2-digit", minute: "2-digit" })}</span>
               </div>
-              <span className="text-[10px] text-gray-400">{selectedOrder.user.firstName} {selectedOrder.user.lastName}</span>
+              <span className="text-[10px] text-gray-400">{selectedOrder.user?.firstName} {selectedOrder.user?.lastName}</span>
             </div>
 
             {/* Action Buttons */}

@@ -52,29 +52,30 @@ export async function GET(request: NextRequest) {
   ] = await Promise.all([
     prisma.order.aggregate({
       where: todayWhere,
-      _sum: { profit: true, totalToman: true, calculatedPkr: true, buyProfitAmount: true, sellProfitAmount: true, totalProfitAmount: true },
+      _sum: { buyMarketProfitAmount: true, sellMarketProfitAmount: true, spreadProfitAmount: true, feeAmount: true, transferCost: true, totalProfitAmount: true, totalToman: true, calculatedPkr: true },
       _count: true,
     }),
     prisma.order.aggregate({
       where: weekWhere,
-      _sum: { profit: true, totalToman: true, calculatedPkr: true, buyProfitAmount: true, sellProfitAmount: true, totalProfitAmount: true },
+      _sum: { buyMarketProfitAmount: true, sellMarketProfitAmount: true, spreadProfitAmount: true, feeAmount: true, transferCost: true, totalProfitAmount: true, totalToman: true, calculatedPkr: true },
       _count: true,
     }),
     prisma.order.aggregate({
       where: monthWhere,
-      _sum: { profit: true, totalToman: true, calculatedPkr: true, buyProfitAmount: true, sellProfitAmount: true, totalProfitAmount: true },
+      _sum: { buyMarketProfitAmount: true, sellMarketProfitAmount: true, spreadProfitAmount: true, feeAmount: true, transferCost: true, totalProfitAmount: true, totalToman: true, calculatedPkr: true },
       _count: true,
     }),
     prisma.order.aggregate({
       where: allTimeWhere,
-      _sum: { profit: true, totalToman: true, calculatedPkr: true, buyProfitAmount: true, sellProfitAmount: true, totalProfitAmount: true },
+      _sum: { buyMarketProfitAmount: true, sellMarketProfitAmount: true, spreadProfitAmount: true, feeAmount: true, transferCost: true, totalProfitAmount: true, totalToman: true, calculatedPkr: true },
       _count: true,
     }),
     prisma.order.findMany({
       where,
       select: {
         id: true, orderType: true, status: true, amount: true, rate: true, totalToman: true,
-        calculatedPkr: true, fee: true, profit: true, buyProfitAmount: true, sellProfitAmount: true, totalProfitAmount: true,
+        calculatedPkr: true, fee: true, transferCost: true,
+        buyMarketProfitAmount: true, sellMarketProfitAmount: true, spreadProfitAmount: true, feeAmount: true, totalProfitAmount: true,
         createdAt: true,
         customer: { select: { name: true } },
       },
@@ -84,16 +85,18 @@ export async function GET(request: NextRequest) {
     prisma.order.groupBy({
       by: ["orderType"],
       where: allTimeWhere,
-      _sum: { profit: true, totalToman: true, calculatedPkr: true, buyProfitAmount: true, sellProfitAmount: true, totalProfitAmount: true },
+      _sum: { buyMarketProfitAmount: true, sellMarketProfitAmount: true, spreadProfitAmount: true, feeAmount: true, transferCost: true, totalProfitAmount: true, totalToman: true, calculatedPkr: true },
       _count: true,
     }),
     prisma.$queryRaw`
       SELECT
         DATE(created_at) as date,
         COUNT(*)::int as "orderCount",
-        COALESCE(SUM(profit), 0)::bigint as profit,
-        COALESCE(SUM(buy_profit_amount), 0)::bigint as "buyProfit",
-        COALESCE(SUM(sell_profit_amount), 0)::bigint as "sellProfit",
+        COALESCE(SUM(buy_market_profit_amount), 0)::bigint as "buyMarketProfit",
+        COALESCE(SUM(sell_market_profit_amount), 0)::bigint as "sellMarketProfit",
+        COALESCE(SUM(spread_profit_amount), 0)::bigint as "spreadProfit",
+        COALESCE(SUM(fee_amount), 0)::bigint as "feeProfit",
+        COALESCE(SUM(transfer_cost), 0)::bigint as "transferCost",
         COALESCE(SUM(total_profit_amount), 0)::bigint as "totalProfit",
         COALESCE(SUM(total_toman), 0)::bigint as "totalToman"
       FROM orders
@@ -106,12 +109,14 @@ export async function GET(request: NextRequest) {
   ]);
 
   const extractSum = (sum: typeof todayStats._sum) => ({
-    profit: sum?.profit || 0,
+    buyMarketProfit: sum?.buyMarketProfitAmount || 0,
+    sellMarketProfit: sum?.sellMarketProfitAmount || 0,
+    spreadProfit: sum?.spreadProfitAmount || 0,
+    feeProfit: sum?.feeAmount || 0,
+    transferCost: sum?.transferCost || 0,
+    totalProfit: sum?.totalProfitAmount || 0,
     totalToman: sum?.totalToman || 0,
     totalPkr: sum?.calculatedPkr || 0,
-    buyProfit: sum?.buyProfitAmount || 0,
-    sellProfit: sum?.sellProfitAmount || 0,
-    totalProfit: sum?.totalProfitAmount || 0,
   });
 
   return safeJson({
@@ -123,12 +128,14 @@ export async function GET(request: NextRequest) {
     },
     profitByType: profitByType.map((p) => ({
       orderType: p.orderType,
-      profit: p._sum?.profit || 0,
+      buyMarketProfit: p._sum?.buyMarketProfitAmount || 0,
+      sellMarketProfit: p._sum?.sellMarketProfitAmount || 0,
+      spreadProfit: p._sum?.spreadProfitAmount || 0,
+      feeProfit: p._sum?.feeAmount || 0,
+      transferCost: p._sum?.transferCost || 0,
+      totalProfit: p._sum?.totalProfitAmount || 0,
       totalToman: p._sum?.totalToman || 0,
       totalPkr: p._sum?.calculatedPkr || 0,
-      buyProfit: p._sum?.buyProfitAmount || 0,
-      sellProfit: p._sum?.sellProfitAmount || 0,
-      totalProfit: p._sum?.totalProfitAmount || 0,
       count: p._count,
     })),
     dailyProfit: dailyProfit,

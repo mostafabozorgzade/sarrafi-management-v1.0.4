@@ -203,7 +203,7 @@ async function main() {
     id: randomUUID(), tenantId: tenant.id, userId: order.userId, customerId: order.customerId,
     orderId: order.id, type: order.orderType.toString(), currencyId: order.currencyId,
     amount: order.amount, rate: order.rate, totalToman: order.totalToman,
-    profit: order.profit || BigInt(0), description: `تراکنش سفارش ${i + 1}`,
+    profit: order.totalProfitAmount || BigInt(0), description: `تراکنش سفارش ${i + 1}`,
   }));
 
   for (const tx of transactionsData) {

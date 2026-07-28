@@ -8,32 +8,38 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ORDER_TYPE_LABELS } from "@/lib/order-types";
 
 interface Summary {
-  profit: bigint;
+  buyMarketProfit: bigint;
+  sellMarketProfit: bigint;
+  spreadProfit: bigint;
+  feeProfit: bigint;
+  transferCost: bigint;
+  totalProfit: bigint;
   totalToman: bigint;
   totalPkr: bigint;
-  buyProfit: bigint;
-  sellProfit: bigint;
-  totalProfit: bigint;
   orderCount: number;
 }
 
 interface ProfitByType {
   orderType: string;
-  profit: bigint;
+  buyMarketProfit: bigint;
+  sellMarketProfit: bigint;
+  spreadProfit: bigint;
+  feeProfit: bigint;
+  transferCost: bigint;
+  totalProfit: bigint;
   totalToman: bigint;
   totalPkr: bigint;
-  buyProfit: bigint;
-  sellProfit: bigint;
-  totalProfit: bigint;
   count: number;
 }
 
 interface DailyProfit {
   date: string;
   orderCount: number;
-  profit: bigint;
-  buyProfit: bigint;
-  sellProfit: bigint;
+  buyMarketProfit: bigint;
+  sellMarketProfit: bigint;
+  spreadProfit: bigint;
+  feeProfit: bigint;
+  transferCost: bigint;
   totalProfit: bigint;
   totalToman: bigint;
 }
@@ -47,9 +53,11 @@ interface FilteredOrder {
   totalToman: bigint;
   calculatedPkr: bigint | null;
   fee: bigint;
-  profit: bigint | null;
-  buyProfitAmount: bigint;
-  sellProfitAmount: bigint;
+  transferCost: bigint;
+  buyMarketProfitAmount: bigint;
+  sellMarketProfitAmount: bigint;
+  spreadProfitAmount: bigint;
+  feeAmount: bigint;
   totalProfitAmount: bigint;
   createdAt: string;
   customer: { name: string };
@@ -146,28 +154,34 @@ export default function ReportsPage() {
           <section className="space-y-2">
             <div className="grid grid-cols-2 gap-2">
               <div className="rounded-xl border border-gray-100 bg-white p-3">
-                <div className="flex items-center gap-1.5 mb-1"><TrendingUp className="h-3.5 w-3.5 text-green-500" strokeWidth={1.5} /><span className="text-[10px] text-gray-400">سود خرید</span></div>
-                <p className="text-lg font-bold text-green-700" dir="ltr">{Number(currentSummary.buyProfit).toLocaleString("en-US")}</p>
+                <div className="flex items-center gap-1.5 mb-1"><TrendingUp className="h-3.5 w-3.5 text-green-500" strokeWidth={1.5} /><span className="text-[10px] text-gray-400">سود خرید نسبت به بازار</span></div>
+                <p className="text-lg font-bold text-green-700" dir="ltr">{Number(currentSummary.buyMarketProfit).toLocaleString("en-US")}</p>
                 <p className="text-[9px] text-gray-300 mt-0.5">تومان</p>
               </div>
               <div className="rounded-xl border border-gray-100 bg-white p-3">
-                <div className="flex items-center gap-1.5 mb-1"><TrendingUp className="h-3.5 w-3.5 text-emerald-500" strokeWidth={1.5} /><span className="text-[10px] text-gray-400">سود فروش</span></div>
-                <p className="text-lg font-bold text-emerald-700" dir="ltr">{Number(currentSummary.sellProfit).toLocaleString("en-US")}</p>
+                <div className="flex items-center gap-1.5 mb-1"><TrendingUp className="h-3.5 w-3.5 text-emerald-500" strokeWidth={1.5} /><span className="text-[10px] text-gray-400">سود فروش نسبت به بازار</span></div>
+                <p className="text-lg font-bold text-emerald-700" dir="ltr">{Number(currentSummary.sellMarketProfit).toLocaleString("en-US")}</p>
                 <p className="text-[9px] text-gray-300 mt-0.5">تومان</p>
               </div>
               <div className="rounded-xl border border-gray-100 bg-white p-3">
-                <div className="flex items-center gap-1.5 mb-1"><Receipt className="h-3.5 w-3.5 text-blue-500" strokeWidth={1.5} /><span className="text-[10px] text-gray-400">تعداد سفارش</span></div>
-                <p className="text-lg font-bold text-blue-700" dir="ltr">{currentSummary.orderCount}</p>
-                <p className="text-[9px] text-gray-300 mt-0.5">سفارش تکمیل شده</p>
+                <div className="flex items-center gap-1.5 mb-1"><Receipt className="h-3.5 w-3.5 text-blue-500" strokeWidth={1.5} /><span className="text-[10px] text-gray-400">سود Spread</span></div>
+                <p className="text-lg font-bold text-blue-700" dir="ltr">{Number(currentSummary.spreadProfit).toLocaleString("en-US")}</p>
+                <p className="text-[9px] text-gray-300 mt-0.5">تومان</p>
               </div>
               <div className="rounded-xl border border-gray-100 bg-white p-3">
-                <div className="flex items-center gap-1.5 mb-1"><Wallet className="h-3.5 w-3.5 text-amber-500" strokeWidth={1.5} /><span className="text-[10px] text-gray-400">گردش تومان</span></div>
-                <p className="text-sm font-bold text-amber-700" dir="ltr">{Number(currentSummary.totalToman).toLocaleString("en-US")}</p>
+                <div className="flex items-center gap-1.5 mb-1"><Wallet className="h-3.5 w-3.5 text-amber-500" strokeWidth={1.5} /><span className="text-[10px] text-gray-400">کارمزد دریافتی</span></div>
+                <p className="text-sm font-bold text-amber-700" dir="ltr">{Number(currentSummary.feeProfit).toLocaleString("en-US")}</p>
                 <p className="text-[9px] text-gray-300 mt-0.5">تومان</p>
               </div>
             </div>
+            {Number(currentSummary.transferCost) > 0 && (
+              <div className="rounded-xl border border-red-100 bg-white p-3 flex items-center justify-between">
+                <span className="text-xs text-red-500">هزینه انتقال</span>
+                <span className="text-sm font-bold text-red-600" dir="ltr">-{Number(currentSummary.transferCost).toLocaleString("en-US")} تومان</span>
+              </div>
+            )}
             <div className="rounded-xl bg-green-50 p-3 flex items-center justify-between">
-              <span className="text-xs text-green-600">سود کل</span>
+              <span className="text-xs text-green-600">سود نهایی</span>
               <span className="text-base font-bold text-green-800" dir="ltr">{Number(currentSummary.totalProfit).toLocaleString("en-US")} تومان</span>
             </div>
           </section>
@@ -193,23 +207,29 @@ export default function ReportsPage() {
                     <div className="grid grid-cols-2 gap-2">
                       <div className="text-center">
                         <p className="text-[9px] text-gray-400">سود خرید</p>
-                        <p className="text-xs font-bold text-green-600" dir="ltr">{Number(p.buyProfit).toLocaleString("en-US")}</p>
+                        <p className="text-xs font-bold text-green-600" dir="ltr">{Number(p.buyMarketProfit).toLocaleString("en-US")}</p>
                       </div>
                       <div className="text-center">
                         <p className="text-[9px] text-gray-400">سود فروش</p>
-                        <p className="text-xs font-bold text-emerald-600" dir="ltr">{Number(p.sellProfit).toLocaleString("en-US")}</p>
+                        <p className="text-xs font-bold text-emerald-600" dir="ltr">{Number(p.sellMarketProfit).toLocaleString("en-US")}</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-[9px] text-gray-400">تومان</p>
-                        <p className="text-xs font-bold text-blue-600" dir="ltr">{Number(p.totalToman).toLocaleString("en-US")}</p>
+                        <p className="text-[9px] text-gray-400">Spread</p>
+                        <p className="text-xs font-bold text-blue-600" dir="ltr">{Number(p.spreadProfit).toLocaleString("en-US")}</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-[9px] text-gray-400">روپیه</p>
-                        <p className="text-xs font-bold text-violet-600" dir="ltr">{Number(p.totalPkr).toLocaleString("en-US")}</p>
+                        <p className="text-[9px] text-gray-400">کارمزد</p>
+                        <p className="text-xs font-bold text-amber-600" dir="ltr">{Number(p.feeProfit).toLocaleString("en-US")}</p>
                       </div>
                     </div>
+                    {Number(p.transferCost) > 0 && (
+                      <div className="mt-1 text-center">
+                        <span className="text-[9px] text-red-500">هزینه انتقال: </span>
+                        <span className="text-[9px] font-bold text-red-600" dir="ltr">-{Number(p.transferCost).toLocaleString("en-US")}</span>
+                      </div>
+                    )}
                     <div className="mt-2 rounded-lg bg-green-50 p-2 flex items-center justify-between">
-                      <span className="text-[10px] text-green-600">سود کل</span>
+                      <span className="text-[10px] text-green-600">سود نهایی</span>
                       <span className="text-xs font-bold text-green-700" dir="ltr">{Number(p.totalProfit).toLocaleString("en-US")} تومان</span>
                     </div>
                   </div>
@@ -230,10 +250,14 @@ export default function ReportsPage() {
                     <Calendar className="h-3 w-3 text-gray-300" strokeWidth={1.5} />
                     <span className="text-[10px] text-gray-500">{new Date(d.date).toLocaleDateString("fa-IR")}</span>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
                     <span className="text-[10px] text-gray-400">{d.orderCount} سفارش</span>
-                    <span className="text-[10px] text-green-500" dir="ltr">{Number(d.buyProfit).toLocaleString("en-US")}</span>
-                    <span className="text-[10px] text-emerald-500" dir="ltr">{Number(d.sellProfit).toLocaleString("en-US")}</span>
+                    <span className="text-[9px] text-green-500" dir="ltr">{Number(d.buyMarketProfit).toLocaleString("en-US")}</span>
+                    <span className="text-[9px] text-emerald-500" dir="ltr">{Number(d.sellMarketProfit).toLocaleString("en-US")}</span>
+                    <span className="text-[9px] text-blue-500" dir="ltr">{Number(d.spreadProfit).toLocaleString("en-US")}</span>
+                    {Number(d.transferCost) > 0 && (
+                      <span className="text-[9px] text-red-500" dir="ltr">-{Number(d.transferCost).toLocaleString("en-US")}</span>
+                    )}
                     <span className="text-xs font-bold text-green-600" dir="ltr">{Number(d.totalProfit).toLocaleString("en-US")}</span>
                   </div>
                 </div>
@@ -280,11 +304,17 @@ export default function ReportsPage() {
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] text-gray-400" dir="ltr">{Number(o.amount).toLocaleString("en-US")} × {Number(o.rate).toLocaleString("en-US")}</span>
                       <div className="flex items-center gap-2">
-                        {Number(o.buyProfitAmount) > 0 && (
-                          <span className="text-[10px] font-medium text-green-500" dir="ltr">{Number(o.buyProfitAmount).toLocaleString("en-US")}</span>
+                        {Number(o.buyMarketProfitAmount) > 0 && (
+                          <span className="text-[9px] font-medium text-green-500" dir="ltr">{Number(o.buyMarketProfitAmount).toLocaleString("en-US")}</span>
                         )}
-                        {Number(o.sellProfitAmount) > 0 && (
-                          <span className="text-[10px] font-medium text-emerald-500" dir="ltr">{Number(o.sellProfitAmount).toLocaleString("en-US")}</span>
+                        {Number(o.sellMarketProfitAmount) > 0 && (
+                          <span className="text-[9px] font-medium text-emerald-500" dir="ltr">{Number(o.sellMarketProfitAmount).toLocaleString("en-US")}</span>
+                        )}
+                        {Number(o.spreadProfitAmount) > 0 && (
+                          <span className="text-[9px] font-medium text-blue-500" dir="ltr">{Number(o.spreadProfitAmount).toLocaleString("en-US")}</span>
+                        )}
+                        {Number(o.transferCost) > 0 && (
+                          <span className="text-[9px] font-medium text-red-500" dir="ltr">-{Number(o.transferCost).toLocaleString("en-US")}</span>
                         )}
                         <span className={cn("text-xs font-bold", o.totalProfitAmount && Number(o.totalProfitAmount) > 0 ? "text-green-600" : "text-red-500")} dir="ltr">
                           {o.totalProfitAmount ? Number(o.totalProfitAmount).toLocaleString("en-US") : "0"} تومان

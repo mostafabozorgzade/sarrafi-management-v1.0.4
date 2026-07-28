@@ -137,10 +137,13 @@ model Order {
   totalToman       BigInt
   calculatedPkr    BigInt?
   fee              BigInt         @default(0)
-  profit           BigInt?
-  buyProfitAmount  BigInt         @default(0)
-  sellProfitAmount BigInt         @default(0)
-  totalProfitAmount BigInt        @default(0)
+  transferCost     BigInt         @default(0)
+
+  buyMarketProfitAmount  BigInt   @default(0)
+  sellMarketProfitAmount BigInt   @default(0)
+  spreadProfitAmount     BigInt   @default(0)
+  feeAmount              BigInt   @default(0)
+  totalProfitAmount      BigInt   @default(0)
 
   marketRateAtTime  BigInt?
   buyRateAtTime     BigInt?
