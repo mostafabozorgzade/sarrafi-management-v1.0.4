@@ -510,7 +510,7 @@ export default function OrdersPage() {
               value={searchQuery}
               onChange={(e) => handleSearch(e.target.value)}
               placeholder="جستجو بر اساس نام مشتری..."
-              className="h-10 w-full rounded-xl border border-gray-100 bg-gray-50/80 pr-10 pl-9 text-[13px] text-gray-700 placeholder:text-gray-300 focus:outline-none focus:border-gray-200 focus:bg-white focus:shadow-sm transition-all"
+              className="h-10 w-full rounded-[5px] border border-gray-100 bg-gray-50/80 pr-10 pl-9 text-[13px] text-gray-700 placeholder:text-gray-300 focus:outline-none focus:border-gray-200 focus:bg-white focus:shadow-sm transition-all"
             />
             {searchQuery && (
               <button onClick={clearSearch} className="absolute left-3 top-1/2 -translate-y-1/2 flex h-5 w-5 items-center justify-center rounded-full bg-gray-200/60 text-gray-400 hover:bg-gray-200 hover:text-gray-600 transition-colors">
@@ -546,16 +546,16 @@ export default function OrdersPage() {
         {loading ? (
           <div className="space-y-2.5">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="rounded-2xl bg-white border border-gray-100/60 p-4">
+              <div key={i} className="rounded-[5px] bg-white border border-gray-200/80 p-4">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2.5">
-                    <Skeleton className="h-9 w-9 rounded-xl" />
+                    <Skeleton className="h-9 w-9 rounded-[5px]" />
                     <div className="space-y-1.5">
                       <Skeleton className="h-3 w-24" />
                       <Skeleton className="h-2.5 w-16" />
                     </div>
                   </div>
-                  <Skeleton className="h-5 w-14 rounded-full" />
+                  <Skeleton className="h-5 w-14 rounded-[3px]" />
                 </div>
                 <div className="flex items-center justify-between">
                   <Skeleton className="h-2.5 w-32" />
@@ -566,7 +566,7 @@ export default function OrdersPage() {
           </div>
         ) : orders.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gray-50 mb-4">
+            <div className="flex h-16 w-16 items-center justify-center rounded-[5px] bg-gray-50 mb-4">
               {searchQuery ? (
                 <Search className="h-7 w-7 text-gray-300" strokeWidth={1.5} />
               ) : (
@@ -593,13 +593,13 @@ export default function OrdersPage() {
               return (
                 <div
                   key={o.id}
-                  className="rounded-2xl bg-white border border-gray-100/60 p-4 active:bg-gray-50/50 transition-colors cursor-pointer"
+                  className="rounded-[5px] bg-white border border-gray-200/80 p-4 active:bg-gray-50/50 transition-colors cursor-pointer"
                   onClick={() => openDetail(o)}
                 >
                   {/* Top row: icon + type + status */}
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <div className={cn("flex h-10 w-10 items-center justify-center rounded-xl", o.orderType === "IR_TO_PK" ? "bg-emerald-50" : o.orderType === "PK_TO_IR" ? "bg-blue-50" : o.orderType === "BUY_PKR" ? "bg-violet-50" : "bg-amber-50")}>
+                      <div className={cn("flex h-10 w-10 items-center justify-center rounded-[5px]", o.orderType === "IR_TO_PK" ? "bg-emerald-50" : o.orderType === "PK_TO_IR" ? "bg-blue-50" : o.orderType === "BUY_PKR" ? "bg-violet-50" : "bg-amber-50")}>
                         <Icon className={cn("h-[18px] w-[18px]", typeInfo.color)} strokeWidth={1.5} />
                       </div>
                       <div>
@@ -607,7 +607,7 @@ export default function OrdersPage() {
                         <p className="text-[11px] text-gray-400 mt-0.5">{o.customer.name}</p>
                       </div>
                     </div>
-                    <span className={cn("rounded-full px-2.5 py-1 text-[10px] font-semibold", STATUS_COLORS[o.status])}>
+                    <span className={cn("rounded-[3px] px-2 py-0.5 text-[10px] font-semibold", STATUS_COLORS[o.status])}>
                       {STATUS_LABELS[o.status]}
                     </span>
                   </div>
@@ -615,13 +615,13 @@ export default function OrdersPage() {
                   {/* Middle row: rate + PKR amount */}
                   <div className="flex items-center gap-3 mb-2.5">
                     {orderRate > 0 && (
-                      <div className="flex items-center gap-1 rounded-lg bg-gray-50 px-2 py-1">
+                      <div className="flex items-center gap-1 rounded-[3px] bg-gray-50 px-2 py-1">
                         <span className="text-[10px] text-gray-400">{isTomanAmt ? "نرخ فروش" : "نرخ خرید"}</span>
                         <span className="text-[11px] font-semibold text-gray-700 tabular-nums" dir="ltr">{orderRate.toLocaleString("en-US")}</span>
                       </div>
                     )}
                     {pkrValue > 0 && (
-                      <div className="flex items-center gap-1 rounded-lg bg-gray-50 px-2 py-1">
+                      <div className="flex items-center gap-1 rounded-[3px] bg-gray-50 px-2 py-1">
                         <span className="text-[10px] text-gray-400">روپیه</span>
                         <span className="text-[11px] font-semibold text-gray-700 tabular-nums" dir="ltr">{pkrValue.toLocaleString("en-US")}</span>
                       </div>
@@ -638,11 +638,11 @@ export default function OrdersPage() {
 
                   {/* Action buttons */}
                   {o.status !== "COMPLETED" && o.status !== "CANCELLED" && nextAction && (
-                    <div className="flex gap-2 mt-3 pt-3 border-t border-gray-50" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() => handleStatus(o.id, nextAction.next)}
                         disabled={isLoadingThis}
-                        className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-gray-900 py-2 text-[11px] font-semibold text-white active:bg-gray-800 transition-colors disabled:opacity-50"
+                        className="flex-1 flex items-center justify-center gap-1.5 rounded-[5px] bg-gray-900 py-2 text-[11px] font-semibold text-white active:bg-gray-800 transition-colors disabled:opacity-50"
                       >
                         {isLoadingThis ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
                         {isLoadingThis ? "در حال انجام..." : nextAction.label}
@@ -650,7 +650,7 @@ export default function OrdersPage() {
                       <button
                         onClick={() => handleStatus(o.id, "CANCELLED")}
                         disabled={isLoadingThis}
-                        className="rounded-xl border border-gray-200 px-3.5 py-2 text-[11px] font-medium text-gray-500 active:bg-gray-50 transition-colors disabled:opacity-50"
+                        className="rounded-[5px] border border-gray-200 px-3.5 py-2 text-[11px] font-medium text-gray-500 active:bg-gray-50 transition-colors disabled:opacity-50"
                       >
                         لغو
                       </button>
@@ -663,20 +663,20 @@ export default function OrdersPage() {
             {loadingMore && (
               <div className="space-y-2.5">
                 {Array.from({ length: 2 }).map((_, i) => (
-                  <div key={`shimmer-${i}`} className="rounded-2xl bg-white border border-gray-100/60 p-4 animate-pulse">
+                  <div key={`shimmer-${i}`} className="rounded-[5px] bg-white border border-gray-200/80 p-4 animate-pulse">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-3">
-                        <Skeleton className="h-10 w-10 rounded-xl" />
+                        <Skeleton className="h-10 w-10 rounded-[5px]" />
                         <div className="space-y-1.5">
                           <Skeleton className="h-3 w-28" />
                           <Skeleton className="h-2.5 w-16" />
                         </div>
                       </div>
-                      <Skeleton className="h-5 w-14 rounded-full" />
+                      <Skeleton className="h-5 w-14 rounded-[3px]" />
                     </div>
                     <div className="flex gap-2 mb-2.5">
-                      <Skeleton className="h-6 w-20 rounded-lg" />
-                      <Skeleton className="h-6 w-24 rounded-lg" />
+                      <Skeleton className="h-6 w-20 rounded-[3px]" />
+                      <Skeleton className="h-6 w-24 rounded-[3px]" />
                     </div>
                     <div className="flex items-center justify-between">
                       <Skeleton className="h-2.5 w-20" />
@@ -693,14 +693,14 @@ export default function OrdersPage() {
       {/* FAB */}
       <button
         onClick={() => setDirectionSheetOpen(true)}
-        className="fixed bottom-24 left-4 z-30 flex h-[52px] w-[52px] items-center justify-center rounded-2xl bg-gray-900 text-white shadow-lg shadow-gray-900/20 transition-all active:scale-95 hover:bg-gray-800"
+        className="fixed bottom-24 left-4 z-30 flex h-[52px] w-[52px] items-center justify-center rounded-[5px] bg-gray-900 text-white shadow-lg shadow-gray-900/20 transition-all active:scale-95 hover:bg-gray-800"
       >
         <Plus className="h-5 w-5" strokeWidth={2} />
       </button>
 
       {/* Success Toast */}
       {success && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 rounded-2xl bg-white border border-gray-100 px-4 py-3 shadow-lg shadow-black/5 animate-slide-up">
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 rounded-[5px] bg-white border border-gray-100 px-4 py-3 shadow-lg shadow-black/5 animate-slide-up">
           <CheckCircle2 className="h-4.5 w-4.5 text-emerald-500" />
           <span className="text-[13px] font-medium text-gray-700">سفارش ثبت شد</span>
         </div>
@@ -708,7 +708,7 @@ export default function OrdersPage() {
 
       {/* Error Toast */}
       {errorToast && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 rounded-2xl bg-white border border-gray-100 px-4 py-3 shadow-lg shadow-black/5 animate-slide-up max-w-[90vw]">
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 rounded-[5px] bg-white border border-gray-100 px-4 py-3 shadow-lg shadow-black/5 animate-slide-up max-w-[90vw]">
           <AlertCircle className="h-4.5 w-4.5 text-red-500 flex-shrink-0" />
           <span className="text-[13px] font-medium text-gray-700">{errorToast}</span>
         </div>
@@ -723,9 +723,9 @@ export default function OrdersPage() {
               <button
                 key={d.id}
                 onClick={() => selectDirection(d)}
-                className="w-full flex items-center gap-4 rounded-2xl border border-gray-100 p-4 text-right transition-all active:bg-gray-50 hover:border-gray-200"
+                className="w-full flex items-center gap-4 rounded-[5px] border border-gray-100 p-4 text-right transition-all active:bg-gray-50 hover:border-gray-200"
               >
-                <div className={cn("flex h-12 w-12 items-center justify-center rounded-2xl", d.color)}>
+                <div className={cn("flex h-12 w-12 items-center justify-center rounded-[5px]", d.color)}>
                   <Icon className="h-5 w-5" strokeWidth={1.5} />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -746,9 +746,9 @@ export default function OrdersPage() {
             <button
               key={st.id}
               onClick={() => selectSubType(st.id)}
-              className="w-full flex items-center gap-4 rounded-2xl border border-gray-100 p-4 text-right transition-all active:bg-gray-50 hover:border-gray-200"
+              className="w-full flex items-center gap-4 rounded-[5px] border border-gray-100 p-4 text-right transition-all active:bg-gray-50 hover:border-gray-200"
             >
-              <div className={cn("flex h-12 w-12 items-center justify-center rounded-2xl text-white", st.color)}>
+              <div className={cn("flex h-12 w-12 items-center justify-center rounded-[5px] text-white", st.color)}>
                 {st.id === "IR_TO_PK" || st.id === "SELL_PKR" ? <Send className="h-5 w-5" strokeWidth={1.5} /> : <ArrowDownToLine className="h-5 w-5" strokeWidth={1.5} />}
               </div>
               <div className="flex-1 min-w-0">
@@ -765,37 +765,37 @@ export default function OrdersPage() {
       <BottomSheet isOpen={formSheetOpen} onClose={() => setFormSheetOpen(false)} title={typeInfo?.label} className="max-h-[85vh]">
         {formLoading ? (
           <div className="space-y-4">
-            <div className="rounded-2xl bg-gray-50 p-4 space-y-3">
+            <div className="rounded-[5px] bg-gray-50 p-4 space-y-3">
               <Skeleton className="h-3 w-24" />
               <div className="grid grid-cols-3 gap-2">
-                <Skeleton className="h-14 rounded-xl" />
-                <Skeleton className="h-14 rounded-xl" />
-                <Skeleton className="h-14 rounded-xl" />
+                <Skeleton className="h-14 rounded-[5px]" />
+                <Skeleton className="h-14 rounded-[5px]" />
+                <Skeleton className="h-14 rounded-[5px]" />
               </div>
             </div>
             <div className="space-y-2">
               <Skeleton className="h-3 w-20" />
-              <Skeleton className="h-12 rounded-xl" />
+              <Skeleton className="h-12 rounded-[5px]" />
             </div>
             <div className="space-y-2">
               <Skeleton className="h-3 w-28" />
-              <Skeleton className="h-12 rounded-xl" />
+              <Skeleton className="h-12 rounded-[5px]" />
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-2">
                 <Skeleton className="h-3 w-20" />
-                <Skeleton className="h-12 rounded-xl" />
+                <Skeleton className="h-12 rounded-[5px]" />
               </div>
               <div className="space-y-2">
                 <Skeleton className="h-3 w-24" />
-                <Skeleton className="h-12 rounded-xl" />
+                <Skeleton className="h-12 rounded-[5px]" />
               </div>
             </div>
             <div className="space-y-2">
               <Skeleton className="h-3 w-20" />
-              <Skeleton className="h-12 rounded-xl" />
+              <Skeleton className="h-12 rounded-[5px]" />
             </div>
-            <Skeleton className="h-12 rounded-xl" />
+            <Skeleton className="h-12 rounded-[5px]" />
           </div>
         ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -803,20 +803,20 @@ export default function OrdersPage() {
 
           {/* Rate Display Card */}
           {currentRates && (
-            <div className="rounded-2xl bg-gray-50 p-4 space-y-3">
+            <div className="rounded-[5px] bg-gray-50 p-4 space-y-3">
               <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">نرخ لحظه معامله</p>
               <div className="grid grid-cols-3 gap-2">
                 {currentRates.marketRate > 0 && (
-                  <div className="rounded-xl bg-white p-2.5 text-center border border-gray-100/80">
+                  <div className="rounded-[5px] bg-white p-2.5 text-center border border-gray-100/80">
                     <span className="text-[9px] text-gray-400">بازار</span>
                     <p className="text-[12px] font-bold text-gray-700 mt-0.5" dir="ltr">{currentRates.marketRate.toLocaleString("en-US")}</p>
                   </div>
                 )}
-                <div className="rounded-xl bg-blue-50 p-2.5 text-center">
+                <div className="rounded-[5px] bg-blue-50 p-2.5 text-center">
                   <span className="text-[9px] text-blue-500">خرید</span>
                   <p className="text-[12px] font-bold text-blue-700 mt-0.5" dir="ltr">{currentRates.buyRate.toLocaleString("en-US")}</p>
                 </div>
-                <div className="rounded-xl bg-emerald-50 p-2.5 text-center">
+                <div className="rounded-[5px] bg-emerald-50 p-2.5 text-center">
                   <span className="text-[9px] text-emerald-500">فروش</span>
                   <p className="text-[12px] font-bold text-emerald-700 mt-0.5" dir="ltr">{currentRates.sellRate.toLocaleString("en-US")}</p>
                 </div>
@@ -826,7 +826,7 @@ export default function OrdersPage() {
 
           {/* Profit Formula Info */}
           {selectedType && (
-            <div className="rounded-2xl bg-amber-50 p-4 space-y-2.5">
+            <div className="rounded-[5px] bg-amber-50 p-4 space-y-2.5">
               <p className="text-[10px] font-semibold text-amber-600 uppercase tracking-wider">نحوه محاسبه سود</p>
               {selectedType === "BUY_PKR" && (
                 <div className="space-y-2">
@@ -834,7 +834,7 @@ export default function OrdersPage() {
                   <p className="text-[10px] text-amber-600 leading-relaxed">
                     روپیه از مشتری دریافت می‌شود و تومان پرداخت می‌شود. سود از اختلاف نرخ بازار و نرخ خرید محاسبه می‌شود.
                   </p>
-                  <div className="rounded-xl bg-white p-2.5 border border-amber-100/80">
+                  <div className="rounded-[5px] bg-white p-2.5 border border-amber-100/80">
                     <p className="text-[10px] text-amber-700 font-medium mb-1">سود خرید:</p>
                     <p className="text-[9px] text-amber-600" dir="ltr">(نرخ بازار - نرخ خرید) × مقدار روپیه</p>
                   </div>
@@ -846,7 +846,7 @@ export default function OrdersPage() {
                   <p className="text-[10px] text-amber-600 leading-relaxed">
                     تومان از مشتری دریافت می‌شود و روپیه تحویل داده می‌شود. سود از اختلاف نرخ فروش و نرخ بازار محاسبه می‌شود.
                   </p>
-                  <div className="rounded-xl bg-white p-2.5 border border-amber-100/80">
+                  <div className="rounded-[5px] bg-white p-2.5 border border-amber-100/80">
                     <p className="text-[10px] text-amber-700 font-medium mb-1">سود فروش:</p>
                     <p className="text-[9px] text-amber-600" dir="ltr">(نرخ فروش - نرخ بازار) × مقدار روپیه</p>
                   </div>
@@ -858,11 +858,11 @@ export default function OrdersPage() {
                   <p className="text-[10px] text-amber-600 leading-relaxed">
                     تومان از مشتری دریافت می‌شود و روپیه به حساب مقصد در پاکستان واریز می‌شود. سود از اختلاف نرخ فروش و نرخ بازار محاسبه می‌شود.
                   </p>
-                  <div className="rounded-xl bg-white p-2.5 border border-amber-100/80">
+                  <div className="rounded-[5px] bg-white p-2.5 border border-amber-100/80">
                     <p className="text-[10px] text-amber-700 font-medium mb-1">محاسبه روپیه:</p>
                     <p className="text-[9px] text-amber-600" dir="ltr">مبلغ تومان ÷ نرخ تبدیل = مقدار روپیه</p>
                   </div>
-                  <div className="rounded-xl bg-white p-2.5 border border-amber-100/80">
+                  <div className="rounded-[5px] bg-white p-2.5 border border-amber-100/80">
                     <p className="text-[10px] text-amber-700 font-medium mb-1">سود حواله:</p>
                     <p className="text-[9px] text-amber-600" dir="ltr">(نرخ فروش - نرخ بازار) × مقدار روپیه</p>
                   </div>
@@ -874,11 +874,11 @@ export default function OrdersPage() {
                   <p className="text-[10px] text-amber-600 leading-relaxed">
                     روپیه از مشتری دریافت می‌شود و تومان به حساب بانکی ایران واریز می‌شود. سود از اختلاف نرخ بازار و نرخ خرید محاسبه می‌شود.
                   </p>
-                  <div className="rounded-xl bg-white p-2.5 border border-amber-100/80">
+                  <div className="rounded-[5px] bg-white p-2.5 border border-amber-100/80">
                     <p className="text-[10px] text-amber-700 font-medium mb-1">محاسبه تومان:</p>
                     <p className="text-[9px] text-amber-600" dir="ltr">مقدار روپیه × نرخ تبدیل = مبلغ تومان</p>
                   </div>
-                  <div className="rounded-xl bg-white p-2.5 border border-amber-100/80">
+                  <div className="rounded-[5px] bg-white p-2.5 border border-amber-100/80">
                     <p className="text-[10px] text-amber-700 font-medium mb-1">سود دریافت:</p>
                     <p className="text-[9px] text-amber-600" dir="ltr">(نرخ بازار - نرخ خرید) × مقدار روپیه</p>
                   </div>
@@ -890,7 +890,7 @@ export default function OrdersPage() {
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-gray-500">مشتری</label>
             <div className="relative">
-              <select value={customerId} onChange={(e) => setCustomerId(e.target.value)} className="flex h-12 w-full appearance-none rounded-xl border border-gray-200 bg-white px-4 pr-10 text-sm focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900/10 transition-colors">
+              <select value={customerId} onChange={(e) => setCustomerId(e.target.value)} className="flex h-12 w-full appearance-none rounded-[5px] border border-gray-200 bg-white px-4 pr-10 text-sm focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900/10 transition-colors">
                 <option value="">انتخاب مشتری</option>
                 {customers.map((c) => <option key={c.id} value={c.id}>{c.name} ({c.phone})</option>)}
               </select>
@@ -900,7 +900,7 @@ export default function OrdersPage() {
 
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-gray-500">{isTomanAmount ? "مبلغ پرداختی (تومان)" : "مبلغ پرداختی (روپیه)"}</label>
-            <Input type="text" inputMode="numeric" value={amount} onChange={(e) => setAmount(formatNum(e.target.value))} placeholder="0" className="h-12 text-left rounded-xl" />
+            <Input type="text" inputMode="numeric" value={amount} onChange={(e) => setAmount(formatNum(e.target.value))} placeholder="0" className="h-12 text-left rounded-[5px]" />
           </div>
 
           {currentRates && selectedType && (
@@ -908,24 +908,24 @@ export default function OrdersPage() {
               {(selectedType === "BUY_PKR" || selectedType === "PK_TO_IR") && (
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-gray-500">نرخ خرید روپیه</label>
-                  <Input type="text" inputMode="numeric" value={buyRate} onChange={(e) => setBuyRate(formatNum(e.target.value))} placeholder="0" className="h-12 text-left rounded-xl" />
+                  <Input type="text" inputMode="numeric" value={buyRate} onChange={(e) => setBuyRate(formatNum(e.target.value))} placeholder="0" className="h-12 text-left rounded-[5px]" />
                 </div>
               )}
               {(selectedType === "SELL_PKR" || selectedType === "IR_TO_PK") && (
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-gray-500">نرخ فروش روپیه</label>
-                  <Input type="text" inputMode="numeric" value={sellRate} onChange={(e) => setSellRate(formatNum(e.target.value))} placeholder="0" className="h-12 text-left rounded-xl" />
+                  <Input type="text" inputMode="numeric" value={sellRate} onChange={(e) => setSellRate(formatNum(e.target.value))} placeholder="0" className="h-12 text-left rounded-[5px]" />
                 </div>
               )}
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-gray-500">نرخ بازار روپیه</label>
-                <Input type="text" inputMode="numeric" value={marketRate} onChange={(e) => setMarketRate(formatNum(e.target.value))} placeholder="0" className="h-12 text-left rounded-xl" />
+                <Input type="text" inputMode="numeric" value={marketRate} onChange={(e) => setMarketRate(formatNum(e.target.value))} placeholder="0" className="h-12 text-left rounded-[5px]" />
               </div>
             </div>
           )}
 
           {amountNum > 0 && rateNum > 0 && (
-            <div className={cn("rounded-2xl p-4", isTomanAmount ? "bg-emerald-50" : "bg-blue-50")}>
+            <div className={cn("rounded-[5px] p-4", isTomanAmount ? "bg-emerald-50" : "bg-blue-50")}>
               <div className="flex items-center justify-between mb-2">
                 <span className={cn("text-[11px]", isTomanAmount ? "text-emerald-500" : "text-blue-500")}>{isTomanAmount ? "مبلغ پرداختی (تومان)" : "مبلغ پرداختی (روپیه)"}</span>
                 <span className={cn("text-[15px] font-bold tabular-nums", isTomanAmount ? "text-emerald-700" : "text-blue-700")} dir="ltr">{isTomanAmount ? totalToman.toLocaleString("en-US") : calculatedPkr.toLocaleString("en-US")}</span>
@@ -939,11 +939,11 @@ export default function OrdersPage() {
 
           {/* Profit Preview */}
           {amountNum > 0 && rateNum > 0 && currentRates && (
-            <div className="rounded-2xl bg-emerald-50 p-4 space-y-3">
+            <div className="rounded-[5px] bg-emerald-50 p-4 space-y-3">
               <p className="text-[10px] font-semibold text-emerald-600 uppercase tracking-wider">پیش‌نمایش سود</p>
               <div className="space-y-2">
                 {previewMainProfit > 0 && (
-                  <div className="rounded-xl bg-white p-2.5 border border-emerald-100/80">
+                  <div className="rounded-[5px] bg-white p-2.5 border border-emerald-100/80">
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-[11px] text-emerald-600">{mainProfitLabel}</span>
                       <span className="text-[13px] font-bold text-emerald-700 tabular-nums" dir="ltr">{previewMainProfit.toLocaleString("en-US")} <span className="text-[9px] font-normal text-emerald-500">تومان</span></span>
@@ -952,7 +952,7 @@ export default function OrdersPage() {
                   </div>
                 )}
                 {feeNum > 0 && (
-                  <div className="rounded-xl bg-white p-2.5 border border-emerald-100/80">
+                  <div className="rounded-[5px] bg-white p-2.5 border border-emerald-100/80">
                     <div className="flex items-center justify-between">
                       <span className="text-[11px] text-emerald-600">کارمزد (+)</span>
                       <span className="text-[13px] font-bold text-emerald-700 tabular-nums" dir="ltr">{feeNum.toLocaleString("en-US")} <span className="text-[9px] font-normal text-emerald-500">تومان</span></span>
@@ -960,7 +960,7 @@ export default function OrdersPage() {
                   </div>
                 )}
                 {transferCostNum > 0 && (
-                  <div className="rounded-xl bg-white p-2.5 border border-red-100/80">
+                  <div className="rounded-[5px] bg-white p-2.5 border border-red-100/80">
                     <div className="flex items-center justify-between">
                       <span className="text-[11px] text-red-500">هزینه انتقال (-)</span>
                       <span className="text-[13px] font-bold text-red-600 tabular-nums" dir="ltr">{transferCostNum.toLocaleString("en-US")} <span className="text-[9px] font-normal text-red-400">تومان</span></span>
@@ -978,7 +978,7 @@ export default function OrdersPage() {
           {isHawala && (
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-gray-500">هزینه انتقال (تومان)</label>
-              <Input type="text" inputMode="numeric" value={transferCost} onChange={(e) => setTransferCost(formatNum(e.target.value))} placeholder="0" className="h-12 text-left rounded-xl" />
+              <Input type="text" inputMode="numeric" value={transferCost} onChange={(e) => setTransferCost(formatNum(e.target.value))} placeholder="0" className="h-12 text-left rounded-[5px]" />
             </div>
           )}
 
@@ -986,39 +986,39 @@ export default function OrdersPage() {
           {isHawala && (<>
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-gray-500">{selectedType === "IR_TO_PK" ? "نام گیرنده" : "نام صاحب حساب"}</label>
-              <Input value={recipientName} onChange={(e) => setRecipientName(e.target.value)} placeholder="نام کامل" className="h-12 rounded-xl" />
+              <Input value={recipientName} onChange={(e) => setRecipientName(e.target.value)} placeholder="نام کامل" className="h-12 rounded-[5px]" />
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-gray-500">{selectedType === "IR_TO_PK" ? "نحوه واریز" : "شماره شبا"}</label>
               {selectedType === "IR_TO_PK" ? (
-                <select value={recipientMethod} onChange={(e) => setRecipientMethod(e.target.value)} className="flex h-12 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900/10 transition-colors">
+                <select value={recipientMethod} onChange={(e) => setRecipientMethod(e.target.value)} className="flex h-12 w-full rounded-[5px] border border-gray-200 bg-white px-3 text-sm focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900/10 transition-colors">
                   <option value="EASYPAISA">Easypaisa</option>
                   <option value="JAZZCASH">JazzCash</option>
                   <option value="BANK_TRANSFER">حواله بانکی</option>
                   <option value="CASH">نقدی</option>
                 </select>
               ) : (
-                <Input value={recipientAccount} onChange={(e) => setRecipientAccount(e.target.value)} placeholder="IR..." className="h-12 rounded-xl" dir="ltr" />
+                <Input value={recipientAccount} onChange={(e) => setRecipientAccount(e.target.value)} placeholder="IR..." className="h-12 rounded-[5px]" dir="ltr" />
               )}
             </div>
             {selectedType === "IR_TO_PK" ? (
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-gray-500">شماره حساب / IBAN</label>
-                <Input value={recipientAccount} onChange={(e) => setRecipientAccount(e.target.value)} placeholder="شماره حساب" className="h-12 rounded-xl" dir="ltr" />
+                <Input value={recipientAccount} onChange={(e) => setRecipientAccount(e.target.value)} placeholder="شماره حساب" className="h-12 rounded-[5px]" dir="ltr" />
               </div>
             ) : (
               <>
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-gray-500">شماره کارت</label>
-                  <Input value={destinationCard} onChange={(e) => setDestinationCard(e.target.value)} placeholder="شماره کارت" className="h-12 rounded-xl" dir="ltr" />
+                  <Input value={destinationCard} onChange={(e) => setDestinationCard(e.target.value)} placeholder="شماره کارت" className="h-12 rounded-[5px]" dir="ltr" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-gray-500">بانک</label>
-                  <Input value={recipientMethod} onChange={(e) => setRecipientMethod(e.target.value)} placeholder="نام بانک" className="h-12 rounded-xl" />
+                  <Input value={recipientMethod} onChange={(e) => setRecipientMethod(e.target.value)} placeholder="نام بانک" className="h-12 rounded-[5px]" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-gray-500">شماره موبایل</label>
-                  <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="اختیاری" className="h-12 rounded-xl" dir="ltr" />
+                  <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="اختیاری" className="h-12 rounded-[5px]" dir="ltr" />
                 </div>
               </>
             )}
@@ -1028,20 +1028,20 @@ export default function OrdersPage() {
           {!isHawala && (<>
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-gray-500">{selectedType === "BUY_PKR" ? "شماره حساب پاکستانی صراف" : "شماره کارت مقصد"}</label>
-              <Input value={destinationCard} onChange={(e) => setDestinationCard(e.target.value)} placeholder={selectedType === "BUY_PKR" ? "شماره حساب پاکستانی" : "شماره کارت"} className="h-12 rounded-xl" dir="ltr" />
+              <Input value={destinationCard} onChange={(e) => setDestinationCard(e.target.value)} placeholder={selectedType === "BUY_PKR" ? "شماره حساب پاکستانی" : "شماره کارت"} className="h-12 rounded-[5px]" dir="ltr" />
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-gray-500">شماره شبا (اختیاری)</label>
-              <Input value={destinationSheba} onChange={(e) => setDestinationSheba(e.target.value)} placeholder="IR..." className="h-12 rounded-xl" dir="ltr" />
+              <Input value={destinationSheba} onChange={(e) => setDestinationSheba(e.target.value)} placeholder="IR..." className="h-12 rounded-[5px]" dir="ltr" />
             </div>
           </>)}
 
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-gray-500">توضیحات</label>
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="اختیاری" rows={2} className="flex w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm placeholder:text-gray-300 focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900/10 transition-colors" />
+            <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="اختیاری" rows={2} className="flex w-full rounded-[5px] border border-gray-200 bg-white px-3 py-2.5 text-sm placeholder:text-gray-300 focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900/10 transition-colors" />
           </div>
 
-          <Button type="submit" isLoading={submitting} className="w-full h-12 rounded-xl bg-gray-900 hover:bg-gray-800">ثبت سفارش</Button>
+          <Button type="submit" isLoading={submitting} className="w-full h-12 rounded-[5px] bg-gray-900 hover:bg-gray-800">ثبت سفارش</Button>
         </form>
         )}
       </BottomSheet>
@@ -1053,7 +1053,7 @@ export default function OrdersPage() {
             {/* Header */}
             <div className="flex items-center gap-3">
               {(() => { const ti = ORDER_TYPE_LABELS[selectedOrder.orderType]; const Icon = ICON_MAP[selectedOrder.orderType] || ArrowDownToLine; return (
-                <div className={cn("flex h-12 w-12 items-center justify-center rounded-2xl", selectedOrder.orderType === "IR_TO_PK" ? "bg-emerald-50" : selectedOrder.orderType === "PK_TO_IR" ? "bg-blue-50" : selectedOrder.orderType === "BUY_PKR" ? "bg-violet-50" : "bg-amber-50")}>
+                <div className={cn("flex h-12 w-12 items-center justify-center rounded-[5px]", selectedOrder.orderType === "IR_TO_PK" ? "bg-emerald-50" : selectedOrder.orderType === "PK_TO_IR" ? "bg-blue-50" : selectedOrder.orderType === "BUY_PKR" ? "bg-violet-50" : "bg-amber-50")}>
                   <Icon className={cn("h-5 w-5", ti?.color)} strokeWidth={1.5} />
                 </div>
               ); })()}
@@ -1064,7 +1064,7 @@ export default function OrdersPage() {
             </div>
 
             {/* Customer */}
-            <div className="flex items-center gap-2.5 rounded-2xl bg-gray-50 p-3">
+            <div className="flex items-center gap-2.5 rounded-[5px] bg-gray-50 p-3">
               <User className="h-4 w-4 text-gray-400" strokeWidth={1.5} />
               <span className="text-[13px] font-medium text-gray-700">{selectedOrder.customer.name}</span>
               <span className="text-[11px] text-gray-400" dir="ltr">{selectedOrder.customer.phone}</span>
@@ -1079,17 +1079,17 @@ export default function OrdersPage() {
               return (
                 <div className="space-y-2">
                   <div className="grid grid-cols-2 gap-2">
-                    <div className="rounded-2xl border border-gray-100/80 p-3 text-center">
+                    <div className="rounded-[5px] border border-gray-100/80 p-3 text-center">
                       <p className="text-[10px] text-gray-400">{isTomanAmt ? "مبلغ (تومان)" : "مبلغ (روپیه)"}</p>
                       <p className="text-[15px] font-bold text-gray-900 mt-1 tabular-nums" dir="ltr">{Number(selectedOrder.amount).toLocaleString("en-US")}</p>
                     </div>
-                    <div className="rounded-2xl border border-gray-100/80 p-3 text-center">
+                    <div className="rounded-[5px] border border-gray-100/80 p-3 text-center">
                       <p className="text-[10px] text-gray-400">{isTomanAmt ? "نرخ فروش" : "نرخ خرید"}</p>
                       <p className="text-[15px] font-bold text-gray-900 mt-1 tabular-nums" dir="ltr">{orderRate.toLocaleString("en-US")} <span className="text-[9px] font-normal text-gray-400">تومان</span></p>
                     </div>
                   </div>
                   {isTomanAmt && Number(selectedOrder.calculatedPkr) > 0 && (
-                    <div className="rounded-2xl border border-blue-100/80 bg-blue-50 p-3 text-center">
+                    <div className="rounded-[5px] border border-blue-100/80 bg-blue-50 p-3 text-center">
                       <p className="text-[10px] text-blue-500">روپیه محاسبه شده</p>
                       <p className="text-[15px] font-bold text-blue-600 mt-1 tabular-nums" dir="ltr">{Number(selectedOrder.calculatedPkr).toLocaleString("en-US")} <span className="text-[9px] font-normal text-blue-400">روپیه</span></p>
                     </div>
@@ -1108,7 +1108,7 @@ export default function OrdersPage() {
               const totalProfit = Number(selectedOrder.totalProfitAmount || 0);
               if (!mainProfit && !feeAmt && !transferAmt && !totalProfit) return null;
               return (
-                <div className="rounded-2xl bg-emerald-50 p-4 space-y-2.5">
+                <div className="rounded-[5px] bg-emerald-50 p-4 space-y-2.5">
                   <p className="text-[10px] font-semibold text-emerald-600 uppercase tracking-wider">تحلیل سود</p>
                   {mktRate > 0 && (
                     <div className="flex items-center justify-between">
@@ -1144,7 +1144,7 @@ export default function OrdersPage() {
 
             {/* Recipient / Destination */}
             {(selectedOrder.recipientName || selectedOrder.destinationCard) && (
-              <div className="rounded-2xl bg-gray-50 p-3.5 space-y-2">
+              <div className="rounded-[5px] bg-gray-50 p-3.5 space-y-2">
                 <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">اطلاعات واریز</p>
                 {selectedOrder.recipientName && (
                   <div className="flex items-center justify-between">
@@ -1181,14 +1181,14 @@ export default function OrdersPage() {
 
             {/* Description */}
             {selectedOrder.description && (
-              <div className="rounded-2xl bg-gray-50 p-3.5">
+              <div className="rounded-[5px] bg-gray-50 p-3.5">
                 <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">توضیحات</p>
                 <p className="text-[12px] text-gray-600 leading-relaxed">{selectedOrder.description}</p>
               </div>
             )}
 
             {/* Meta */}
-            <div className="flex items-center justify-between rounded-2xl bg-gray-50 p-3">
+            <div className="flex items-center justify-between rounded-[5px] bg-gray-50 p-3">
               <div className="flex items-center gap-2">
                 <Clock className="h-3.5 w-3.5 text-gray-400" strokeWidth={1.5} />
                 <span className="text-[11px] text-gray-400">{new Date(selectedOrder.createdAt).toLocaleDateString("fa-IR")} {new Date(selectedOrder.createdAt).toLocaleTimeString("fa-IR", { hour: "2-digit", minute: "2-digit" })}</span>
@@ -1203,16 +1203,16 @@ export default function OrdersPage() {
               return (
                 <div className="space-y-2">
                   {nextAction && (
-                    <button onClick={() => { handleStatus(selectedOrder.id, nextAction.next); setDetailSheetOpen(false); }} disabled={isLoadingDetail} className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-gray-900 py-3 text-[13px] font-semibold text-white active:bg-gray-800 transition-colors disabled:opacity-50">
+                    <button onClick={() => { handleStatus(selectedOrder.id, nextAction.next); setDetailSheetOpen(false); }} disabled={isLoadingDetail} className="w-full flex items-center justify-center gap-1.5 rounded-[5px] bg-gray-900 py-3 text-[13px] font-semibold text-white active:bg-gray-800 transition-colors disabled:opacity-50">
                       {isLoadingDetail ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                       {isLoadingDetail ? "در حال انجام..." : nextAction.label}
                     </button>
                   )}
                   <div className="flex gap-2">
-                    <button onClick={() => openEdit(selectedOrder)} className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-gray-200 py-2.5 text-[12px] font-medium text-gray-600 active:bg-gray-50 transition-colors">
+                    <button onClick={() => openEdit(selectedOrder)} className="flex-1 flex items-center justify-center gap-1.5 rounded-[5px] border border-gray-200 py-2.5 text-[12px] font-medium text-gray-600 active:bg-gray-50 transition-colors">
                       <Pencil className="h-3.5 w-3.5" strokeWidth={1.5} /> ویرایش
                     </button>
-                    <button onClick={() => openDeleteConfirm(selectedOrder)} className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50 py-2.5 text-[12px] font-medium text-red-600 active:bg-red-100 transition-colors">
+                    <button onClick={() => openDeleteConfirm(selectedOrder)} className="flex-1 flex items-center justify-center gap-1.5 rounded-[5px] border border-red-200 bg-red-50 py-2.5 text-[12px] font-medium text-red-600 active:bg-red-100 transition-colors">
                       <Trash2 className="h-3.5 w-3.5" strokeWidth={1.5} /> حذف
                     </button>
                   </div>
@@ -1228,41 +1228,41 @@ export default function OrdersPage() {
         {formLoading ? (
           <div className="space-y-4">
             {editingOrder && (
-              <div className="rounded-2xl bg-blue-50 p-3 flex items-center justify-between">
+              <div className="rounded-[5px] bg-blue-50 p-3 flex items-center justify-between">
                 <Skeleton className="h-3 w-16" />
                 <Skeleton className="h-3 w-24" />
               </div>
             )}
             <div className="space-y-2">
               <Skeleton className="h-3 w-16" />
-              <Skeleton className="h-12 rounded-xl" />
+              <Skeleton className="h-12 rounded-[5px]" />
             </div>
             <div className="space-y-2">
               <Skeleton className="h-3 w-28" />
-              <Skeleton className="h-12 rounded-xl" />
+              <Skeleton className="h-12 rounded-[5px]" />
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-2">
                 <Skeleton className="h-3 w-20" />
-                <Skeleton className="h-12 rounded-xl" />
+                <Skeleton className="h-12 rounded-[5px]" />
               </div>
               <div className="space-y-2">
                 <Skeleton className="h-3 w-24" />
-                <Skeleton className="h-12 rounded-xl" />
+                <Skeleton className="h-12 rounded-[5px]" />
               </div>
             </div>
             <div className="space-y-2">
               <Skeleton className="h-3 w-20" />
-              <Skeleton className="h-12 rounded-xl" />
+              <Skeleton className="h-12 rounded-[5px]" />
             </div>
-            <Skeleton className="h-12 rounded-xl" />
+            <Skeleton className="h-12 rounded-[5px]" />
           </div>
         ) : (
         <form onSubmit={handleEdit} className="space-y-4">
           {error && <ErrorAlert message={error} />}
 
           {editingOrder && (
-            <div className="rounded-2xl bg-blue-50 p-3 flex items-center justify-between">
+            <div className="rounded-[5px] bg-blue-50 p-3 flex items-center justify-between">
               <span className="text-[12px] text-blue-600">نوع سفارش</span>
               <span className="text-[12px] font-bold text-blue-700">{ORDER_TYPE_LABELS[editingOrder.orderType]?.label}</span>
             </div>
@@ -1271,7 +1271,7 @@ export default function OrdersPage() {
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-gray-500">مشتری</label>
             <div className="relative">
-              <select value={customerId} onChange={(e) => setCustomerId(e.target.value)} className="flex h-12 w-full appearance-none rounded-xl border border-gray-200 bg-white px-4 pr-10 text-sm focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900/10 transition-colors">
+              <select value={customerId} onChange={(e) => setCustomerId(e.target.value)} className="flex h-12 w-full appearance-none rounded-[5px] border border-gray-200 bg-white px-4 pr-10 text-sm focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900/10 transition-colors">
                 <option value="">انتخاب مشتری</option>
                 {customers.map((c) => <option key={c.id} value={c.id}>{c.name} ({c.phone})</option>)}
               </select>
@@ -1281,7 +1281,7 @@ export default function OrdersPage() {
 
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-gray-500">{editingOrder?.orderType === "IR_TO_PK" ? "مبلغ پرداختی (تومان)" : "مبلغ پرداختی (روپیه)"}</label>
-            <Input type="text" inputMode="numeric" value={amount} onChange={(e) => setAmount(formatNum(e.target.value))} placeholder="0" className="h-12 text-left rounded-xl" />
+            <Input type="text" inputMode="numeric" value={amount} onChange={(e) => setAmount(formatNum(e.target.value))} placeholder="0" className="h-12 text-left rounded-[5px]" />
           </div>
 
           {currentRates && editingOrder && (
@@ -1289,20 +1289,20 @@ export default function OrdersPage() {
               {(editingOrder.orderType === "BUY_PKR" || editingOrder.orderType === "PK_TO_IR") && (
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-gray-500">نرخ خرید روپیه</label>
-                  <Input type="text" inputMode="numeric" value={buyRate} readOnly className="h-12 text-left rounded-xl bg-gray-50 text-gray-500 cursor-not-allowed" />
+                  <Input type="text" inputMode="numeric" value={buyRate} readOnly className="h-12 text-left rounded-[5px] bg-gray-50 text-gray-500 cursor-not-allowed" />
                   <p className="text-[9px] text-gray-400">قفل شده - هنگام ایجاد سفارش ثبت شده</p>
                 </div>
               )}
               {(editingOrder.orderType === "SELL_PKR" || editingOrder.orderType === "IR_TO_PK") && (
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-gray-500">نرخ فروش روپیه</label>
-                  <Input type="text" inputMode="numeric" value={sellRate} readOnly className="h-12 text-left rounded-xl bg-gray-50 text-gray-500 cursor-not-allowed" />
+                  <Input type="text" inputMode="numeric" value={sellRate} readOnly className="h-12 text-left rounded-[5px] bg-gray-50 text-gray-500 cursor-not-allowed" />
                   <p className="text-[9px] text-gray-400">قفل شده - هنگام ایجاد سفارش ثبت شده</p>
                 </div>
               )}
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-gray-500">نرخ بازار روپیه</label>
-                <Input type="text" inputMode="numeric" value={marketRate} onChange={(e) => setMarketRate(formatNum(e.target.value))} placeholder="0" className="h-12 text-left rounded-xl" />
+                <Input type="text" inputMode="numeric" value={marketRate} onChange={(e) => setMarketRate(formatNum(e.target.value))} placeholder="0" className="h-12 text-left rounded-[5px]" />
               </div>
             </div>
           )}
@@ -1310,42 +1310,42 @@ export default function OrdersPage() {
           {editingOrder && isHawalaType(editingOrder.orderType) && (
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-gray-500">هزینه انتقال (تومان)</label>
-              <Input type="text" inputMode="numeric" value={transferCost} onChange={(e) => setTransferCost(formatNum(e.target.value))} placeholder="0" className="h-12 text-left rounded-xl" />
+              <Input type="text" inputMode="numeric" value={transferCost} onChange={(e) => setTransferCost(formatNum(e.target.value))} placeholder="0" className="h-12 text-left rounded-[5px]" />
             </div>
           )}
 
           {editingOrder && isHawalaType(editingOrder.orderType) && (<>
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-gray-500">{editingOrder.orderType === "IR_TO_PK" ? "نام گیرنده" : "نام صاحب حساب"}</label>
-              <Input value={recipientName} onChange={(e) => setRecipientName(e.target.value)} placeholder="نام کامل" className="h-12 rounded-xl" />
+              <Input value={recipientName} onChange={(e) => setRecipientName(e.target.value)} placeholder="نام کامل" className="h-12 rounded-[5px]" />
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-gray-500">{editingOrder.orderType === "IR_TO_PK" ? "نحوه واریز" : "شماره شبا"}</label>
               {editingOrder.orderType === "IR_TO_PK" ? (
-                <select value={recipientMethod} onChange={(e) => setRecipientMethod(e.target.value)} className="flex h-12 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900/10 transition-colors">
+                <select value={recipientMethod} onChange={(e) => setRecipientMethod(e.target.value)} className="flex h-12 w-full rounded-[5px] border border-gray-200 bg-white px-3 text-sm focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900/10 transition-colors">
                   <option value="EASYPAISA">Easypaisa</option>
                   <option value="JAZZCASH">JazzCash</option>
                   <option value="BANK_TRANSFER">حواله بانکی</option>
                   <option value="CASH">نقدی</option>
                 </select>
               ) : (
-                <Input value={recipientAccount} onChange={(e) => setRecipientAccount(e.target.value)} placeholder="IR..." className="h-12 rounded-xl" dir="ltr" />
+                <Input value={recipientAccount} onChange={(e) => setRecipientAccount(e.target.value)} placeholder="IR..." className="h-12 rounded-[5px]" dir="ltr" />
               )}
             </div>
             {editingOrder.orderType === "IR_TO_PK" ? (
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-gray-500">شماره حساب / IBAN</label>
-                <Input value={recipientAccount} onChange={(e) => setRecipientAccount(e.target.value)} placeholder="شماره حساب" className="h-12 rounded-xl" dir="ltr" />
+                <Input value={recipientAccount} onChange={(e) => setRecipientAccount(e.target.value)} placeholder="شماره حساب" className="h-12 rounded-[5px]" dir="ltr" />
               </div>
             ) : (
               <>
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-gray-500">شماره کارت</label>
-                  <Input value={destinationCard} onChange={(e) => setDestinationCard(e.target.value)} placeholder="شماره کارت" className="h-12 rounded-xl" dir="ltr" />
+                  <Input value={destinationCard} onChange={(e) => setDestinationCard(e.target.value)} placeholder="شماره کارت" className="h-12 rounded-[5px]" dir="ltr" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-gray-500">بانک</label>
-                  <Input value={recipientMethod} onChange={(e) => setRecipientMethod(e.target.value)} placeholder="نام بانک" className="h-12 rounded-xl" />
+                  <Input value={recipientMethod} onChange={(e) => setRecipientMethod(e.target.value)} placeholder="نام بانک" className="h-12 rounded-[5px]" />
                 </div>
               </>
             )}
@@ -1354,20 +1354,20 @@ export default function OrdersPage() {
           {editingOrder && !isHawalaType(editingOrder.orderType) && (<>
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-gray-500">{editingOrder.orderType === "BUY_PKR" ? "شماره حساب پاکستانی صراف" : "شماره کارت مقصد"}</label>
-              <Input value={destinationCard} onChange={(e) => setDestinationCard(e.target.value)} placeholder={editingOrder.orderType === "BUY_PKR" ? "شماره حساب پاکستانی" : "شماره کارت"} className="h-12 rounded-xl" dir="ltr" />
+              <Input value={destinationCard} onChange={(e) => setDestinationCard(e.target.value)} placeholder={editingOrder.orderType === "BUY_PKR" ? "شماره حساب پاکستانی" : "شماره کارت"} className="h-12 rounded-[5px]" dir="ltr" />
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-gray-500">شماره شبا (اختیاری)</label>
-              <Input value={destinationSheba} onChange={(e) => setDestinationSheba(e.target.value)} placeholder="IR..." className="h-12 rounded-xl" dir="ltr" />
+              <Input value={destinationSheba} onChange={(e) => setDestinationSheba(e.target.value)} placeholder="IR..." className="h-12 rounded-[5px]" dir="ltr" />
             </div>
           </>)}
 
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-gray-500">توضیحات</label>
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="اختیاری" rows={2} className="flex w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm placeholder:text-gray-300 focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900/10 transition-colors" />
+            <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="اختیاری" rows={2} className="flex w-full rounded-[5px] border border-gray-200 bg-white px-3 py-2.5 text-sm placeholder:text-gray-300 focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900/10 transition-colors" />
           </div>
 
-          <Button type="submit" isLoading={submitting} className="w-full h-12 rounded-xl bg-gray-900 hover:bg-gray-800">ذخیره تغییرات</Button>
+          <Button type="submit" isLoading={submitting} className="w-full h-12 rounded-[5px] bg-gray-900 hover:bg-gray-800">ذخیره تغییرات</Button>
         </form>
         )}
       </BottomSheet>
@@ -1377,7 +1377,7 @@ export default function OrdersPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setDeleteConfirmOpen(false)}>
           <div className="mx-4 w-full max-w-sm rounded-3xl bg-white p-5 space-y-5" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-red-50">
+              <div className="flex h-11 w-11 items-center justify-center rounded-[5px] bg-red-50">
                 <Trash2 className="h-5 w-5 text-red-500" strokeWidth={1.5} />
               </div>
               <div>
@@ -1386,7 +1386,7 @@ export default function OrdersPage() {
               </div>
             </div>
             {deletingOrder && (
-              <div className="rounded-2xl bg-gray-50 p-3.5 space-y-1.5">
+              <div className="rounded-[5px] bg-gray-50 p-3.5 space-y-1.5">
                 <div className="flex justify-between">
                   <span className="text-[12px] text-gray-500">نوع</span>
                   <span className="text-[12px] font-medium text-gray-900">{ORDER_TYPE_LABELS[deletingOrder.orderType]?.label}</span>
@@ -1402,8 +1402,8 @@ export default function OrdersPage() {
               </div>
             )}
             <div className="flex gap-2.5">
-              <button onClick={() => setDeleteConfirmOpen(false)} disabled={deleting} className="flex-1 rounded-xl border border-gray-200 py-2.5 text-[13px] font-medium text-gray-600 active:bg-gray-50 transition-colors disabled:opacity-50">انصراف</button>
-              <button onClick={handleDelete} disabled={deleting} className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-red-500 py-2.5 text-[13px] font-semibold text-white active:bg-red-600 transition-colors disabled:opacity-50">
+              <button onClick={() => setDeleteConfirmOpen(false)} disabled={deleting} className="flex-1 rounded-[5px] border border-gray-200 py-2.5 text-[13px] font-medium text-gray-600 active:bg-gray-50 transition-colors disabled:opacity-50">انصراف</button>
+              <button onClick={handleDelete} disabled={deleting} className="flex-1 flex items-center justify-center gap-1.5 rounded-[5px] bg-red-500 py-2.5 text-[13px] font-semibold text-white active:bg-red-600 transition-colors disabled:opacity-50">
                 {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 {deleting ? "در حال حذف..." : "حذف"}
               </button>
