@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   ArrowDownToLine,
   Plus,
@@ -71,7 +71,14 @@ interface Rate { id: string; currencyId: string; buyRate: string; sellRate: stri
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [filter, setFilter] = useState<"all" | string>("all");
+  const pageRef = useRef(1);
+  const loadingMoreRef = useRef(false);
+  const hasMoreRef = useRef(true);
+  const filterRef = useRef("all");
+  const PAGE_SIZE = 10;
 
   const [directionSheetOpen, setDirectionSheetOpen] = useState(false);
   const [subTypeSheetOpen, setSubTypeSheetOpen] = useState(false);
@@ -123,8 +130,24 @@ export default function OrdersPage() {
   const parseFormatted = (v: string) => Number(onlyDigits(v) || "0");
 
   useEffect(() => {
-    const params = filter === "all" ? "" : `?status=${filter}`;
-    api.get(`/api/orders${params}`).then((data) => { setOrders(data); setLoading(false); }).catch(() => setLoading(false));
+    filterRef.current = filter;
+    pageRef.current = 1;
+    hasMoreRef.current = true;
+    loadingMoreRef.current = false;
+    setHasMore(true);
+    setLoadingMore(false);
+    setLoading(true);
+    const params = new URLSearchParams();
+    if (filter !== "all") params.set("status", filter);
+    params.set("page", "1");
+    params.set("limit", String(PAGE_SIZE));
+    api.get(`/api/orders?${params.toString()}`).then((data) => {
+      setOrders(data.orders);
+      const more = data.orders.length < data.total;
+      hasMoreRef.current = more;
+      setHasMore(more);
+      setLoading(false);
+    }).catch(() => setLoading(false));
   }, [filter]);
 
   const loadFormData = () => {
@@ -147,6 +170,43 @@ export default function OrdersPage() {
       }
     }).catch(() => {}).finally(() => setFormLoading(false));
   };
+
+  const loadMore = useCallback(() => {
+    if (loadingMoreRef.current || !hasMoreRef.current) return;
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+    const nextPage = pageRef.current + 1;
+    const params = new URLSearchParams();
+    if (filterRef.current !== "all") params.set("status", filterRef.current);
+    params.set("page", String(nextPage));
+    params.set("limit", String(PAGE_SIZE));
+    api.get(`/api/orders?${params.toString()}`).then((data) => {
+      setOrders((prev) => [...prev, ...data.orders]);
+      pageRef.current = nextPage;
+      const more = data.orders.length >= PAGE_SIZE && (pageRef.current * PAGE_SIZE) < data.total;
+      hasMoreRef.current = more;
+      setHasMore(more);
+    }).catch(() => {}).finally(() => {
+      loadingMoreRef.current = false;
+      setLoadingMore(false);
+    });
+  }, []);
+
+  useEffect(() => {
+    const scrollContainer = document.querySelector("[data-scroll-container]");
+    if (!scrollContainer) return;
+
+    const onScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+      if (scrollHeight - scrollTop - clientHeight < 200) {
+        loadMore();
+      }
+    };
+
+    scrollContainer.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => scrollContainer.removeEventListener("scroll", onScroll);
+  }, [loadMore]);
 
   const handleStatus = async (id: string, status: string) => {
     try {
@@ -414,6 +474,13 @@ export default function OrdersPage() {
                 </div>
               );
             })}
+            {/* Infinite scroll sentinel */}
+            {hasMore && <div className="h-1" />}
+            {loadingMore && (
+              <div className="flex justify-center py-4">
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-200 border-t-gray-600" />
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -11,23 +11,30 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status");
   const orderType = searchParams.get("orderType");
+  const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+  const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "10", 10)));
+  const skip = (page - 1) * limit;
 
   const where: Record<string, unknown> = user.role === "OWNER" ? { tenantId: user.tenantId } : { tenantId: user.tenantId };
   if (status && status !== "all") where.status = status;
   if (orderType && orderType !== "all") where.orderType = orderType;
 
-  const orders = await prisma.order.findMany({
-    where,
-    include: {
-      customer: { select: { name: true, phone: true } },
-      currency: { select: { code: true, name: true } },
-      user: { select: { firstName: true, lastName: true } },
-    },
-    orderBy: { createdAt: "desc" },
-    take: 100,
-  });
+  const [orders, total] = await Promise.all([
+    prisma.order.findMany({
+      where,
+      include: {
+        customer: { select: { name: true, phone: true } },
+        currency: { select: { code: true, name: true } },
+        user: { select: { firstName: true, lastName: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: limit,
+    }),
+    prisma.order.count({ where }),
+  ]);
 
-  return safeJson(orders);
+  return safeJson({ orders, total, page, limit });
 }
 
 export async function POST(request: NextRequest) {
