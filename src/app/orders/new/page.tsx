@@ -460,18 +460,6 @@ export default function NewOrderPage() {
             </div>
           )}
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-gray-500">کارمزد (تومان)</label>
-            <Input
-              type="text"
-              inputMode="numeric"
-              value={fee}
-              onChange={(e) => setFee(formatNum(e.target.value))}
-              placeholder="0"
-              className="h-12 text-left rounded-xl"
-            />
-          </div>
-
           {isHawala && (
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-gray-500">هزینه انتقال (تومان)</label>

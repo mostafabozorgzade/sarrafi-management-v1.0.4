@@ -704,6 +704,11 @@ export default function OrdersPage() {
           )}
 
           {isHawala && (
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-gray-500">هزینه انتقال (تومان)</label>
+              <Input type="text" inputMode="numeric" value={transferCost} onChange={(e) => setTransferCost(formatNum(e.target.value))} placeholder="0" className="h-12 text-left rounded-xl" />
+            </div>
+          )}
 
           {/* Hawala fields: IR_TO_PK and PK_TO_IR */}
           {isHawala && (<>
@@ -1025,11 +1030,6 @@ export default function OrdersPage() {
               </div>
             </div>
           )}
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-gray-500">کارمزد (تومان)</label>
-            <Input type="text" inputMode="numeric" value={fee} onChange={(e) => setFee(formatNum(e.target.value))} placeholder="0" className="h-12 text-left rounded-xl" />
-          </div>
 
           {editingOrder && isHawalaType(editingOrder.orderType) && (
             <div className="space-y-1.5">
