@@ -12,6 +12,7 @@ import {
   Send,
   Pencil,
   Trash2,
+  X,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -67,6 +68,14 @@ interface Order {
 
 interface Customer { id: string; name: string; phone: string }
 interface Rate { id: string; currencyId: string; buyRate: string; sellRate: string; marketRate: string; currency: { code: string } }
+
+const FILTER_TABS = [
+  { value: "all", label: "همه" },
+  { value: "COMPLETED", label: "تکمیل شده" },
+  { value: "REGISTERED", label: "ثبت شده" },
+  { value: "TOMAN_RECEIVED", label: "دریافت" },
+  { value: "IN_PROGRESS", label: "در حال انجام" },
+] as const;
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -321,7 +330,7 @@ export default function OrdersPage() {
       });
       setFormSheetOpen(false);
       setSuccess(true);
-      setTimeout(() => setSuccess(false), 1500);
+      setTimeout(() => setSuccess(false), 2000);
       setOrders((prev) => [newOrder, ...prev]);
       resetForm();
       setSelectedDirection(null);
@@ -416,68 +425,121 @@ export default function OrdersPage() {
   const subTypes = selectedDirection ? SUB_TYPES[selectedDirection.id] || [] : [];
 
   return (
-    <main className="min-h-dvh bg-white">
-      <div className="sticky top-0 z-30 border-b border-gray-100 bg-white">
-        <div className="flex h-12 items-center justify-center px-4">
-          <h1 className="text-sm font-semibold text-gray-900">سفارشات</h1>
+    <main className="min-h-dvh bg-[#fafafa]">
+      {/* Header */}
+      <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-gray-100/80">
+        <div className="flex h-14 items-center justify-center px-5">
+          <h1 className="text-[15px] font-semibold tracking-tight text-gray-900">سفارشات</h1>
         </div>
-        <div className="flex gap-1 px-4 pb-2 overflow-x-auto scrollbar-hide">
-          {([["all", "همه"], ["COMPLETED", "تکمیل"], ["REGISTERED", "ثبت شده"], ["TOMAN_RECEIVED", "دریافت"], ["IN_PROGRESS", "انجام"]] as const).map(([value, label]) => (
-            <button key={value} onClick={() => setFilter(value)} className={cn("rounded-md px-2.5 py-1.5 text-[10px] font-medium transition-colors whitespace-nowrap", filter === value ? "bg-gray-900 text-white" : "text-gray-400")}>{label}</button>
+        <div className="flex gap-1.5 px-4 pb-3 overflow-x-auto scrollbar-hide">
+          {FILTER_TABS.map(({ value, label }) => (
+            <button
+              key={value}
+              onClick={() => setFilter(value)}
+              className={cn(
+                "rounded-full px-3.5 py-1.5 text-[11px] font-medium transition-all duration-200 whitespace-nowrap",
+                filter === value
+                  ? "bg-gray-900 text-white shadow-sm"
+                  : "text-gray-400 hover:text-gray-600 hover:bg-gray-50"
+              )}
+            >
+              {label}
+            </button>
           ))}
         </div>
       </div>
 
+      {/* Content */}
       <div className="p-4 pb-28">
         {loading ? (
-          <div className="space-y-3">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="rounded-xl border border-gray-100 p-3">
-                <div className="flex items-center justify-between mb-2"><div className="flex items-center gap-2"><Skeleton className="h-4 w-4" /><Skeleton className="h-3 w-28" /></div><Skeleton className="h-4 w-16 rounded-md" /></div>
-                <div className="flex items-center justify-between mb-1"><Skeleton className="h-2.5 w-20" /><Skeleton className="h-2.5 w-28" /></div>
-                <div className="flex items-center justify-between mb-2"><Skeleton className="h-2.5 w-16" /><Skeleton className="h-3 w-24" /></div>
-                <div className="flex gap-1"><Skeleton className="h-7 flex-1 rounded-lg" /><Skeleton className="h-7 w-12 rounded-lg" /></div>
+          <div className="space-y-2.5">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="rounded-2xl bg-white border border-gray-100/60 p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2.5">
+                    <Skeleton className="h-9 w-9 rounded-xl" />
+                    <div className="space-y-1.5">
+                      <Skeleton className="h-3 w-24" />
+                      <Skeleton className="h-2.5 w-16" />
+                    </div>
+                  </div>
+                  <Skeleton className="h-5 w-14 rounded-full" />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-2.5 w-32" />
+                  <Skeleton className="h-4 w-28" />
+                </div>
               </div>
             ))}
           </div>
         ) : orders.length === 0 ? (
-          <div className="py-8 text-center text-xs text-gray-300">سفارشی ثبت نشده</div>
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gray-50 mb-4">
+              <ArrowDownToLine className="h-7 w-7 text-gray-300" strokeWidth={1.5} />
+            </div>
+            <p className="text-sm font-medium text-gray-400">سفارشی ثبت نشده</p>
+            <p className="text-xs text-gray-300 mt-1">برای شروع، دکمه + را بزنید</p>
+          </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             {orders.map((o) => {
               const typeInfo = ORDER_TYPE_LABELS[o.orderType] || { label: o.orderType, short: o.orderType, color: "text-gray-600", bg: "bg-gray-50 text-gray-600" };
               const Icon = ICON_MAP[o.orderType] || ArrowDownToLine;
               const nextAction = getNextAction(o.status, o.orderType);
+              const iconBg = o.orderType === "IR_TO_PK" ? "bg-emerald-50" : o.orderType === "PK_TO_IR" ? "bg-blue-50" : o.orderType === "BUY_PKR" ? "bg-violet-50" : "bg-amber-50";
               return (
-                <div key={o.id} className="rounded-xl border border-gray-100 p-3 active:bg-gray-50" onClick={() => openDetail(o)}>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <Icon className={cn("h-4 w-4", typeInfo.color)} strokeWidth={1.5} />
-                      <span className="text-xs font-medium text-gray-900">{typeInfo.label}</span>
+                <div
+                  key={o.id}
+                  className="rounded-2xl bg-white border border-gray-100/60 p-4 active:bg-gray-50/50 transition-colors cursor-pointer"
+                  onClick={() => openDetail(o)}
+                >
+                  {/* Top row: icon + type + status */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className={cn("flex h-10 w-10 items-center justify-center rounded-xl", iconBg)}>
+                        <Icon className={cn("h-[18px] w-[18px]", typeInfo.color)} strokeWidth={1.5} />
+                      </div>
+                      <div>
+                        <p className="text-[13px] font-semibold text-gray-900 leading-tight">{typeInfo.label}</p>
+                        <p className="text-[11px] text-gray-400 mt-0.5">{o.customer.name}</p>
+                      </div>
                     </div>
-                    <span className={cn("rounded-md px-1.5 py-0.5 text-[9px] font-medium", STATUS_COLORS[o.status])}>{STATUS_LABELS[o.status]}</span>
+                    <span className={cn("rounded-full px-2.5 py-1 text-[10px] font-semibold", STATUS_COLORS[o.status])}>
+                      {STATUS_LABELS[o.status]}
+                    </span>
                   </div>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] text-gray-400">{o.customer.name}</span>
-                    <span className="text-[10px] text-gray-400" dir="ltr">{Number(o.totalToman).toLocaleString("en-US")} تومان</span>
+
+                  {/* Bottom row: date + amount */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-gray-400">{new Date(o.createdAt).toLocaleDateString("fa-IR")}</span>
+                    <span className="text-sm font-bold text-gray-900 tabular-nums" dir="ltr">
+                      {Number(o.totalToman).toLocaleString("en-US")} <span className="text-[10px] font-normal text-gray-400">تومان</span>
+                    </span>
                   </div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] text-gray-400">{new Date(o.createdAt).toLocaleDateString("fa-IR")}</span>
-                    <span className="text-xs font-bold text-gray-900" dir="ltr">{Number(o.totalToman).toLocaleString("en-US")} تومان</span>
-                  </div>
-                  {o.status !== "COMPLETED" && o.status !== "CANCELLED" && (
-                    <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-                      {nextAction && <button onClick={() => handleStatus(o.id, nextAction.next)} className="flex-1 rounded-lg bg-green-50 py-1.5 text-[10px] font-medium text-green-600">{nextAction.label}</button>}
-                      <button onClick={() => handleStatus(o.id, "CANCELLED")} className="rounded-lg bg-red-50 px-3 py-1.5 text-[10px] font-medium text-red-600">لغو</button>
+
+                  {/* Action buttons */}
+                  {o.status !== "COMPLETED" && o.status !== "CANCELLED" && nextAction && (
+                    <div className="flex gap-2 mt-3 pt-3 border-t border-gray-50" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={() => handleStatus(o.id, nextAction.next)}
+                        className="flex-1 rounded-xl bg-gray-900 py-2 text-[11px] font-semibold text-white active:bg-gray-800 transition-colors"
+                      >
+                        {nextAction.label}
+                      </button>
+                      <button
+                        onClick={() => handleStatus(o.id, "CANCELLED")}
+                        className="rounded-xl border border-gray-200 px-3.5 py-2 text-[11px] font-medium text-gray-500 active:bg-gray-50 transition-colors"
+                      >
+                        لغو
+                      </button>
                     </div>
                   )}
                 </div>
               );
             })}
-            {/* Infinite scroll sentinel */}
             {hasMore && <div className="h-1" />}
             {loadingMore && (
-              <div className="flex justify-center py-4">
+              <div className="flex justify-center py-5">
                 <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-200 border-t-gray-600" />
               </div>
             )}
@@ -485,46 +547,46 @@ export default function OrdersPage() {
         )}
       </div>
 
-      {/* Floating Action Button */}
+      {/* FAB */}
       <button
         onClick={() => setDirectionSheetOpen(true)}
-        className="fixed bottom-24 left-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-gray-900 text-white shadow-lg transition-all active:scale-95 hover:bg-gray-800"
+        className="fixed bottom-24 left-4 z-30 flex h-[52px] w-[52px] items-center justify-center rounded-2xl bg-gray-900 text-white shadow-lg shadow-gray-900/20 transition-all active:scale-95 hover:bg-gray-800"
       >
-        <Plus className="h-6 w-6" strokeWidth={2} />
+        <Plus className="h-5 w-5" strokeWidth={2} />
       </button>
 
       {/* Success Toast */}
       {success && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-xl bg-green-50 border border-green-200 px-4 py-3 shadow-lg animate-slide-up">
-          <CheckCircle2 className="h-5 w-5 text-green-500" />
-          <span className="text-sm font-medium text-green-700">سفارش ثبت شد</span>
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 rounded-2xl bg-white border border-gray-100 px-4 py-3 shadow-lg shadow-black/5 animate-slide-up">
+          <CheckCircle2 className="h-4.5 w-4.5 text-emerald-500" />
+          <span className="text-[13px] font-medium text-gray-700">سفارش ثبت شد</span>
         </div>
       )}
 
       {/* Error Toast */}
       {errorToast && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-xl bg-red-50 border border-red-200 px-4 py-3 shadow-lg animate-slide-up max-w-[90vw]">
-          <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
-          <span className="text-sm font-medium text-red-700">{errorToast}</span>
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 rounded-2xl bg-white border border-gray-100 px-4 py-3 shadow-lg shadow-black/5 animate-slide-up max-w-[90vw]">
+          <AlertCircle className="h-4.5 w-4.5 text-red-500 flex-shrink-0" />
+          <span className="text-[13px] font-medium text-gray-700">{errorToast}</span>
         </div>
       )}
 
       {/* Direction Selection BottomSheet */}
       <BottomSheet isOpen={directionSheetOpen} onClose={() => setDirectionSheetOpen(false)} title="نوع تبدیل">
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           {DIRECTIONS.map((d) => {
             const Icon = d.icon;
             return (
               <button
                 key={d.id}
                 onClick={() => selectDirection(d)}
-                className="w-full flex items-center gap-4 rounded-xl border border-gray-100 p-4 text-right transition-all active:bg-gray-50 hover:border-gray-200"
+                className="w-full flex items-center gap-4 rounded-2xl border border-gray-100 p-4 text-right transition-all active:bg-gray-50 hover:border-gray-200"
               >
-                <div className={cn("flex h-12 w-12 items-center justify-center rounded-xl", d.color)}>
+                <div className={cn("flex h-12 w-12 items-center justify-center rounded-2xl", d.color)}>
                   <Icon className="h-5 w-5" strokeWidth={1.5} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-gray-900">{d.label}</p>
+                  <p className="text-[13px] font-bold text-gray-900">{d.label}</p>
                   <p className="text-[11px] text-gray-400 mt-0.5">{d.sub}</p>
                 </div>
                 <ChevronLeft className="h-5 w-5 flex-shrink-0 text-gray-300" strokeWidth={1.5} />
@@ -536,18 +598,18 @@ export default function OrdersPage() {
 
       {/* Sub-Type Selection BottomSheet */}
       <BottomSheet isOpen={subTypeSheetOpen} onClose={() => setSubTypeSheetOpen(false)} title={selectedDirection?.label}>
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           {subTypes.map((st) => (
             <button
               key={st.id}
               onClick={() => selectSubType(st.id)}
-              className="w-full flex items-center gap-4 rounded-xl border border-gray-100 p-4 text-right transition-all active:bg-gray-50 hover:border-gray-200"
+              className="w-full flex items-center gap-4 rounded-2xl border border-gray-100 p-4 text-right transition-all active:bg-gray-50 hover:border-gray-200"
             >
-              <div className={cn("flex h-12 w-12 items-center justify-center rounded-xl text-white", st.color)}>
+              <div className={cn("flex h-12 w-12 items-center justify-center rounded-2xl text-white", st.color)}>
                 {st.id === "IR_TO_PK" || st.id === "SELL_PKR" ? <Send className="h-5 w-5" strokeWidth={1.5} /> : <ArrowDownToLine className="h-5 w-5" strokeWidth={1.5} />}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-gray-900">{st.label}</p>
+                <p className="text-[13px] font-bold text-gray-900">{st.label}</p>
                 <p className="text-[11px] text-gray-400 mt-0.5 leading-relaxed">{st.desc}</p>
               </div>
               <ChevronLeft className="h-5 w-5 flex-shrink-0 text-gray-300" strokeWidth={1.5} />
@@ -560,12 +622,12 @@ export default function OrdersPage() {
       <BottomSheet isOpen={formSheetOpen} onClose={() => setFormSheetOpen(false)} title={typeInfo?.label} className="max-h-[85vh]">
         {formLoading ? (
           <div className="space-y-4">
-            <div className="rounded-xl bg-gray-50 p-3 space-y-2">
+            <div className="rounded-2xl bg-gray-50 p-4 space-y-3">
               <Skeleton className="h-3 w-24" />
               <div className="grid grid-cols-3 gap-2">
-                <Skeleton className="h-12 rounded-lg" />
-                <Skeleton className="h-12 rounded-lg" />
-                <Skeleton className="h-12 rounded-lg" />
+                <Skeleton className="h-14 rounded-xl" />
+                <Skeleton className="h-14 rounded-xl" />
+                <Skeleton className="h-14 rounded-xl" />
               </div>
             </div>
             <div className="space-y-2">
@@ -598,22 +660,22 @@ export default function OrdersPage() {
 
           {/* Rate Display Card */}
           {currentRates && (
-            <div className="rounded-xl bg-gray-50 p-3 space-y-2">
-              <p className="text-[10px] font-semibold text-gray-400 uppercase">نرخ لحظه معامله</p>
+            <div className="rounded-2xl bg-gray-50 p-4 space-y-3">
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">نرخ لحظه معامله</p>
               <div className="grid grid-cols-3 gap-2">
                 {currentRates.marketRate > 0 && (
-                  <div className="rounded-lg bg-white p-2 text-center border border-gray-100">
-                    <span className="text-[8px] text-gray-400">بازار</span>
-                    <p className="text-[11px] font-bold text-gray-700" dir="ltr">{currentRates.marketRate.toLocaleString("en-US")}</p>
+                  <div className="rounded-xl bg-white p-2.5 text-center border border-gray-100/80">
+                    <span className="text-[9px] text-gray-400">بازار</span>
+                    <p className="text-[12px] font-bold text-gray-700 mt-0.5" dir="ltr">{currentRates.marketRate.toLocaleString("en-US")}</p>
                   </div>
                 )}
-                <div className="rounded-lg bg-blue-50 p-2 text-center">
-                  <span className="text-[8px] text-blue-500">خرید</span>
-                  <p className="text-[11px] font-bold text-blue-700" dir="ltr">{currentRates.buyRate.toLocaleString("en-US")}</p>
+                <div className="rounded-xl bg-blue-50 p-2.5 text-center">
+                  <span className="text-[9px] text-blue-500">خرید</span>
+                  <p className="text-[12px] font-bold text-blue-700 mt-0.5" dir="ltr">{currentRates.buyRate.toLocaleString("en-US")}</p>
                 </div>
-                <div className="rounded-lg bg-emerald-50 p-2 text-center">
-                  <span className="text-[8px] text-emerald-500">فروش</span>
-                  <p className="text-[11px] font-bold text-emerald-700" dir="ltr">{currentRates.sellRate.toLocaleString("en-US")}</p>
+                <div className="rounded-xl bg-emerald-50 p-2.5 text-center">
+                  <span className="text-[9px] text-emerald-500">فروش</span>
+                  <p className="text-[12px] font-bold text-emerald-700 mt-0.5" dir="ltr">{currentRates.sellRate.toLocaleString("en-US")}</p>
                 </div>
               </div>
             </div>
@@ -621,60 +683,60 @@ export default function OrdersPage() {
 
           {/* Profit Formula Info */}
           {selectedType && (
-            <div className="rounded-xl bg-amber-50 p-3 space-y-2">
-              <p className="text-[10px] font-semibold text-amber-600 uppercase">نحوه محاسبه سود</p>
+            <div className="rounded-2xl bg-amber-50 p-4 space-y-2.5">
+              <p className="text-[10px] font-semibold text-amber-600 uppercase tracking-wider">نحوه محاسبه سود</p>
               {selectedType === "BUY_PKR" && (
-                <div className="space-y-1.5">
-                  <p className="text-[10px] text-amber-700 font-medium">خرید روپیه از مشتری</p>
-                  <p className="text-[9px] text-amber-600 leading-relaxed">
+                <div className="space-y-2">
+                  <p className="text-[11px] text-amber-700 font-medium">خرید روپیه از مشتری</p>
+                  <p className="text-[10px] text-amber-600 leading-relaxed">
                     روپیه از مشتری دریافت می‌شود و تومان پرداخت می‌شود. سود از اختلاف نرخ بازار و نرخ خرید محاسبه می‌شود.
                   </p>
-                  <div className="rounded-lg bg-white p-2 border border-amber-100">
-                    <p className="text-[9px] text-amber-700 font-medium mb-1">سود خرید:</p>
+                  <div className="rounded-xl bg-white p-2.5 border border-amber-100/80">
+                    <p className="text-[10px] text-amber-700 font-medium mb-1">سود خرید:</p>
                     <p className="text-[9px] text-amber-600" dir="ltr">(نرخ بازار - نرخ خرید) × مقدار روپیه</p>
                   </div>
                 </div>
               )}
               {selectedType === "SELL_PKR" && (
-                <div className="space-y-1.5">
-                  <p className="text-[10px] text-amber-700 font-medium">فروش روپیه به مشتری</p>
-                  <p className="text-[9px] text-amber-600 leading-relaxed">
+                <div className="space-y-2">
+                  <p className="text-[11px] text-amber-700 font-medium">فروش روپیه به مشتری</p>
+                  <p className="text-[10px] text-amber-600 leading-relaxed">
                     تومان از مشتری دریافت می‌شود و روپیه تحویل داده می‌شود. سود از اختلاف نرخ فروش و نرخ بازار محاسبه می‌شود.
                   </p>
-                  <div className="rounded-lg bg-white p-2 border border-amber-100">
-                    <p className="text-[9px] text-amber-700 font-medium mb-1">سود فروش:</p>
+                  <div className="rounded-xl bg-white p-2.5 border border-amber-100/80">
+                    <p className="text-[10px] text-amber-700 font-medium mb-1">سود فروش:</p>
                     <p className="text-[9px] text-amber-600" dir="ltr">(نرخ فروش - نرخ بازار) × مقدار روپیه</p>
                   </div>
                 </div>
               )}
               {selectedType === "IR_TO_PK" && (
-                <div className="space-y-1.5">
-                  <p className="text-[10px] text-amber-700 font-medium">حواله ایران به پاکستان</p>
-                  <p className="text-[9px] text-amber-600 leading-relaxed">
+                <div className="space-y-2">
+                  <p className="text-[11px] text-amber-700 font-medium">حواله ایران به پاکستان</p>
+                  <p className="text-[10px] text-amber-600 leading-relaxed">
                     تومان از مشتری دریافت می‌شود و روپیه به حساب مقصد در پاکستان واریز می‌شود. سود از اختلاف نرخ فروش و نرخ بازار محاسبه می‌شود.
                   </p>
-                  <div className="rounded-lg bg-white p-2 border border-amber-100">
-                    <p className="text-[9px] text-amber-700 font-medium mb-1">محاسبه روپیه:</p>
+                  <div className="rounded-xl bg-white p-2.5 border border-amber-100/80">
+                    <p className="text-[10px] text-amber-700 font-medium mb-1">محاسبه روپیه:</p>
                     <p className="text-[9px] text-amber-600" dir="ltr">مبلغ تومان ÷ نرخ تبدیل = مقدار روپیه</p>
                   </div>
-                  <div className="rounded-lg bg-white p-2 border border-amber-100">
-                    <p className="text-[9px] text-amber-700 font-medium mb-1">سود حواله:</p>
+                  <div className="rounded-xl bg-white p-2.5 border border-amber-100/80">
+                    <p className="text-[10px] text-amber-700 font-medium mb-1">سود حواله:</p>
                     <p className="text-[9px] text-amber-600" dir="ltr">(نرخ فروش - نرخ بازار) × مقدار روپیه</p>
                   </div>
                 </div>
               )}
               {selectedType === "PK_TO_IR" && (
-                <div className="space-y-1.5">
-                  <p className="text-[10px] text-amber-700 font-medium">حواله پاکستان به ایران</p>
-                  <p className="text-[9px] text-amber-600 leading-relaxed">
+                <div className="space-y-2">
+                  <p className="text-[11px] text-amber-700 font-medium">حواله پاکستان به ایران</p>
+                  <p className="text-[10px] text-amber-600 leading-relaxed">
                     روپیه از مشتری دریافت می‌شود و تومان به حساب بانکی ایران واریز می‌شود. سود از اختلاف نرخ بازار و نرخ خرید محاسبه می‌شود.
                   </p>
-                  <div className="rounded-lg bg-white p-2 border border-amber-100">
-                    <p className="text-[9px] text-amber-700 font-medium mb-1">محاسبه تومان:</p>
+                  <div className="rounded-xl bg-white p-2.5 border border-amber-100/80">
+                    <p className="text-[10px] text-amber-700 font-medium mb-1">محاسبه تومان:</p>
                     <p className="text-[9px] text-amber-600" dir="ltr">مقدار روپیه × نرخ تبدیل = مبلغ تومان</p>
                   </div>
-                  <div className="rounded-lg bg-white p-2 border border-amber-100">
-                    <p className="text-[9px] text-amber-700 font-medium mb-1">سود دریافت:</p>
+                  <div className="rounded-xl bg-white p-2.5 border border-amber-100/80">
+                    <p className="text-[10px] text-amber-700 font-medium mb-1">سود دریافت:</p>
                     <p className="text-[9px] text-amber-600" dir="ltr">(نرخ بازار - نرخ خرید) × مقدار روپیه</p>
                   </div>
                 </div>
@@ -685,7 +747,7 @@ export default function OrdersPage() {
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-gray-500">مشتری</label>
             <div className="relative">
-              <select value={customerId} onChange={(e) => setCustomerId(e.target.value)} className="flex h-12 w-full appearance-none rounded-xl border border-gray-200 bg-white px-4 pr-10 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+              <select value={customerId} onChange={(e) => setCustomerId(e.target.value)} className="flex h-12 w-full appearance-none rounded-xl border border-gray-200 bg-white px-4 pr-10 text-sm focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900/10 transition-colors">
                 <option value="">انتخاب مشتری</option>
                 {customers.map((c) => <option key={c.id} value={c.id}>{c.name} ({c.phone})</option>)}
               </select>
@@ -720,52 +782,52 @@ export default function OrdersPage() {
           )}
 
           {amountNum > 0 && rateNum > 0 && (
-            <div className={cn("rounded-xl p-4", isTomanAmount ? "bg-green-50" : "bg-blue-50")}>
+            <div className={cn("rounded-2xl p-4", isTomanAmount ? "bg-emerald-50" : "bg-blue-50")}>
               <div className="flex items-center justify-between mb-2">
-                <span className={cn("text-xs", isTomanAmount ? "text-green-500" : "text-blue-500")}>{isTomanAmount ? "مبلغ پرداختی (تومان)" : "مبلغ پرداختی (روپیه)"}</span>
-                <span className={cn("text-base font-bold", isTomanAmount ? "text-green-700" : "text-blue-700")} dir="ltr">{isTomanAmount ? totalToman.toLocaleString("en-US") : calculatedPkr.toLocaleString("en-US")}</span>
+                <span className={cn("text-[11px]", isTomanAmount ? "text-emerald-500" : "text-blue-500")}>{isTomanAmount ? "مبلغ پرداختی (تومان)" : "مبلغ پرداختی (روپیه)"}</span>
+                <span className={cn("text-[15px] font-bold tabular-nums", isTomanAmount ? "text-emerald-700" : "text-blue-700")} dir="ltr">{isTomanAmount ? totalToman.toLocaleString("en-US") : calculatedPkr.toLocaleString("en-US")}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className={cn("text-xs", isTomanAmount ? "text-green-500" : "text-blue-500")}>{isTomanAmount ? "مبلغ دریافتی (روپیه)" : "مبلغ دریافتی (تومان)"}</span>
-                <span className={cn("text-sm font-semibold", isTomanAmount ? "text-green-600" : "text-blue-600")} dir="ltr">{isTomanAmount ? calculatedPkr.toLocaleString("en-US") : totalToman.toLocaleString("en-US")}</span>
+                <span className={cn("text-[11px]", isTomanAmount ? "text-emerald-500" : "text-blue-500")}>{isTomanAmount ? "مبلغ دریافتی (روپیه)" : "مبلغ دریافتی (تومان)"}</span>
+                <span className={cn("text-[13px] font-semibold tabular-nums", isTomanAmount ? "text-emerald-600" : "text-blue-600")} dir="ltr">{isTomanAmount ? calculatedPkr.toLocaleString("en-US") : totalToman.toLocaleString("en-US")}</span>
               </div>
             </div>
           )}
 
           {/* Profit Preview */}
           {amountNum > 0 && rateNum > 0 && currentRates && (
-            <div className="rounded-xl bg-green-50 p-4 space-y-3">
-              <p className="text-[10px] font-semibold text-green-600 uppercase">پیش‌نمایش سود</p>
+            <div className="rounded-2xl bg-emerald-50 p-4 space-y-3">
+              <p className="text-[10px] font-semibold text-emerald-600 uppercase tracking-wider">پیش‌نمایش سود</p>
               <div className="space-y-2">
                 {previewMainProfit > 0 && (
-                  <div className="rounded-lg bg-white p-2 border border-green-100">
+                  <div className="rounded-xl bg-white p-2.5 border border-emerald-100/80">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-[10px] text-green-600">{mainProfitLabel}</span>
-                      <span className="text-xs font-bold text-green-700" dir="ltr">{previewMainProfit.toLocaleString("en-US")} تومان</span>
+                      <span className="text-[11px] text-emerald-600">{mainProfitLabel}</span>
+                      <span className="text-[13px] font-bold text-emerald-700 tabular-nums" dir="ltr">{previewMainProfit.toLocaleString("en-US")} <span className="text-[9px] font-normal text-emerald-500">تومان</span></span>
                     </div>
-                    <p className="text-[9px] text-green-500" dir="ltr">{mainProfitFormula}</p>
+                    <p className="text-[9px] text-emerald-500" dir="ltr">{mainProfitFormula}</p>
                   </div>
                 )}
                 {feeNum > 0 && (
-                  <div className="rounded-lg bg-white p-2 border border-green-100">
+                  <div className="rounded-xl bg-white p-2.5 border border-emerald-100/80">
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-green-600">کارمزد (+)</span>
-                      <span className="text-xs font-bold text-green-700" dir="ltr">{feeNum.toLocaleString("en-US")} تومان</span>
+                      <span className="text-[11px] text-emerald-600">کارمزد (+)</span>
+                      <span className="text-[13px] font-bold text-emerald-700 tabular-nums" dir="ltr">{feeNum.toLocaleString("en-US")} <span className="text-[9px] font-normal text-emerald-500">تومان</span></span>
                     </div>
                   </div>
                 )}
                 {transferCostNum > 0 && (
-                  <div className="rounded-lg bg-white p-2 border border-red-100">
+                  <div className="rounded-xl bg-white p-2.5 border border-red-100/80">
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-red-500">هزینه انتقال (-)</span>
-                      <span className="text-xs font-bold text-red-600" dir="ltr">{transferCostNum.toLocaleString("en-US")} تومان</span>
+                      <span className="text-[11px] text-red-500">هزینه انتقال (-)</span>
+                      <span className="text-[13px] font-bold text-red-600 tabular-nums" dir="ltr">{transferCostNum.toLocaleString("en-US")} <span className="text-[9px] font-normal text-red-400">تومان</span></span>
                     </div>
                   </div>
                 )}
               </div>
-              <div className="flex items-center justify-between border-t border-green-200 pt-2">
-                <span className="text-xs font-medium text-green-600">سود کل</span>
-                <span className="text-base font-bold text-green-800" dir="ltr">{previewTotalProfit.toLocaleString("en-US")} تومان</span>
+              <div className="flex items-center justify-between border-t border-emerald-200/60 pt-2.5">
+                <span className="text-[12px] font-medium text-emerald-600">سود کل</span>
+                <span className="text-[15px] font-bold text-emerald-800 tabular-nums" dir="ltr">{previewTotalProfit.toLocaleString("en-US")} <span className="text-[9px] font-normal text-emerald-600">تومان</span></span>
               </div>
             </div>
           )}
@@ -777,7 +839,7 @@ export default function OrdersPage() {
             </div>
           )}
 
-          {/* Hawala fields: IR_TO_PK and PK_TO_IR */}
+          {/* Hawala fields */}
           {isHawala && (<>
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-gray-500">{selectedType === "IR_TO_PK" ? "نام گیرنده" : "نام صاحب حساب"}</label>
@@ -786,7 +848,7 @@ export default function OrdersPage() {
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-gray-500">{selectedType === "IR_TO_PK" ? "نحوه واریز" : "شماره شبا"}</label>
               {selectedType === "IR_TO_PK" ? (
-                <select value={recipientMethod} onChange={(e) => setRecipientMethod(e.target.value)} className="flex h-12 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                <select value={recipientMethod} onChange={(e) => setRecipientMethod(e.target.value)} className="flex h-12 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900/10 transition-colors">
                   <option value="EASYPAISA">Easypaisa</option>
                   <option value="JAZZCASH">JazzCash</option>
                   <option value="BANK_TRANSFER">حواله بانکی</option>
@@ -819,7 +881,7 @@ export default function OrdersPage() {
             )}
           </>)}
 
-          {/* Card fields: BUY_PKR and SELL_PKR */}
+          {/* Card fields */}
           {!isHawala && (<>
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-gray-500">{selectedType === "BUY_PKR" ? "شماره حساب پاکستانی صراف" : "شماره کارت مقصد"}</label>
@@ -833,10 +895,10 @@ export default function OrdersPage() {
 
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-gray-500">توضیحات</label>
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="اختیاری" rows={2} className="flex w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm placeholder:text-gray-300 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+            <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="اختیاری" rows={2} className="flex w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm placeholder:text-gray-300 focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900/10 transition-colors" />
           </div>
 
-          <Button type="submit" isLoading={submitting} className="w-full h-12 rounded-xl">ثبت سفارش</Button>
+          <Button type="submit" isLoading={submitting} className="w-full h-12 rounded-xl bg-gray-900 hover:bg-gray-800">ثبت سفارش</Button>
         </form>
         )}
       </BottomSheet>
@@ -848,22 +910,22 @@ export default function OrdersPage() {
             {/* Header */}
             <div className="flex items-center gap-3">
               {(() => { const ti = ORDER_TYPE_LABELS[selectedOrder.orderType]; const Icon = ICON_MAP[selectedOrder.orderType] || ArrowDownToLine; return (
-                <div className={cn("flex h-12 w-12 items-center justify-center rounded-xl", selectedOrder.orderType === "IR_TO_PK" ? "bg-green-50" : selectedOrder.orderType === "PK_TO_IR" ? "bg-blue-50" : selectedOrder.orderType === "BUY_PKR" ? "bg-violet-50" : "bg-amber-50")}>
+                <div className={cn("flex h-12 w-12 items-center justify-center rounded-2xl", selectedOrder.orderType === "IR_TO_PK" ? "bg-emerald-50" : selectedOrder.orderType === "PK_TO_IR" ? "bg-blue-50" : selectedOrder.orderType === "BUY_PKR" ? "bg-violet-50" : "bg-amber-50")}>
                   <Icon className={cn("h-5 w-5", ti?.color)} strokeWidth={1.5} />
                 </div>
               ); })()}
               <div className="flex-1">
-                <p className="text-sm font-bold text-gray-900">{ORDER_TYPE_LABELS[selectedOrder.orderType]?.label || selectedOrder.orderType}</p>
-                <span className={cn("inline-block mt-0.5 rounded-md px-1.5 py-0.5 text-[9px] font-medium", STATUS_COLORS[selectedOrder.status])}>{STATUS_LABELS[selectedOrder.status]}</span>
+                <p className="text-[13px] font-bold text-gray-900">{ORDER_TYPE_LABELS[selectedOrder.orderType]?.label || selectedOrder.orderType}</p>
+                <span className={cn("inline-block mt-1 rounded-full px-2 py-0.5 text-[10px] font-semibold", STATUS_COLORS[selectedOrder.status])}>{STATUS_LABELS[selectedOrder.status]}</span>
               </div>
             </div>
 
             {/* Customer */}
-            <div className="flex items-center gap-2 rounded-xl bg-gray-50 p-2.5">
-              <User className="h-3.5 w-3.5 text-gray-400" strokeWidth={1.5} />
-              <span className="text-xs font-medium text-gray-700">{selectedOrder.customer.name}</span>
-              <span className="text-[10px] text-gray-400" dir="ltr">{selectedOrder.customer.phone}</span>
-              <span className="mr-auto text-[10px] text-gray-400">{selectedOrder.currency.code}</span>
+            <div className="flex items-center gap-2.5 rounded-2xl bg-gray-50 p-3">
+              <User className="h-4 w-4 text-gray-400" strokeWidth={1.5} />
+              <span className="text-[13px] font-medium text-gray-700">{selectedOrder.customer.name}</span>
+              <span className="text-[11px] text-gray-400" dir="ltr">{selectedOrder.customer.phone}</span>
+              <span className="mr-auto text-[11px] text-gray-400">{selectedOrder.currency.code}</span>
             </div>
 
             {/* Amount & Rates */}
@@ -874,19 +936,19 @@ export default function OrdersPage() {
               return (
                 <div className="space-y-2">
                   <div className="grid grid-cols-2 gap-2">
-                    <div className="rounded-xl border border-gray-100 p-2.5 text-center">
-                      <p className="text-[9px] text-gray-400">{isTomanAmt ? "مبلغ (تومان)" : "مبلغ (روپیه)"}</p>
-                      <p className="text-sm font-bold text-gray-900" dir="ltr">{Number(selectedOrder.amount).toLocaleString("en-US")}</p>
+                    <div className="rounded-2xl border border-gray-100/80 p-3 text-center">
+                      <p className="text-[10px] text-gray-400">{isTomanAmt ? "مبلغ (تومان)" : "مبلغ (روپیه)"}</p>
+                      <p className="text-[15px] font-bold text-gray-900 mt-1 tabular-nums" dir="ltr">{Number(selectedOrder.amount).toLocaleString("en-US")}</p>
                     </div>
-                    <div className="rounded-xl border border-gray-100 p-2.5 text-center">
-                      <p className="text-[9px] text-gray-400">{isTomanAmt ? "نرخ فروش" : "نرخ خرید"}</p>
-                      <p className="text-sm font-bold text-gray-900" dir="ltr">{orderRate.toLocaleString("en-US")} <span className="text-[9px] font-normal text-gray-400">تومان</span></p>
+                    <div className="rounded-2xl border border-gray-100/80 p-3 text-center">
+                      <p className="text-[10px] text-gray-400">{isTomanAmt ? "نرخ فروش" : "نرخ خرید"}</p>
+                      <p className="text-[15px] font-bold text-gray-900 mt-1 tabular-nums" dir="ltr">{orderRate.toLocaleString("en-US")} <span className="text-[9px] font-normal text-gray-400">تومان</span></p>
                     </div>
                   </div>
                   {isTomanAmt && Number(selectedOrder.calculatedPkr) > 0 && (
-                    <div className="rounded-xl border border-blue-100 bg-blue-50 p-2.5 text-center">
-                      <p className="text-[9px] text-blue-500">روپیه محاسبه شده</p>
-                      <p className="text-sm font-bold text-blue-600" dir="ltr">{Number(selectedOrder.calculatedPkr).toLocaleString("en-US")} <span className="text-[9px] font-normal text-blue-400">روپیه</span></p>
+                    <div className="rounded-2xl border border-blue-100/80 bg-blue-50 p-3 text-center">
+                      <p className="text-[10px] text-blue-500">روپیه محاسبه شده</p>
+                      <p className="text-[15px] font-bold text-blue-600 mt-1 tabular-nums" dir="ltr">{Number(selectedOrder.calculatedPkr).toLocaleString("en-US")} <span className="text-[9px] font-normal text-blue-400">روپیه</span></p>
                     </div>
                   )}
                 </div>
@@ -903,35 +965,35 @@ export default function OrdersPage() {
               const totalProfit = Number(selectedOrder.totalProfitAmount || 0);
               if (!mainProfit && !feeAmt && !transferAmt && !totalProfit) return null;
               return (
-                <div className="rounded-xl bg-green-50 p-3 space-y-1.5">
-                  <p className="text-[10px] font-semibold text-green-600">تحلیل سود</p>
+                <div className="rounded-2xl bg-emerald-50 p-4 space-y-2.5">
+                  <p className="text-[10px] font-semibold text-emerald-600 uppercase tracking-wider">تحلیل سود</p>
                   {mktRate > 0 && (
                     <div className="flex items-center justify-between">
-                      <span className="text-[11px] text-green-600">نرخ بازار</span>
-                      <span className="text-[11px] font-bold text-green-700" dir="ltr">{mktRate.toLocaleString("en-US")} <span className="text-[9px] font-normal text-green-500">تومان</span></span>
+                      <span className="text-[12px] text-emerald-600">نرخ بازار</span>
+                      <span className="text-[12px] font-bold text-emerald-700 tabular-nums" dir="ltr">{mktRate.toLocaleString("en-US")} <span className="text-[9px] font-normal text-emerald-500">تومان</span></span>
                     </div>
                   )}
                   {mainProfit !== 0 && (
                     <div className="flex items-center justify-between">
-                      <span className="text-[11px] text-green-600">{ot === "BUY_PKR" ? "سود خرید نسبت به بازار" : ot === "SELL_PKR" ? "سود فروش نسبت به بازار" : ot === "IR_TO_PK" ? "سود حواله" : "سود دریافت روپیه"}</span>
-                      <span className="text-[11px] font-bold text-green-700" dir="ltr">{mainProfit.toLocaleString("en-US")} <span className="text-[9px] font-normal text-green-500">تومان</span></span>
+                      <span className="text-[12px] text-emerald-600">{ot === "BUY_PKR" ? "سود خرید نسبت به بازار" : ot === "SELL_PKR" ? "سود فروش نسبت به بازار" : ot === "IR_TO_PK" ? "سود حواله" : "سود دریافت روپیه"}</span>
+                      <span className="text-[12px] font-bold text-emerald-700 tabular-nums" dir="ltr">{mainProfit.toLocaleString("en-US")} <span className="text-[9px] font-normal text-emerald-500">تومان</span></span>
                     </div>
                   )}
                   {feeAmt > 0 && (
                     <div className="flex items-center justify-between">
-                      <span className="text-[11px] text-green-600">(+ ) کارمزد</span>
-                      <span className="text-[11px] font-bold text-green-700" dir="ltr">+{feeAmt.toLocaleString("en-US")} <span className="text-[9px] font-normal text-green-500">تومان</span></span>
+                      <span className="text-[12px] text-emerald-600">(+ ) کارمزد</span>
+                      <span className="text-[12px] font-bold text-emerald-700 tabular-nums" dir="ltr">+{feeAmt.toLocaleString("en-US")} <span className="text-[9px] font-normal text-emerald-500">تومان</span></span>
                     </div>
                   )}
                   {transferAmt > 0 && (
                     <div className="flex items-center justify-between">
-                      <span className="text-[11px] text-red-500">(-) هزینه انتقال</span>
-                      <span className="text-[11px] font-bold text-red-600" dir="ltr">-{transferAmt.toLocaleString("en-US")} <span className="text-[9px] font-normal text-red-400">تومان</span></span>
+                      <span className="text-[12px] text-red-500">(-) هزینه انتقال</span>
+                      <span className="text-[12px] font-bold text-red-600 tabular-nums" dir="ltr">-{transferAmt.toLocaleString("en-US")} <span className="text-[9px] font-normal text-red-400">تومان</span></span>
                     </div>
                   )}
-                  <div className="flex items-center justify-between border-t border-green-200 pt-1.5">
-                    <span className="text-[11px] font-semibold text-green-600">سود نهایی</span>
-                    <span className="text-sm font-bold text-green-800" dir="ltr">{totalProfit.toLocaleString("en-US")} <span className="text-[9px] font-normal text-green-600">تومان</span></span>
+                  <div className="flex items-center justify-between border-t border-emerald-200/60 pt-2.5">
+                    <span className="text-[12px] font-semibold text-emerald-600">سود نهایی</span>
+                    <span className="text-[15px] font-bold text-emerald-800 tabular-nums" dir="ltr">{totalProfit.toLocaleString("en-US")} <span className="text-[9px] font-normal text-emerald-600">تومان</span></span>
                   </div>
                 </div>
               );
@@ -939,36 +1001,36 @@ export default function OrdersPage() {
 
             {/* Recipient / Destination */}
             {(selectedOrder.recipientName || selectedOrder.destinationCard) && (
-              <div className="rounded-xl bg-gray-50 p-3 space-y-1.5">
-                <p className="text-[10px] font-semibold text-gray-400">اطلاعات واریز</p>
+              <div className="rounded-2xl bg-gray-50 p-3.5 space-y-2">
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">اطلاعات واریز</p>
                 {selectedOrder.recipientName && (
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-gray-500">دریافت‌کننده</span>
-                    <span className="text-[11px] font-medium text-gray-900">{selectedOrder.recipientName}</span>
+                    <span className="text-[12px] text-gray-500">دریافت‌کننده</span>
+                    <span className="text-[12px] font-medium text-gray-900">{selectedOrder.recipientName}</span>
                   </div>
                 )}
                 {selectedOrder.recipientAccount && (
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-gray-500">شماره حساب</span>
-                    <span className="text-[11px] font-medium text-gray-900" dir="ltr">{selectedOrder.recipientAccount}</span>
+                    <span className="text-[12px] text-gray-500">شماره حساب</span>
+                    <span className="text-[12px] font-medium text-gray-900 tabular-nums" dir="ltr">{selectedOrder.recipientAccount}</span>
                   </div>
                 )}
                 {selectedOrder.recipientMethod && (
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-gray-500">نحوه واریز</span>
-                    <span className="text-[11px] font-medium text-gray-900">{METHOD_LABELS[selectedOrder.recipientMethod] || selectedOrder.recipientMethod}</span>
+                    <span className="text-[12px] text-gray-500">نحوه واریز</span>
+                    <span className="text-[12px] font-medium text-gray-900">{METHOD_LABELS[selectedOrder.recipientMethod] || selectedOrder.recipientMethod}</span>
                   </div>
                 )}
                 {selectedOrder.destinationCard && (
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-gray-500">{selectedOrder.orderType === "BUY_PKR" ? "حساب پاکستانی" : "کارت مقصد"}</span>
-                    <span className="text-[11px] font-medium text-gray-900" dir="ltr">{selectedOrder.destinationCard}</span>
+                    <span className="text-[12px] text-gray-500">{selectedOrder.orderType === "BUY_PKR" ? "حساب پاکستانی" : "کارت مقصد"}</span>
+                    <span className="text-[12px] font-medium text-gray-900 tabular-nums" dir="ltr">{selectedOrder.destinationCard}</span>
                   </div>
                 )}
                 {selectedOrder.destinationSheba && (
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-gray-500">شبا</span>
-                    <span className="text-[11px] font-medium text-gray-900" dir="ltr">{selectedOrder.destinationSheba}</span>
+                    <span className="text-[12px] text-gray-500">شبا</span>
+                    <span className="text-[12px] font-medium text-gray-900 tabular-nums" dir="ltr">{selectedOrder.destinationSheba}</span>
                   </div>
                 )}
               </div>
@@ -976,19 +1038,19 @@ export default function OrdersPage() {
 
             {/* Description */}
             {selectedOrder.description && (
-              <div className="rounded-xl bg-gray-50 p-3">
-                <p className="text-[10px] font-semibold text-gray-400 mb-1">توضیحات</p>
-                <p className="text-[11px] text-gray-600 leading-relaxed">{selectedOrder.description}</p>
+              <div className="rounded-2xl bg-gray-50 p-3.5">
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">توضیحات</p>
+                <p className="text-[12px] text-gray-600 leading-relaxed">{selectedOrder.description}</p>
               </div>
             )}
 
             {/* Meta */}
-            <div className="flex items-center justify-between rounded-xl bg-gray-50 p-2.5">
+            <div className="flex items-center justify-between rounded-2xl bg-gray-50 p-3">
               <div className="flex items-center gap-2">
                 <Clock className="h-3.5 w-3.5 text-gray-400" strokeWidth={1.5} />
-                <span className="text-[10px] text-gray-400">{new Date(selectedOrder.createdAt).toLocaleDateString("fa-IR")} {new Date(selectedOrder.createdAt).toLocaleTimeString("fa-IR", { hour: "2-digit", minute: "2-digit" })}</span>
+                <span className="text-[11px] text-gray-400">{new Date(selectedOrder.createdAt).toLocaleDateString("fa-IR")} {new Date(selectedOrder.createdAt).toLocaleTimeString("fa-IR", { hour: "2-digit", minute: "2-digit" })}</span>
               </div>
-              <span className="text-[10px] text-gray-400">{selectedOrder.user?.firstName} {selectedOrder.user?.lastName}</span>
+              <span className="text-[11px] text-gray-400">{selectedOrder.user?.firstName} {selectedOrder.user?.lastName}</span>
             </div>
 
             {/* Action Buttons */}
@@ -997,13 +1059,13 @@ export default function OrdersPage() {
               return (
                 <div className="space-y-2">
                   {nextAction && (
-                    <button onClick={() => { handleStatus(selectedOrder.id, nextAction.next); setDetailSheetOpen(false); }} className="w-full rounded-xl bg-green-500 py-3 text-sm font-semibold text-white active:bg-green-600">{nextAction.label}</button>
+                    <button onClick={() => { handleStatus(selectedOrder.id, nextAction.next); setDetailSheetOpen(false); }} className="w-full rounded-xl bg-gray-900 py-3 text-[13px] font-semibold text-white active:bg-gray-800 transition-colors">{nextAction.label}</button>
                   )}
                   <div className="flex gap-2">
-                    <button onClick={() => openEdit(selectedOrder)} className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-blue-50 py-2.5 text-xs font-medium text-blue-600 active:bg-blue-100">
+                    <button onClick={() => openEdit(selectedOrder)} className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-gray-200 py-2.5 text-[12px] font-medium text-gray-600 active:bg-gray-50 transition-colors">
                       <Pencil className="h-3.5 w-3.5" strokeWidth={1.5} /> ویرایش
                     </button>
-                    <button onClick={() => openDeleteConfirm(selectedOrder)} className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-red-50 py-2.5 text-xs font-medium text-red-600 active:bg-red-100">
+                    <button onClick={() => openDeleteConfirm(selectedOrder)} className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50 py-2.5 text-[12px] font-medium text-red-600 active:bg-red-100 transition-colors">
                       <Trash2 className="h-3.5 w-3.5" strokeWidth={1.5} /> حذف
                     </button>
                   </div>
@@ -1019,7 +1081,7 @@ export default function OrdersPage() {
         {formLoading ? (
           <div className="space-y-4">
             {editingOrder && (
-              <div className="rounded-xl bg-blue-50 p-3 flex items-center justify-between">
+              <div className="rounded-2xl bg-blue-50 p-3 flex items-center justify-between">
                 <Skeleton className="h-3 w-16" />
                 <Skeleton className="h-3 w-24" />
               </div>
@@ -1053,16 +1115,16 @@ export default function OrdersPage() {
           {error && <ErrorAlert message={error} />}
 
           {editingOrder && (
-            <div className="rounded-xl bg-blue-50 p-3 flex items-center justify-between">
-              <span className="text-xs text-blue-600">نوع سفارش</span>
-              <span className="text-xs font-bold text-blue-700">{ORDER_TYPE_LABELS[editingOrder.orderType]?.label}</span>
+            <div className="rounded-2xl bg-blue-50 p-3 flex items-center justify-between">
+              <span className="text-[12px] text-blue-600">نوع سفارش</span>
+              <span className="text-[12px] font-bold text-blue-700">{ORDER_TYPE_LABELS[editingOrder.orderType]?.label}</span>
             </div>
           )}
 
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-gray-500">مشتری</label>
             <div className="relative">
-              <select value={customerId} onChange={(e) => setCustomerId(e.target.value)} className="flex h-12 w-full appearance-none rounded-xl border border-gray-200 bg-white px-4 pr-10 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+              <select value={customerId} onChange={(e) => setCustomerId(e.target.value)} className="flex h-12 w-full appearance-none rounded-xl border border-gray-200 bg-white px-4 pr-10 text-sm focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900/10 transition-colors">
                 <option value="">انتخاب مشتری</option>
                 {customers.map((c) => <option key={c.id} value={c.id}>{c.name} ({c.phone})</option>)}
               </select>
@@ -1113,7 +1175,7 @@ export default function OrdersPage() {
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-gray-500">{editingOrder.orderType === "IR_TO_PK" ? "نحوه واریز" : "شماره شبا"}</label>
               {editingOrder.orderType === "IR_TO_PK" ? (
-                <select value={recipientMethod} onChange={(e) => setRecipientMethod(e.target.value)} className="flex h-12 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                <select value={recipientMethod} onChange={(e) => setRecipientMethod(e.target.value)} className="flex h-12 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900/10 transition-colors">
                   <option value="EASYPAISA">Easypaisa</option>
                   <option value="JAZZCASH">JazzCash</option>
                   <option value="BANK_TRANSFER">حواله بانکی</option>
@@ -1155,46 +1217,46 @@ export default function OrdersPage() {
 
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-gray-500">توضیحات</label>
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="اختیاری" rows={2} className="flex w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm placeholder:text-gray-300 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+            <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="اختیاری" rows={2} className="flex w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm placeholder:text-gray-300 focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900/10 transition-colors" />
           </div>
 
-          <Button type="submit" isLoading={submitting} className="w-full h-12 rounded-xl">ذخیره تغییرات</Button>
+          <Button type="submit" isLoading={submitting} className="w-full h-12 rounded-xl bg-gray-900 hover:bg-gray-800">ذخیره تغییرات</Button>
         </form>
         )}
       </BottomSheet>
 
       {/* Delete Confirmation */}
       {deleteConfirmOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setDeleteConfirmOpen(false)}>
-          <div className="mx-4 w-full max-w-sm rounded-2xl bg-white p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setDeleteConfirmOpen(false)}>
+          <div className="mx-4 w-full max-w-sm rounded-3xl bg-white p-5 space-y-5" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-50">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-red-50">
                 <Trash2 className="h-5 w-5 text-red-500" strokeWidth={1.5} />
               </div>
               <div>
-                <p className="text-sm font-bold text-gray-900">حذف سفارش</p>
-                <p className="text-xs text-gray-500">آیا از حذف این سفارش مطمئن هستید؟</p>
+                <p className="text-[15px] font-bold text-gray-900">حذف سفارش</p>
+                <p className="text-[12px] text-gray-500 mt-0.5">آیا از حذف این سفارش مطمئن هستید؟</p>
               </div>
             </div>
             {deletingOrder && (
-              <div className="rounded-xl bg-gray-50 p-3 space-y-1">
+              <div className="rounded-2xl bg-gray-50 p-3.5 space-y-1.5">
                 <div className="flex justify-between">
-                  <span className="text-xs text-gray-500">نوع</span>
-                  <span className="text-xs font-medium text-gray-900">{ORDER_TYPE_LABELS[deletingOrder.orderType]?.label}</span>
+                  <span className="text-[12px] text-gray-500">نوع</span>
+                  <span className="text-[12px] font-medium text-gray-900">{ORDER_TYPE_LABELS[deletingOrder.orderType]?.label}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-xs text-gray-500">مبلغ</span>
-                  <span className="text-xs font-medium text-gray-900" dir="ltr">{Number(deletingOrder.totalToman).toLocaleString("en-US")} تومان</span>
+                  <span className="text-[12px] text-gray-500">مبلغ</span>
+                  <span className="text-[12px] font-medium text-gray-900 tabular-nums" dir="ltr">{Number(deletingOrder.totalToman).toLocaleString("en-US")} تومان</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-xs text-gray-500">مشتری</span>
-                  <span className="text-xs font-medium text-gray-900">{deletingOrder.customer.name}</span>
+                  <span className="text-[12px] text-gray-500">مشتری</span>
+                  <span className="text-[12px] font-medium text-gray-900">{deletingOrder.customer.name}</span>
                 </div>
               </div>
             )}
-            <div className="flex gap-2">
-              <button onClick={() => setDeleteConfirmOpen(false)} className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-medium text-gray-700 active:bg-gray-50">انصراف</button>
-              <button onClick={handleDelete} className="flex-1 rounded-xl bg-red-500 py-2.5 text-sm font-semibold text-white active:bg-red-600">حذف</button>
+            <div className="flex gap-2.5">
+              <button onClick={() => setDeleteConfirmOpen(false)} className="flex-1 rounded-xl border border-gray-200 py-2.5 text-[13px] font-medium text-gray-600 active:bg-gray-50 transition-colors">انصراف</button>
+              <button onClick={handleDelete} className="flex-1 rounded-xl bg-red-500 py-2.5 text-[13px] font-semibold text-white active:bg-red-600 transition-colors">حذف</button>
             </div>
           </div>
         </div>
