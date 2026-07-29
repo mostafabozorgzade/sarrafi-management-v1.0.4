@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
         destinationCard: destinationCard || null,
         destinationSheba: destinationSheba || null,
         description: description || null,
-        status: "REGISTERED",
+        status: "IN_PROGRESS",
       },
       include: {
         customer: { select: { name: true, phone: true } },
@@ -184,7 +184,7 @@ export async function PATCH(request: NextRequest) {
       },
     });
 
-    if (status === "TOMAN_RECEIVED") {
+    if (status === "COMPLETED") {
       const tomanReg = await prisma.cashRegister.findFirst({ where: { tenantId: user.tenantId, type: "toman" } });
       if (tomanReg) {
         await prisma.cashEntry.create({
@@ -192,9 +192,7 @@ export async function PATCH(request: NextRequest) {
         });
         await prisma.cashRegister.update({ where: { id: tomanReg.id }, data: { balance: { increment: order.totalToman } } });
       }
-    }
 
-    if (status === "PKR_TRANSFERRED") {
       const pkrReg = await prisma.cashRegister.findFirst({ where: { tenantId: user.tenantId, type: "rupee" } });
       if (pkrReg) {
         const pkrAmount = order.calculatedPkr || BigInt(0);
@@ -203,9 +201,7 @@ export async function PATCH(request: NextRequest) {
         });
         await prisma.cashRegister.update({ where: { id: pkrReg.id }, data: { balance: { decrement: pkrAmount } } });
       }
-    }
 
-    if (status === "COMPLETED") {
       await prisma.transaction.create({
         data: {
           tenantId: order.tenantId,

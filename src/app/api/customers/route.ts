@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
   if (!user.tenantId) return safeJson({ error: "tenant required" }, { status: 400 });
 
   const body = await request.json();
-  const { name, phone, pakAccount } = body;
+  const { name, phone, pakAccount, address } = body;
 
   if (!name || !phone) {
     return safeJson({ error: "نام و شماره تماس الزامی است" }, { status: 400 });
@@ -33,6 +33,7 @@ export async function POST(request: NextRequest) {
       tenantId: user.tenantId,
       name,
       phone,
+      address: address || null,
       pakAccount: pakAccount || null,
     },
   });

@@ -73,10 +73,9 @@ interface Rate { id: string; currencyId: string; buyRate: string; sellRate: stri
 
 const FILTER_TABS = [
   { value: "all", label: "همه" },
-  { value: "COMPLETED", label: "تکمیل شده" },
-  { value: "REGISTERED", label: "ثبت شده" },
-  { value: "TOMAN_RECEIVED", label: "دریافت" },
   { value: "IN_PROGRESS", label: "در حال انجام" },
+  { value: "COMPLETED", label: "تکمیل شده" },
+  { value: "CANCELLED", label: "لغو شده" },
 ] as const;
 
 export default function OrdersPage() {
@@ -283,27 +282,8 @@ export default function OrdersPage() {
     setStatusLoading(null);
   };
 
-  const getNextAction = (status: string, orderType: string) => {
-    if (orderType === "IR_TO_PK") {
-      if (status === "REGISTERED") return { label: "تومان دریافت شد", next: "TOMAN_RECEIVED" };
-      if (status === "TOMAN_RECEIVED") return { label: "روپیه واریز شد", next: "PKR_TRANSFERRED" };
-      if (status === "PKR_TRANSFERRED") return { label: "تکمیل", next: "COMPLETED" };
-    }
-    if (orderType === "PK_TO_IR") {
-      if (status === "REGISTERED") return { label: "روپیه دریافت شد", next: "TOMAN_RECEIVED" };
-      if (status === "TOMAN_RECEIVED") return { label: "تومان پرداخت شد", next: "PKR_TRANSFERRED" };
-      if (status === "PKR_TRANSFERRED") return { label: "تکمیل", next: "COMPLETED" };
-    }
-    if (orderType === "BUY_PKR") {
-      if (status === "REGISTERED") return { label: "روپیه دریافت شد", next: "TOMAN_RECEIVED" };
-      if (status === "TOMAN_RECEIVED") return { label: "تومان پرداخت شد", next: "PKR_TRANSFERRED" };
-      if (status === "PKR_TRANSFERRED") return { label: "تکمیل", next: "COMPLETED" };
-    }
-    if (orderType === "SELL_PKR") {
-      if (status === "REGISTERED") return { label: "تومان دریافت شد", next: "TOMAN_RECEIVED" };
-      if (status === "TOMAN_RECEIVED") return { label: "روپیه تحویل شد", next: "PKR_TRANSFERRED" };
-      if (status === "PKR_TRANSFERRED") return { label: "تکمیل", next: "COMPLETED" };
-    }
+  const getNextAction = (status: string) => {
+    if (status === "IN_PROGRESS") return { label: "تکمیل شده", next: "COMPLETED" };
     return null;
   };
 
@@ -585,7 +565,7 @@ export default function OrdersPage() {
             {orders.map((o) => {
               const typeInfo = ORDER_TYPE_LABELS[o.orderType] || { label: o.orderType, short: o.orderType, color: "text-gray-600", bg: "bg-gray-50 text-gray-600" };
               const Icon = ICON_MAP[o.orderType] || ArrowDownToLine;
-              const nextAction = getNextAction(o.status, o.orderType);
+              const nextAction = getNextAction(o.status);
               const isTomanAmt = o.orderType === "IR_TO_PK" || o.orderType === "SELL_PKR";
               const orderRate = isTomanAmt ? Number(o.sellRateAtTime || 0) : Number(o.buyRateAtTime || 0);
               const pkrValue = isTomanAmt && Number(o.calculatedPkr) > 0 ? Number(o.calculatedPkr) : Number(o.amount);
@@ -1199,7 +1179,7 @@ export default function OrdersPage() {
 
             {/* Action Buttons */}
             {selectedOrder.status !== "COMPLETED" && selectedOrder.status !== "CANCELLED" && (() => {
-              const nextAction = getNextAction(selectedOrder.status, selectedOrder.orderType);
+              const nextAction = getNextAction(selectedOrder.status);
               const isLoadingDetail = statusLoading === selectedOrder.id;
               return (
                 <div className="space-y-2">

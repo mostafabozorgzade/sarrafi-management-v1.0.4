@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { TrendingUp, Receipt, ClipboardList, ArrowDownToLine, Wallet, Clock } from "lucide-react";
+import { TrendingUp, Receipt, ClipboardList, ArrowDownToLine, Wallet } from "lucide-react";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,8 +14,7 @@ interface DashboardData {
     todayVolume: bigint;
     totalProfit: bigint;
     totalCustomers: number;
-    pendingOrders: number;
-    inProgressOrders: number;
+    activeOrders: number;
   };
   registers: { id: string; name: string; type: string; balance: bigint }[];
   rates: { id: string; currency: { code: string; name: string }; buyRate: bigint; sellRate: bigint }[];
@@ -81,8 +80,7 @@ export default function DashboardPage() {
   const stats = [
     { label: "سود امروز", value: Number(data.stats.todayProfit).toLocaleString("en-US"), icon: TrendingUp, bg: "bg-green-50", color: "text-green-600" },
     { label: "حجم امروز", value: Number(data.stats.todayVolume).toLocaleString("en-US"), icon: Receipt, bg: "bg-blue-50", color: "text-blue-600" },
-    { label: "سفارشات فعال", value: String(data.stats.pendingOrders + data.stats.inProgressOrders), icon: ClipboardList, bg: "bg-amber-50", color: "text-amber-600" },
-    { label: "در حال انجام", value: String(data.stats.inProgressOrders), icon: Clock, bg: "bg-violet-50", color: "text-violet-600" },
+    { label: "سفارشات فعال", value: String(data.stats.activeOrders), icon: ClipboardList, bg: "bg-amber-50", color: "text-amber-600" },
   ];
 
   return (

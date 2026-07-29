@@ -130,7 +130,7 @@ async function main() {
     },
     {
       id: randomUUID(), tenantId: tenant.id, customerId: fatemeh.id, userId: cashier.id, currencyId: pkr.id,
-      orderType: OrderType.PK_TO_IR, status: OrderStatus.REGISTERED, amount: BigInt(30000),
+      orderType: OrderType.PK_TO_IR, status: OrderStatus.IN_PROGRESS, amount: BigInt(30000),
       totalToman: BigInt(90000000), fee: BigInt(300000),
       buyMarketProfitAmount: BigInt(90000), sellMarketProfitAmount: BigInt(60000), totalProfitAmount: BigInt(150000),
       recipientName: "فاطمه رضایی", recipientMethod: "EASYPAISA" as const,
@@ -138,7 +138,7 @@ async function main() {
     },
     {
       id: randomUUID(), tenantId: tenant.id, customerId: ali.id, userId: manager.id, currencyId: pkr.id,
-      orderType: OrderType.BUY_PKR, status: OrderStatus.TOMAN_RECEIVED, amount: BigInt(100000),
+      orderType: OrderType.BUY_PKR, status: OrderStatus.IN_PROGRESS, amount: BigInt(100000),
       totalToman: BigInt(295000000), fee: BigInt(800000),
       buyMarketProfitAmount: BigInt(250000), sellMarketProfitAmount: BigInt(150000), totalProfitAmount: BigInt(400000),
       recipientName: "علی کریمی", recipientMethod: "CASH" as const,
@@ -154,7 +154,7 @@ async function main() {
     },
     {
       id: randomUUID(), tenantId: tenant.id, customerId: reza.id, userId: manager.id, currencyId: pkr.id,
-      orderType: OrderType.IR_TO_PK, status: OrderStatus.PKR_TRANSFERRED, amount: BigInt(75000),
+      orderType: OrderType.IR_TO_PK, status: OrderStatus.IN_PROGRESS, amount: BigInt(75000),
       totalToman: BigInt(221250000), fee: BigInt(600000),
       buyMarketProfitAmount: BigInt(180000), sellMarketProfitAmount: BigInt(120000), totalProfitAmount: BigInt(300000),
       recipientName: "رضا عباسی", recipientMethod: "HAWALA" as const,
@@ -170,7 +170,7 @@ async function main() {
     },
     {
       id: randomUUID(), tenantId: tenant.id, customerId: fatemeh.id, userId: manager.id, currencyId: pkr.id,
-      orderType: OrderType.SELL_PKR, status: OrderStatus.REGISTERED, amount: BigInt(20000),
+      orderType: OrderType.SELL_PKR, status: OrderStatus.IN_PROGRESS, amount: BigInt(20000),
       totalToman: BigInt(60000000), fee: BigInt(200000),
       buyMarketProfitAmount: BigInt(40000), sellMarketProfitAmount: BigInt(60000), totalProfitAmount: BigInt(100000),
       recipientName: "فاطمه رضایی", recipientMethod: "CASH" as const,
@@ -194,7 +194,7 @@ async function main() {
     },
     {
       id: randomUUID(), tenantId: tenant.id, customerId: reza.id, userId: cashier.id, currencyId: pkr.id,
-      orderType: OrderType.BUY_PKR, status: OrderStatus.REGISTERED, amount: BigInt(80000),
+      orderType: OrderType.BUY_PKR, status: OrderStatus.IN_PROGRESS, amount: BigInt(80000),
       totalToman: BigInt(236000000), fee: BigInt(700000),
       buyMarketProfitAmount: BigInt(200000), sellMarketProfitAmount: BigInt(150000), totalProfitAmount: BigInt(350000),
       recipientName: "رضا عباسی", recipientMethod: "HAWALA" as const,

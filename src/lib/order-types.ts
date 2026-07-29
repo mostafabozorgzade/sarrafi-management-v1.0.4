@@ -105,23 +105,13 @@ export const ORDER_TYPE_LABELS: Record<string, OrderTypeInfo> = {
 };
 
 export const STATUS_LABELS: Record<string, string> = {
-  DRAFT: "پیش‌نویس",
-  REGISTERED: "ثبت شده",
-  TOMAN_RECEIVED: "تومان دریافت",
-  AWAITING_PKR_TRANSFER: "انتظار روپیه",
-  PKR_TRANSFERRED: "روپیه واریز",
   IN_PROGRESS: "در حال انجام",
-  COMPLETED: "تکمیل",
-  CANCELLED: "لغو",
+  COMPLETED: "تکمیل شده",
+  CANCELLED: "لغو شده",
 };
 
 export const STATUS_COLORS: Record<string, string> = {
-  DRAFT: "bg-gray-100 text-gray-600",
-  REGISTERED: "bg-blue-50 text-blue-600",
-  TOMAN_RECEIVED: "bg-amber-50 text-amber-600",
-  AWAITING_PKR_TRANSFER: "bg-violet-50 text-violet-600",
-  PKR_TRANSFERRED: "bg-cyan-50 text-cyan-600",
-  IN_PROGRESS: "bg-indigo-50 text-indigo-600",
+  IN_PROGRESS: "bg-yellow-50 text-yellow-600",
   COMPLETED: "bg-green-50 text-green-600",
   CANCELLED: "bg-red-50 text-red-600",
 };

@@ -21,11 +21,6 @@ enum OrderType {
 }
 
 enum OrderStatus {
-  DRAFT
-  REGISTERED
-  TOMAN_RECEIVED
-  AWAITING_PKR_TRANSFER
-  PKR_TRANSFERRED
   IN_PROGRESS
   COMPLETED
   CANCELLED
@@ -109,6 +104,7 @@ model Customer {
   tenantId     String        @db.Uuid
   name         String
   phone        String
+  address      String?
   pakAccount   String?
   debt         BigInt        @default(0)
   totalBuy     BigInt        @default(0)
@@ -130,7 +126,7 @@ model Order {
   userId           String         @db.Uuid
   currencyId       String         @db.Uuid
   orderType        OrderType
-  status           OrderStatus    @default(DRAFT)
+  status           OrderStatus    @default(IN_PROGRESS)
 
   amount           BigInt
   totalToman       BigInt
