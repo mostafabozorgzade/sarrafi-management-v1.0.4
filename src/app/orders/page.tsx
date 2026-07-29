@@ -488,7 +488,7 @@ export default function OrdersPage() {
   return (
     <main className="min-h-dvh bg-[#fafafa]">
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-gray-100/80">
+      <div className="bg-white border-b border-gray-100/80">
         {/* Title */}
         <div className="flex h-14 items-center justify-between px-5">
           <div className="flex items-center gap-2.5">
@@ -509,7 +509,7 @@ export default function OrdersPage() {
               type="text"
               value={searchQuery}
               onChange={(e) => handleSearch(e.target.value)}
-              placeholder="جستجو..."
+              placeholder="جستجو بر اساس نام مشتری..."
               className="h-10 w-full rounded-xl border border-gray-100 bg-gray-50/80 pr-10 pl-9 text-[13px] text-gray-700 placeholder:text-gray-300 focus:outline-none focus:border-gray-200 focus:bg-white focus:shadow-sm transition-all"
             />
             {searchQuery && (
@@ -521,8 +521,8 @@ export default function OrdersPage() {
         </div>
 
         {/* Filter Tabs */}
-        <div className="px-4 pb-3">
-          <div className="flex gap-1 p-1 bg-gray-100/70 rounded-xl overflow-x-auto scrollbar-hide">
+        <div className="px-4 pb-0">
+          <div className="flex gap-1 p-1 bg-gray-100/70 rounded-xl">
             {FILTER_TABS.map(({ value, label }) => (
               <button
                 key={value}
