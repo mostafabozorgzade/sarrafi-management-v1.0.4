@@ -528,7 +528,7 @@ export default function OrdersPage() {
                 key={value}
                 onClick={() => setFilter(value)}
                 className={cn(
-                  "rounded-full px-4 py-1.5 text-[11px] font-semibold transition-all duration-200 whitespace-nowrap",
+                  "rounded-[5px] px-4 py-1.5 text-[11px] font-semibold transition-all duration-200 whitespace-nowrap",
                   filter === value
                     ? "bg-gray-900 text-white shadow-sm"
                     : "bg-gray-100/70 text-gray-400 hover:text-gray-600"
@@ -693,8 +693,9 @@ export default function OrdersPage() {
       {/* FAB */}
       <button
         onClick={() => setDirectionSheetOpen(true)}
-        className="fixed bottom-24 left-4 z-30 flex h-[52px] w-[52px] items-center justify-center rounded-[5px] bg-gray-900 text-white shadow-lg shadow-gray-900/20 transition-all active:scale-95 hover:bg-gray-800"
+        className="fixed bottom-24 left-4 z-30 flex h-12 items-center gap-2 rounded-[5px] bg-gray-900 pl-4 pr-3 text-white shadow-lg shadow-gray-900/20 transition-all active:scale-95 hover:bg-gray-800"
       >
+        <span className="text-[13px] font-semibold">ثبت سفارش</span>
         <Plus className="h-5 w-5" strokeWidth={2} />
       </button>
 
