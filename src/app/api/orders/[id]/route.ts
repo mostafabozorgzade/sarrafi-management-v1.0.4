@@ -38,7 +38,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     const body = await request.json();
     const {
-      customerId, currencyId, amount, fee, transferCost,
+      customerId, currencyId, amount, rate, marketRate, fee, transferCost,
       recipientName, recipientAccount, recipientMethod,
       destinationCard, destinationSheba, description,
     } = body;
@@ -48,17 +48,23 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     const orderType = existing.orderType;
-    const amountNum = Number(amount);
-    const feeNum = Number(fee || 0);
-    const transferCostNum = Number(transferCost || 0);
+    const amountNum = Number(String(amount).replace(/,/g, ""));
+    const rateNum = Number(String(rate).replace(/,/g, "")) || 0;
+    const marketRateNum = Number(String(marketRate).replace(/,/g, "")) || 0;
+    const feeNum = Number(String(fee || 0).replace(/,/g, ""));
+    const transferCostNum = Number(String(transferCost || 0).replace(/,/g, ""));
 
     const currencyRate = await prisma.currencyRate.findUnique({
       where: { tenantId_currencyId: { tenantId: user.tenantId, currencyId } },
     });
 
-    const marketRateAtTime = currencyRate ? Number(currencyRate.marketRate ?? 0) : 0;
-    const buyRateAtTime = currencyRate ? Number(currencyRate.buyRate ?? 0) : 0;
-    const sellRateAtTime = currencyRate ? Number(currencyRate.sellRate ?? 0) : 0;
+    const fallbackBuyRate = currencyRate ? Number(currencyRate.buyRate ?? 0) : 0;
+    const fallbackSellRate = currencyRate ? Number(currencyRate.sellRate ?? 0) : 0;
+    const fallbackMarketRate = currencyRate ? Number(currencyRate.marketRate ?? 0) : 0;
+
+    const buyRateAtTime = rateNum > 0 ? (fallbackBuyRate || rateNum) : fallbackBuyRate;
+    const sellRateAtTime = rateNum > 0 ? (fallbackSellRate || rateNum) : fallbackSellRate;
+    const marketRateAtTime = marketRateNum > 0 ? marketRateNum : fallbackMarketRate;
 
     const orderRate = (orderType === "BUY_PKR" || orderType === "PK_TO_IR") ? buyRateAtTime : sellRateAtTime;
 

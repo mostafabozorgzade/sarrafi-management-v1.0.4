@@ -33,6 +33,7 @@ export default function NewOrderPage() {
   const [currencyId, setCurrencyId] = useState("");
   const [amount, setAmount] = useState("");
   const [rate, setRate] = useState("");
+  const [marketRate, setMarketRate] = useState("");
   const [fee, setFee] = useState("");
   const [transferCost, setTransferCost] = useState("");
   const [recipientName, setRecipientName] = useState("");
@@ -68,12 +69,14 @@ export default function NewOrderPage() {
           marketRate: Number(pkrRate.marketRate),
         });
         setRate(Number(pkrRate.sellRate).toLocaleString("en-US"));
+        setMarketRate(Number(pkrRate.marketRate).toLocaleString("en-US"));
       }
     }).catch(() => {});
   }, []);
 
   const amountNum = parseFormatted(amount);
   const rateNum = parseFormatted(rate);
+  const marketRateNum = parseFormatted(marketRate);
   const feeNum = parseFormatted(fee);
   const transferCostNum = parseFormatted(transferCost);
   const isTomanAmount = selectedType ? isTomanAmountType(selectedType) : false;
@@ -96,23 +99,23 @@ export default function NewOrderPage() {
   let mainProfitLabel = "";
   let mainProfitFormula = "";
 
-  if (currentRates && pkrAmount > 0) {
+  if (pkrAmount > 0) {
     if (selectedType === "BUY_PKR") {
-      previewMainProfit = (currentRates.marketRate - currentRates.buyRate) * pkrAmount;
+      previewMainProfit = (marketRateNum - rateNum) * pkrAmount;
       mainProfitLabel = "سود خرید روپیه نسبت به بازار";
-      mainProfitFormula = `(بازار ${currentRates.marketRate.toLocaleString("en-US")} - خرید ${currentRates.buyRate.toLocaleString("en-US")}) × ${pkrAmount.toLocaleString("en-US")}`;
+      mainProfitFormula = `(بازار ${marketRateNum.toLocaleString("en-US")} - خرید ${rateNum.toLocaleString("en-US")}) × ${pkrAmount.toLocaleString("en-US")}`;
     } else if (selectedType === "SELL_PKR") {
-      previewMainProfit = (currentRates.sellRate - currentRates.marketRate) * pkrAmount;
+      previewMainProfit = (rateNum - marketRateNum) * pkrAmount;
       mainProfitLabel = "سود فروش روپیه نسبت به بازار";
-      mainProfitFormula = `(فروش ${currentRates.sellRate.toLocaleString("en-US")} - بازار ${currentRates.marketRate.toLocaleString("en-US")}) × ${pkrAmount.toLocaleString("en-US")}`;
+      mainProfitFormula = `(فروش ${rateNum.toLocaleString("en-US")} - بازار ${marketRateNum.toLocaleString("en-US")}) × ${pkrAmount.toLocaleString("en-US")}`;
     } else if (selectedType === "IR_TO_PK") {
-      previewMainProfit = (currentRates.sellRate - currentRates.marketRate) * pkrAmount;
+      previewMainProfit = (rateNum - marketRateNum) * pkrAmount;
       mainProfitLabel = "سود حواله ایران به پاکستان";
-      mainProfitFormula = `(فروش ${currentRates.sellRate.toLocaleString("en-US")} - بازار ${currentRates.marketRate.toLocaleString("en-US")}) × ${pkrAmount.toLocaleString("en-US")}`;
+      mainProfitFormula = `(فروش ${rateNum.toLocaleString("en-US")} - بازار ${marketRateNum.toLocaleString("en-US")}) × ${pkrAmount.toLocaleString("en-US")}`;
     } else if (selectedType === "PK_TO_IR") {
-      previewMainProfit = (currentRates.marketRate - currentRates.buyRate) * pkrAmount;
+      previewMainProfit = (marketRateNum - rateNum) * pkrAmount;
       mainProfitLabel = "سود دریافت روپیه";
-      mainProfitFormula = `(بازار ${currentRates.marketRate.toLocaleString("en-US")} - خرید ${currentRates.buyRate.toLocaleString("en-US")}) × ${pkrAmount.toLocaleString("en-US")}`;
+      mainProfitFormula = `(بازار ${marketRateNum.toLocaleString("en-US")} - خرید ${rateNum.toLocaleString("en-US")}) × ${pkrAmount.toLocaleString("en-US")}`;
     }
 
     previewTotalProfit = previewMainProfit + feeNum - transferCostNum;
@@ -133,6 +136,7 @@ export default function NewOrderPage() {
   const resetForm = () => {
     setAmount("");
     setRate("");
+    setMarketRate("");
     setFee("");
     setTransferCost("");
     setRecipientName("");
@@ -151,7 +155,7 @@ export default function NewOrderPage() {
     setLoading(true);
     try {
       await api.post("/api/orders", {
-        customerId, currencyId, orderType: selectedType, amount, fee, transferCost,
+        customerId, currencyId, orderType: selectedType, amount, rate, marketRate, fee, transferCost,
         recipientName, recipientAccount, recipientMethod,
         destinationCard, destinationSheba, description,
       });
@@ -352,18 +356,31 @@ export default function NewOrderPage() {
           </div>
 
           {currentRates && selectedType && (
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-gray-500">
-                {(selectedType === "SELL_PKR" || selectedType === "IR_TO_PK") ? "نرخ فروش روپیه" : "نرخ خرید روپیه"}
-              </label>
-              <Input
-                type="text"
-                inputMode="numeric"
-                value={rate}
-                onChange={(e) => setRate(formatNum(e.target.value))}
-                placeholder="0"
-                className="h-12 text-left rounded-xl"
-              />
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-500">
+                  {(selectedType === "SELL_PKR" || selectedType === "IR_TO_PK") ? "نرخ فروش روپیه" : "نرخ خرید روپیه"}
+                </label>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  value={rate}
+                  onChange={(e) => setRate(formatNum(e.target.value))}
+                  placeholder="0"
+                  className="h-12 text-left rounded-xl"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-500">نرخ بازار روپیه</label>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  value={marketRate}
+                  onChange={(e) => setMarketRate(formatNum(e.target.value))}
+                  placeholder="0"
+                  className="h-12 text-left rounded-xl"
+                />
+              </div>
             </div>
           )}
 
