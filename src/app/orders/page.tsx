@@ -7,9 +7,7 @@ import {
   Clock,
   CheckCircle2,
   AlertCircle,
-  CreditCard,
   User,
-  FileText,
   ChevronLeft,
   Send,
   Pencil,
@@ -87,7 +85,8 @@ export default function OrdersPage() {
   const [customerId, setCustomerId] = useState("");
   const [currencyId, setCurrencyId] = useState("");
   const [amount, setAmount] = useState("");
-  const [rate, setRate] = useState("");
+  const [buyRate, setBuyRate] = useState("");
+  const [sellRate, setSellRate] = useState("");
   const [marketRate, setMarketRate] = useState("");
   const [fee, setFee] = useState("");
   const [transferCost, setTransferCost] = useState("");
@@ -106,6 +105,14 @@ export default function OrdersPage() {
   const [editSheetOpen, setEditSheetOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deletingOrder, setDeletingOrder] = useState<Order | null>(null);
+  const [formLoading, setFormLoading] = useState(false);
+
+  useEffect(() => {
+    if (selectedOrder && detailSheetOpen) {
+      const updated = orders.find((o) => o.id === selectedOrder.id);
+      if (updated) setSelectedOrder(updated);
+    }
+  }, [orders, detailSheetOpen]);
 
   const onlyDigits = (v: string) => v.replace(/[^0-9]/g, "");
   const formatNum = (v: string) => {
@@ -121,6 +128,7 @@ export default function OrdersPage() {
   }, [filter]);
 
   const loadFormData = () => {
+    setFormLoading(true);
     Promise.all([api.get("/api/customers"), api.get("/api/currencies"), api.get("/api/rates")]).then(([c, cur, rates]) => {
       setCustomers(c);
       if (c.length > 0) setCustomerId(c[0].id);
@@ -133,10 +141,11 @@ export default function OrdersPage() {
           sellRate: Number(pkrRate.sellRate),
           marketRate: Number(pkrRate.marketRate),
         });
-        setRate(Number(pkrRate.sellRate).toLocaleString("en-US"));
+        setBuyRate(Number(pkrRate.buyRate).toLocaleString("en-US"));
+        setSellRate(Number(pkrRate.sellRate).toLocaleString("en-US"));
         setMarketRate(Number(pkrRate.marketRate).toLocaleString("en-US"));
       }
-    }).catch(() => {});
+    }).catch(() => {}).finally(() => setFormLoading(false));
   };
 
   const handleStatus = async (id: string, status: string) => {
@@ -185,7 +194,7 @@ export default function OrdersPage() {
   };
 
   const resetForm = () => {
-    setAmount(""); setRate(""); setMarketRate(""); setFee(""); setTransferCost(""); setRecipientName(""); setRecipientAccount("");
+    setAmount(""); setBuyRate(""); setSellRate(""); setMarketRate(""); setFee(""); setTransferCost(""); setRecipientName(""); setRecipientAccount("");
     setDestinationCard(""); setDestinationSheba(""); setDescription(""); setError(null);
     setSelectedType(null); setCurrentRates(null);
   };
@@ -193,8 +202,10 @@ export default function OrdersPage() {
   const isTomanAmount = selectedType ? isTomanAmountType(selectedType) : false;
   const isHawala = selectedType ? isHawalaType(selectedType) : false;
   const amountNum = parseFormatted(amount);
-  const rateNum = parseFormatted(rate);
+  const buyRateNum = parseFormatted(buyRate);
+  const sellRateNum = parseFormatted(sellRate);
   const marketRateNum = parseFormatted(marketRate);
+  const rateNum = (selectedType === "SELL_PKR" || selectedType === "IR_TO_PK") ? sellRateNum : buyRateNum;
   const feeNum = parseFormatted(fee);
   let totalToman = 0;
   let calculatedPkr = 0;
@@ -244,7 +255,7 @@ export default function OrdersPage() {
     setSubmitting(true);
     try {
       const newOrder = await api.post("/api/orders", {
-        customerId, currencyId, orderType: selectedType, amount, rate, marketRate, fee, transferCost,
+        customerId, currencyId, orderType: selectedType, amount, buyRate, sellRate, marketRate, fee, transferCost,
         recipientName, recipientAccount, recipientMethod,
         destinationCard, destinationSheba, description,
       });
@@ -274,8 +285,8 @@ export default function OrdersPage() {
     setCustomerId(order.customerId);
     setCurrencyId(order.currencyId);
     setAmount(String(Number(order.amount)));
-    const storedRate = (order.orderType === "SELL_PKR" || order.orderType === "IR_TO_PK") ? Number(order.sellRateAtTime || 0) : Number(order.buyRateAtTime || 0);
-    setRate(storedRate > 0 ? storedRate.toLocaleString("en-US") : "");
+    setBuyRate(Number(order.buyRateAtTime || 0) > 0 ? Number(order.buyRateAtTime).toLocaleString("en-US") : "");
+    setSellRate(Number(order.sellRateAtTime || 0) > 0 ? Number(order.sellRateAtTime).toLocaleString("en-US") : "");
     const storedMarket = Number(order.marketRateAtTime || 0);
     setMarketRate(storedMarket > 0 ? storedMarket.toLocaleString("en-US") : "");
     setFee(String(Number(order.fee)));
@@ -302,7 +313,7 @@ export default function OrdersPage() {
     setSubmitting(true);
     try {
       const updated = await api.put(`/api/orders/${editingOrder.id}`, {
-        customerId, currencyId, amount, rate, marketRate, fee, transferCost,
+        customerId, currencyId, amount, marketRate, fee, transferCost,
         recipientName, recipientAccount, recipientMethod,
         destinationCard, destinationSheba, description,
       });
@@ -480,6 +491,41 @@ export default function OrdersPage() {
 
       {/* Form BottomSheet */}
       <BottomSheet isOpen={formSheetOpen} onClose={() => setFormSheetOpen(false)} title={typeInfo?.label} className="max-h-[85vh]">
+        {formLoading ? (
+          <div className="space-y-4">
+            <div className="rounded-xl bg-gray-50 p-3 space-y-2">
+              <Skeleton className="h-3 w-24" />
+              <div className="grid grid-cols-3 gap-2">
+                <Skeleton className="h-12 rounded-lg" />
+                <Skeleton className="h-12 rounded-lg" />
+                <Skeleton className="h-12 rounded-lg" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="h-12 rounded-xl" />
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-3 w-28" />
+              <Skeleton className="h-12 rounded-xl" />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-2">
+                <Skeleton className="h-3 w-20" />
+                <Skeleton className="h-12 rounded-xl" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-3 w-24" />
+                <Skeleton className="h-12 rounded-xl" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="h-12 rounded-xl" />
+            </div>
+            <Skeleton className="h-12 rounded-xl" />
+          </div>
+        ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && <ErrorAlert message={error} />}
 
@@ -587,12 +633,18 @@ export default function OrdersPage() {
 
           {currentRates && selectedType && (
             <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-gray-500">
-                  {(selectedType === "SELL_PKR" || selectedType === "IR_TO_PK") ? "نرخ فروش روپیه" : "نرخ خرید روپیه"}
-                </label>
-                <Input type="text" inputMode="numeric" value={rate} onChange={(e) => setRate(formatNum(e.target.value))} placeholder="0" className="h-12 text-left rounded-xl" />
-              </div>
+              {(selectedType === "BUY_PKR" || selectedType === "PK_TO_IR") && (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-gray-500">نرخ خرید روپیه</label>
+                  <Input type="text" inputMode="numeric" value={buyRate} onChange={(e) => setBuyRate(formatNum(e.target.value))} placeholder="0" className="h-12 text-left rounded-xl" />
+                </div>
+              )}
+              {(selectedType === "SELL_PKR" || selectedType === "IR_TO_PK") && (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-gray-500">نرخ فروش روپیه</label>
+                  <Input type="text" inputMode="numeric" value={sellRate} onChange={(e) => setSellRate(formatNum(e.target.value))} placeholder="0" className="h-12 text-left rounded-xl" />
+                </div>
+              )}
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-gray-500">نرخ بازار روپیه</label>
                 <Input type="text" inputMode="numeric" value={marketRate} onChange={(e) => setMarketRate(formatNum(e.target.value))} placeholder="0" className="h-12 text-left rounded-xl" />
@@ -651,17 +703,7 @@ export default function OrdersPage() {
             </div>
           )}
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-gray-500">کارمزد (تومان)</label>
-            <Input type="text" inputMode="numeric" value={fee} onChange={(e) => setFee(formatNum(e.target.value))} placeholder="0" className="h-12 text-left rounded-xl" />
-          </div>
-
           {isHawala && (
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-gray-500">هزینه انتقال (تومان)</label>
-              <Input type="text" inputMode="numeric" value={transferCost} onChange={(e) => setTransferCost(formatNum(e.target.value))} placeholder="0" className="h-12 text-left rounded-xl" />
-            </div>
-          )}
 
           {/* Hawala fields: IR_TO_PK and PK_TO_IR */}
           {isHawala && (<>
@@ -724,12 +766,13 @@ export default function OrdersPage() {
 
           <Button type="submit" isLoading={submitting} className="w-full h-12 rounded-xl">ثبت سفارش</Button>
         </form>
+        )}
       </BottomSheet>
 
       {/* Detail BottomSheet */}
       <BottomSheet isOpen={detailSheetOpen} onClose={() => setDetailSheetOpen(false)} title="جزئیات سفارش" className="max-h-[85vh]">
         {selectedOrder && (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {/* Header */}
             <div className="flex items-center gap-3">
               {(() => { const ti = ORDER_TYPE_LABELS[selectedOrder.orderType]; const Icon = ICON_MAP[selectedOrder.orderType] || ArrowDownToLine; return (
@@ -743,115 +786,80 @@ export default function OrdersPage() {
               </div>
             </div>
 
-            {/* Customer & Currency */}
-            <div className="rounded-xl bg-gray-50 p-3 space-y-2">
-              <div className="flex items-center gap-2">
-                <User className="h-3.5 w-3.5 text-gray-400" strokeWidth={1.5} />
-                <span className="text-xs text-gray-600">{selectedOrder.customer.name}</span>
-                <span className="text-[10px] text-gray-400" dir="ltr">{selectedOrder.customer.phone}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CreditCard className="h-3.5 w-3.5 text-gray-400" strokeWidth={1.5} />
-                <span className="text-xs text-gray-600">{selectedOrder.currency.name} ({selectedOrder.currency.code})</span>
-              </div>
+            {/* Customer */}
+            <div className="flex items-center gap-2 rounded-xl bg-gray-50 p-2.5">
+              <User className="h-3.5 w-3.5 text-gray-400" strokeWidth={1.5} />
+              <span className="text-xs font-medium text-gray-700">{selectedOrder.customer.name}</span>
+              <span className="text-[10px] text-gray-400" dir="ltr">{selectedOrder.customer.phone}</span>
+              <span className="mr-auto text-[10px] text-gray-400">{selectedOrder.currency.code}</span>
             </div>
 
-            {/* Amounts */}
+            {/* Amount & Rates */}
             {(() => {
               const ot = selectedOrder.orderType;
               const isTomanAmt = ot === "IR_TO_PK" || ot === "SELL_PKR";
+              const orderRate = isTomanAmt ? Number(selectedOrder.sellRateAtTime || 0) : Number(selectedOrder.buyRateAtTime || 0);
               return (
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="rounded-xl border border-gray-100 p-3 text-center">
-                    <p className="text-[10px] text-gray-400">{isTomanAmt ? "مبلغ (تومان)" : "مبلغ (روپیه)"}</p>
-                    <p className="text-sm font-bold text-gray-900" dir="ltr">{Number(selectedOrder.amount).toLocaleString("en-US")}</p>
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="rounded-xl border border-gray-100 p-2.5 text-center">
+                      <p className="text-[9px] text-gray-400">{isTomanAmt ? "مبلغ (تومان)" : "مبلغ (روپیه)"}</p>
+                      <p className="text-sm font-bold text-gray-900" dir="ltr">{Number(selectedOrder.amount).toLocaleString("en-US")}</p>
+                    </div>
+                    <div className="rounded-xl border border-gray-100 p-2.5 text-center">
+                      <p className="text-[9px] text-gray-400">{isTomanAmt ? "نرخ فروش" : "نرخ خرید"}</p>
+                      <p className="text-sm font-bold text-gray-900" dir="ltr">{orderRate.toLocaleString("en-US")} <span className="text-[9px] font-normal text-gray-400">تومان</span></p>
+                    </div>
                   </div>
-                  <div className="rounded-xl border border-gray-100 p-3 text-center">
-                    <p className="text-[10px] text-gray-400">
-                      {(selectedOrder.orderType === "SELL_PKR" || selectedOrder.orderType === "IR_TO_PK") ? "نرخ فروش" : "نرخ خرید"}
-                    </p>
-                    <p className="text-sm font-bold text-gray-900" dir="ltr">{(selectedOrder.orderType === "SELL_PKR" || selectedOrder.orderType === "IR_TO_PK") ? Number(selectedOrder.sellRateAtTime || 0).toLocaleString("en-US") : Number(selectedOrder.buyRateAtTime || 0).toLocaleString("en-US")} <span className="text-[9px] font-normal text-gray-400">تومان/روپیه</span></p>
-                  </div>
-                  <div className="rounded-xl border border-gray-100 p-3 text-center">
-                    <p className="text-[10px] text-gray-400">جمع کل (تومان)</p>
-                    <p className="text-sm font-bold text-blue-600" dir="ltr">{Number(selectedOrder.totalToman).toLocaleString("en-US")} <span className="text-[9px] font-normal">تومان</span></p>
-                  </div>
-                  <div className="rounded-xl border border-gray-100 p-3 text-center">
-                    <p className="text-[10px] text-gray-400">کارمزد (تومان)</p>
-                    <p className="text-sm font-bold text-gray-900" dir="ltr">{Number(selectedOrder.fee).toLocaleString("en-US")} <span className="text-[9px] font-normal text-gray-400">تومان</span></p>
-                  </div>
-                  {selectedOrder.calculatedPkr && Number(selectedOrder.calculatedPkr) > 0 && (
-                    <div className="col-span-2 rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-center">
-                      <p className="text-[10px] text-emerald-500">روپیه محاسبه شده</p>
-                      <p className="text-sm font-bold text-emerald-600" dir="ltr">{Number(selectedOrder.calculatedPkr).toLocaleString("en-US")} <span className="text-[9px] font-normal text-emerald-500">روپیه</span></p>
+                  {isTomanAmt && Number(selectedOrder.calculatedPkr) > 0 && (
+                    <div className="rounded-xl border border-blue-100 bg-blue-50 p-2.5 text-center">
+                      <p className="text-[9px] text-blue-500">روپیه محاسبه شده</p>
+                      <p className="text-sm font-bold text-blue-600" dir="ltr">{Number(selectedOrder.calculatedPkr).toLocaleString("en-US")} <span className="text-[9px] font-normal text-blue-400">روپیه</span></p>
                     </div>
                   )}
                 </div>
               );
             })()}
 
-            {/* Financial Details */}
-            {(selectedOrder.marketRateAtTime || selectedOrder.buyRateAtTime || selectedOrder.sellRateAtTime) && (
-              <div className="rounded-xl bg-green-50 p-3 space-y-2">
-                <p className="text-[10px] font-semibold text-green-600 uppercase">نرخ لحظه معامله</p>
-                {selectedOrder.marketRateAtTime && Number(selectedOrder.marketRateAtTime) > 0 && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-green-600">نرخ بازار</span>
-                    <span className="text-xs font-bold text-green-700" dir="ltr">{Number(selectedOrder.marketRateAtTime).toLocaleString("en-US")} <span className="text-[9px] font-normal text-green-500">تومان</span></span>
-                  </div>
-                )}
-                {selectedOrder.buyRateAtTime && Number(selectedOrder.buyRateAtTime) > 0 && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-green-600">نرخ خرید</span>
-                    <span className="text-xs font-bold text-green-700" dir="ltr">{Number(selectedOrder.buyRateAtTime).toLocaleString("en-US")} <span className="text-[9px] font-normal text-green-500">تومان</span></span>
-                  </div>
-                )}
-                {selectedOrder.sellRateAtTime && Number(selectedOrder.sellRateAtTime) > 0 && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-green-600">نرخ فروش</span>
-                    <span className="text-xs font-bold text-green-700" dir="ltr">{Number(selectedOrder.sellRateAtTime).toLocaleString("en-US")} <span className="text-[9px] font-normal text-green-500">تومان</span></span>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Profit Details */}
+            {/* Profit Breakdown */}
             {(() => {
               const ot = selectedOrder.orderType;
-              const hasProfit = (ot === "BUY_PKR" || ot === "PK_TO_IR") ? Number(selectedOrder.buyMarketProfitAmount) !== 0 : Number(selectedOrder.sellMarketProfitAmount) !== 0;
-              const hasFee = Number(selectedOrder.feeAmount) > 0;
-              const hasTransfer = Number(selectedOrder.transferCost) > 0;
-              if (!hasProfit && !hasFee && !hasTransfer && !Number(selectedOrder.totalProfitAmount)) return null;
+              const mktRate = Number(selectedOrder.marketRateAtTime || 0);
+              const mainProfit = (ot === "BUY_PKR" || ot === "PK_TO_IR") ? Number(selectedOrder.buyMarketProfitAmount) : Number(selectedOrder.sellMarketProfitAmount);
+              const feeAmt = Number(selectedOrder.feeAmount || 0);
+              const transferAmt = Number(selectedOrder.transferCost || 0);
+              const totalProfit = Number(selectedOrder.totalProfitAmount || 0);
+              if (!mainProfit && !feeAmt && !transferAmt && !totalProfit) return null;
               return (
-                <div className="rounded-xl bg-green-50 p-3 space-y-2">
-                  <p className="text-[10px] font-semibold text-green-600 uppercase">تحلیل سود</p>
-                  {(ot === "BUY_PKR" || ot === "PK_TO_IR") && Number(selectedOrder.buyMarketProfitAmount) !== 0 && (
+                <div className="rounded-xl bg-green-50 p-3 space-y-1.5">
+                  <p className="text-[10px] font-semibold text-green-600">تحلیل سود</p>
+                  {mktRate > 0 && (
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-green-600">{ot === "BUY_PKR" ? "سود خرید روپیه" : "سود دریافت روپیه"}</span>
-                      <span className="text-xs font-bold text-green-700" dir="ltr">{Number(selectedOrder.buyMarketProfitAmount).toLocaleString("en-US")} <span className="text-[9px] font-normal text-green-500">تومان</span></span>
+                      <span className="text-[11px] text-green-600">نرخ بازار</span>
+                      <span className="text-[11px] font-bold text-green-700" dir="ltr">{mktRate.toLocaleString("en-US")} <span className="text-[9px] font-normal text-green-500">تومان</span></span>
                     </div>
                   )}
-                  {(ot === "SELL_PKR" || ot === "IR_TO_PK") && Number(selectedOrder.sellMarketProfitAmount) !== 0 && (
+                  {mainProfit !== 0 && (
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-green-600">{ot === "SELL_PKR" ? "سود فروش روپیه" : "سود حواله"}</span>
-                      <span className="text-xs font-bold text-green-700" dir="ltr">{Number(selectedOrder.sellMarketProfitAmount).toLocaleString("en-US")} <span className="text-[9px] font-normal text-green-500">تومان</span></span>
+                      <span className="text-[11px] text-green-600">{ot === "BUY_PKR" ? "سود خرید نسبت به بازار" : ot === "SELL_PKR" ? "سود فروش نسبت به بازار" : ot === "IR_TO_PK" ? "سود حواله" : "سود دریافت روپیه"}</span>
+                      <span className="text-[11px] font-bold text-green-700" dir="ltr">{mainProfit.toLocaleString("en-US")} <span className="text-[9px] font-normal text-green-500">تومان</span></span>
                     </div>
                   )}
-                  {hasFee && (
+                  {feeAmt > 0 && (
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-green-600">کارمزد</span>
-                      <span className="text-xs font-bold text-green-700" dir="ltr">{Number(selectedOrder.feeAmount).toLocaleString("en-US")} <span className="text-[9px] font-normal text-green-500">تومان</span></span>
+                      <span className="text-[11px] text-green-600">(+ ) کارمزد</span>
+                      <span className="text-[11px] font-bold text-green-700" dir="ltr">+{feeAmt.toLocaleString("en-US")} <span className="text-[9px] font-normal text-green-500">تومان</span></span>
                     </div>
                   )}
-                  {hasTransfer && (
+                  {transferAmt > 0 && (
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-red-500">هزینه انتقال</span>
-                      <span className="text-xs font-bold text-red-600" dir="ltr">-{Number(selectedOrder.transferCost).toLocaleString("en-US")} <span className="text-[9px] font-normal text-red-400">تومان</span></span>
+                      <span className="text-[11px] text-red-500">(-) هزینه انتقال</span>
+                      <span className="text-[11px] font-bold text-red-600" dir="ltr">-{transferAmt.toLocaleString("en-US")} <span className="text-[9px] font-normal text-red-400">تومان</span></span>
                     </div>
                   )}
-                  <div className="flex items-center justify-between border-t border-green-200 pt-2">
-                    <span className="text-xs font-medium text-green-600">سود نهایی</span>
-                    <span className="text-sm font-bold text-green-800" dir="ltr">{Number(selectedOrder.totalProfitAmount).toLocaleString("en-US")} <span className="text-[9px] font-normal text-green-600">تومان</span></span>
+                  <div className="flex items-center justify-between border-t border-green-200 pt-1.5">
+                    <span className="text-[11px] font-semibold text-green-600">سود نهایی</span>
+                    <span className="text-sm font-bold text-green-800" dir="ltr">{totalProfit.toLocaleString("en-US")} <span className="text-[9px] font-normal text-green-600">تومان</span></span>
                   </div>
                 </div>
               );
@@ -859,36 +867,36 @@ export default function OrdersPage() {
 
             {/* Recipient / Destination */}
             {(selectedOrder.recipientName || selectedOrder.destinationCard) && (
-              <div className="rounded-xl bg-gray-50 p-3 space-y-2">
-                <p className="text-[10px] font-semibold text-gray-400 uppercase">اطلاعات واریز</p>
+              <div className="rounded-xl bg-gray-50 p-3 space-y-1.5">
+                <p className="text-[10px] font-semibold text-gray-400">اطلاعات واریز</p>
                 {selectedOrder.recipientName && (
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500">{selectedOrder.orderType === "IR_TO_PK" ? "دریافت‌کننده" : "صاحب حساب"}</span>
-                    <span className="text-xs font-medium text-gray-900">{selectedOrder.recipientName}</span>
+                    <span className="text-[11px] text-gray-500">دریافت‌کننده</span>
+                    <span className="text-[11px] font-medium text-gray-900">{selectedOrder.recipientName}</span>
                   </div>
                 )}
                 {selectedOrder.recipientAccount && (
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500">{selectedOrder.orderType === "IR_TO_PK" ? "شماره حساب" : "شماره شبا"}</span>
-                    <span className="text-xs font-medium text-gray-900" dir="ltr">{selectedOrder.recipientAccount}</span>
+                    <span className="text-[11px] text-gray-500">شماره حساب</span>
+                    <span className="text-[11px] font-medium text-gray-900" dir="ltr">{selectedOrder.recipientAccount}</span>
                   </div>
                 )}
                 {selectedOrder.recipientMethod && (
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500">{selectedOrder.orderType === "IR_TO_PK" ? "نحوه واریز" : "بانک"}</span>
-                    <span className="text-xs font-medium text-gray-900">{METHOD_LABELS[selectedOrder.recipientMethod] || selectedOrder.recipientMethod}</span>
+                    <span className="text-[11px] text-gray-500">نحوه واریز</span>
+                    <span className="text-[11px] font-medium text-gray-900">{METHOD_LABELS[selectedOrder.recipientMethod] || selectedOrder.recipientMethod}</span>
                   </div>
                 )}
                 {selectedOrder.destinationCard && (
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500">{selectedOrder.orderType === "BUY_PKR" ? "حساب پاکستانی" : "کارت مقصد"}</span>
-                    <span className="text-xs font-medium text-gray-900" dir="ltr">{selectedOrder.destinationCard}</span>
+                    <span className="text-[11px] text-gray-500">{selectedOrder.orderType === "BUY_PKR" ? "حساب پاکستانی" : "کارت مقصد"}</span>
+                    <span className="text-[11px] font-medium text-gray-900" dir="ltr">{selectedOrder.destinationCard}</span>
                   </div>
                 )}
                 {selectedOrder.destinationSheba && (
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500">شبا</span>
-                    <span className="text-xs font-medium text-gray-900" dir="ltr">{selectedOrder.destinationSheba}</span>
+                    <span className="text-[11px] text-gray-500">شبا</span>
+                    <span className="text-[11px] font-medium text-gray-900" dir="ltr">{selectedOrder.destinationSheba}</span>
                   </div>
                 )}
               </div>
@@ -897,16 +905,13 @@ export default function OrdersPage() {
             {/* Description */}
             {selectedOrder.description && (
               <div className="rounded-xl bg-gray-50 p-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <FileText className="h-3.5 w-3.5 text-gray-400" strokeWidth={1.5} />
-                  <span className="text-[10px] font-semibold text-gray-400 uppercase">توضیحات</span>
-                </div>
-                <p className="text-xs text-gray-600 leading-relaxed">{selectedOrder.description}</p>
+                <p className="text-[10px] font-semibold text-gray-400 mb-1">توضیحات</p>
+                <p className="text-[11px] text-gray-600 leading-relaxed">{selectedOrder.description}</p>
               </div>
             )}
 
             {/* Meta */}
-            <div className="flex items-center justify-between rounded-xl bg-gray-50 p-3">
+            <div className="flex items-center justify-between rounded-xl bg-gray-50 p-2.5">
               <div className="flex items-center gap-2">
                 <Clock className="h-3.5 w-3.5 text-gray-400" strokeWidth={1.5} />
                 <span className="text-[10px] text-gray-400">{new Date(selectedOrder.createdAt).toLocaleDateString("fa-IR")} {new Date(selectedOrder.createdAt).toLocaleTimeString("fa-IR", { hour: "2-digit", minute: "2-digit" })}</span>
@@ -939,6 +944,39 @@ export default function OrdersPage() {
 
       {/* Edit BottomSheet */}
       <BottomSheet isOpen={editSheetOpen} onClose={() => { setEditSheetOpen(false); setEditingOrder(null); resetForm(); }} title="ویرایش سفارش" className="max-h-[85vh]">
+        {formLoading ? (
+          <div className="space-y-4">
+            {editingOrder && (
+              <div className="rounded-xl bg-blue-50 p-3 flex items-center justify-between">
+                <Skeleton className="h-3 w-16" />
+                <Skeleton className="h-3 w-24" />
+              </div>
+            )}
+            <div className="space-y-2">
+              <Skeleton className="h-3 w-16" />
+              <Skeleton className="h-12 rounded-xl" />
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-3 w-28" />
+              <Skeleton className="h-12 rounded-xl" />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-2">
+                <Skeleton className="h-3 w-20" />
+                <Skeleton className="h-12 rounded-xl" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-3 w-24" />
+                <Skeleton className="h-12 rounded-xl" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="h-12 rounded-xl" />
+            </div>
+            <Skeleton className="h-12 rounded-xl" />
+          </div>
+        ) : (
         <form onSubmit={handleEdit} className="space-y-4">
           {error && <ErrorAlert message={error} />}
 
@@ -967,12 +1005,20 @@ export default function OrdersPage() {
 
           {currentRates && editingOrder && (
             <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-gray-500">
-                  {(editingOrder.orderType === "SELL_PKR" || editingOrder.orderType === "IR_TO_PK") ? "نرخ فروش روپیه" : "نرخ خرید روپیه"}
-                </label>
-                <Input type="text" inputMode="numeric" value={rate} onChange={(e) => setRate(formatNum(e.target.value))} placeholder="0" className="h-12 text-left rounded-xl" />
-              </div>
+              {(editingOrder.orderType === "BUY_PKR" || editingOrder.orderType === "PK_TO_IR") && (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-gray-500">نرخ خرید روپیه</label>
+                  <Input type="text" inputMode="numeric" value={buyRate} readOnly className="h-12 text-left rounded-xl bg-gray-50 text-gray-500 cursor-not-allowed" />
+                  <p className="text-[9px] text-gray-400">قفل شده - هنگام ایجاد سفارش ثبت شده</p>
+                </div>
+              )}
+              {(editingOrder.orderType === "SELL_PKR" || editingOrder.orderType === "IR_TO_PK") && (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-gray-500">نرخ فروش روپیه</label>
+                  <Input type="text" inputMode="numeric" value={sellRate} readOnly className="h-12 text-left rounded-xl bg-gray-50 text-gray-500 cursor-not-allowed" />
+                  <p className="text-[9px] text-gray-400">قفل شده - هنگام ایجاد سفارش ثبت شده</p>
+                </div>
+              )}
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-gray-500">نرخ بازار روپیه</label>
                 <Input type="text" inputMode="numeric" value={marketRate} onChange={(e) => setMarketRate(formatNum(e.target.value))} placeholder="0" className="h-12 text-left rounded-xl" />
@@ -1047,6 +1093,7 @@ export default function OrdersPage() {
 
           <Button type="submit" isLoading={submitting} className="w-full h-12 rounded-xl">ذخیره تغییرات</Button>
         </form>
+        )}
       </BottomSheet>
 
       {/* Delete Confirmation */}

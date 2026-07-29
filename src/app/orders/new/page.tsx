@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ErrorAlert } from "@/components/ui/error-alert";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import {
   DIRECTIONS,
@@ -32,7 +33,8 @@ export default function NewOrderPage() {
   const [customerId, setCustomerId] = useState("");
   const [currencyId, setCurrencyId] = useState("");
   const [amount, setAmount] = useState("");
-  const [rate, setRate] = useState("");
+  const [buyRate, setBuyRate] = useState("");
+  const [sellRate, setSellRate] = useState("");
   const [marketRate, setMarketRate] = useState("");
   const [fee, setFee] = useState("");
   const [transferCost, setTransferCost] = useState("");
@@ -46,6 +48,7 @@ export default function NewOrderPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [currentRates, setCurrentRates] = useState<{ buyRate: number; sellRate: number; marketRate: number } | null>(null);
+  const [formLoading, setFormLoading] = useState(true);
 
   const onlyDigits = (v: string) => v.replace(/[^0-9]/g, "");
   const formatNum = (v: string) => {
@@ -68,15 +71,18 @@ export default function NewOrderPage() {
           sellRate: Number(pkrRate.sellRate),
           marketRate: Number(pkrRate.marketRate),
         });
-        setRate(Number(pkrRate.sellRate).toLocaleString("en-US"));
+        setBuyRate(Number(pkrRate.buyRate).toLocaleString("en-US"));
+        setSellRate(Number(pkrRate.sellRate).toLocaleString("en-US"));
         setMarketRate(Number(pkrRate.marketRate).toLocaleString("en-US"));
       }
-    }).catch(() => {});
+    }).catch(() => {}).finally(() => setFormLoading(false));
   }, []);
 
   const amountNum = parseFormatted(amount);
-  const rateNum = parseFormatted(rate);
+  const buyRateNum = parseFormatted(buyRate);
+  const sellRateNum = parseFormatted(sellRate);
   const marketRateNum = parseFormatted(marketRate);
+  const rateNum = (selectedType === "SELL_PKR" || selectedType === "IR_TO_PK") ? sellRateNum : buyRateNum;
   const feeNum = parseFormatted(fee);
   const transferCostNum = parseFormatted(transferCost);
   const isTomanAmount = selectedType ? isTomanAmountType(selectedType) : false;
@@ -135,7 +141,8 @@ export default function NewOrderPage() {
 
   const resetForm = () => {
     setAmount("");
-    setRate("");
+    setBuyRate("");
+    setSellRate("");
     setMarketRate("");
     setFee("");
     setTransferCost("");
@@ -155,7 +162,7 @@ export default function NewOrderPage() {
     setLoading(true);
     try {
       await api.post("/api/orders", {
-        customerId, currencyId, orderType: selectedType, amount, rate, marketRate, fee, transferCost,
+        customerId, currencyId, orderType: selectedType, amount, buyRate, sellRate, marketRate, fee, transferCost,
         recipientName, recipientAccount, recipientMethod,
         destinationCard, destinationSheba, description,
       });
@@ -237,6 +244,41 @@ export default function NewOrderPage() {
         title={typeInfo?.label}
         className="max-h-[85vh]"
       >
+        {formLoading ? (
+          <div className="space-y-4">
+            <div className="rounded-xl bg-gray-50 p-3 space-y-2">
+              <Skeleton className="h-3 w-24" />
+              <div className="grid grid-cols-3 gap-2">
+                <Skeleton className="h-12 rounded-lg" />
+                <Skeleton className="h-12 rounded-lg" />
+                <Skeleton className="h-12 rounded-lg" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="h-12 rounded-xl" />
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-3 w-28" />
+              <Skeleton className="h-12 rounded-xl" />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-2">
+                <Skeleton className="h-3 w-20" />
+                <Skeleton className="h-12 rounded-xl" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-3 w-24" />
+                <Skeleton className="h-12 rounded-xl" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="h-12 rounded-xl" />
+            </div>
+            <Skeleton className="h-12 rounded-xl" />
+          </div>
+        ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && <ErrorAlert message={error} />}
 
@@ -357,19 +399,32 @@ export default function NewOrderPage() {
 
           {currentRates && selectedType && (
             <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-gray-500">
-                  {(selectedType === "SELL_PKR" || selectedType === "IR_TO_PK") ? "نرخ فروش روپیه" : "نرخ خرید روپیه"}
-                </label>
-                <Input
-                  type="text"
-                  inputMode="numeric"
-                  value={rate}
-                  onChange={(e) => setRate(formatNum(e.target.value))}
-                  placeholder="0"
-                  className="h-12 text-left rounded-xl"
-                />
-              </div>
+              {(selectedType === "BUY_PKR" || selectedType === "PK_TO_IR") && (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-gray-500">نرخ خرید روپیه</label>
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    value={buyRate}
+                    onChange={(e) => setBuyRate(formatNum(e.target.value))}
+                    placeholder="0"
+                    className="h-12 text-left rounded-xl"
+                  />
+                </div>
+              )}
+              {(selectedType === "SELL_PKR" || selectedType === "IR_TO_PK") && (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-gray-500">نرخ فروش روپیه</label>
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    value={sellRate}
+                    onChange={(e) => setSellRate(formatNum(e.target.value))}
+                    placeholder="0"
+                    className="h-12 text-left rounded-xl"
+                  />
+                </div>
+              )}
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-gray-500">نرخ بازار روپیه</label>
                 <Input
@@ -588,6 +643,7 @@ export default function NewOrderPage() {
 
           <Button type="submit" isLoading={loading} className="w-full h-12 rounded-xl">ثبت سفارش</Button>
         </form>
+        )}
       </BottomSheet>
     </main>
   );

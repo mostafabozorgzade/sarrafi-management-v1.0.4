@@ -38,7 +38,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     const body = await request.json();
     const {
-      customerId, currencyId, amount, rate, marketRate, fee, transferCost,
+      customerId, currencyId, amount, marketRate, fee, transferCost,
       recipientName, recipientAccount, recipientMethod,
       destinationCard, destinationSheba, description,
     } = body;
@@ -49,7 +49,6 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     const orderType = existing.orderType;
     const amountNum = Number(String(amount).replace(/,/g, ""));
-    const rateNum = Number(String(rate).replace(/,/g, "")) || 0;
     const marketRateNum = Number(String(marketRate).replace(/,/g, "")) || 0;
     const feeNum = Number(String(fee || 0).replace(/,/g, ""));
     const transferCostNum = Number(String(transferCost || 0).replace(/,/g, ""));
@@ -58,13 +57,11 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       where: { tenantId_currencyId: { tenantId: user.tenantId, currencyId } },
     });
 
-    const fallbackBuyRate = currencyRate ? Number(currencyRate.buyRate ?? 0) : 0;
-    const fallbackSellRate = currencyRate ? Number(currencyRate.sellRate ?? 0) : 0;
     const fallbackMarketRate = currencyRate ? Number(currencyRate.marketRate ?? 0) : 0;
 
-    const buyRateAtTime = rateNum > 0 ? (fallbackBuyRate || rateNum) : fallbackBuyRate;
-    const sellRateAtTime = rateNum > 0 ? (fallbackSellRate || rateNum) : fallbackSellRate;
-    const marketRateAtTime = marketRateNum > 0 ? marketRateNum : fallbackMarketRate;
+    const buyRateAtTime = Number(existing.buyRateAtTime || 0);
+    const sellRateAtTime = Number(existing.sellRateAtTime || 0);
+    const marketRateAtTime = marketRateNum > 0 ? marketRateNum : (Number(existing.marketRateAtTime) || fallbackMarketRate);
 
     const orderRate = (orderType === "BUY_PKR" || orderType === "PK_TO_IR") ? buyRateAtTime : sellRateAtTime;
 
