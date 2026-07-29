@@ -65,7 +65,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     let totalToman: number;
     let calculatedPkr: number;
 
-    if (orderType === "IR_TO_PK") {
+    if (orderType === "IR_TO_PK" || orderType === "SELL_PKR") {
       totalToman = amountNum;
       calculatedPkr = orderRate > 0 ? Math.round(amountNum / orderRate) : 0;
     } else {
@@ -73,7 +73,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       calculatedPkr = amountNum;
     }
 
-    const pkrAmount = orderType === "IR_TO_PK" ? calculatedPkr : amountNum;
+    const pkrAmount = (orderType === "IR_TO_PK" || orderType === "SELL_PKR") ? calculatedPkr : amountNum;
 
     let buyMarketProfit = 0;
     let sellMarketProfit = 0;

@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     let totalToman: number;
     let calculatedPkr: number;
 
-    if (orderType === "IR_TO_PK") {
+    if (orderType === "IR_TO_PK" || orderType === "SELL_PKR") {
       totalToman = amountNum;
       calculatedPkr = orderRate > 0 ? Math.round(amountNum / orderRate) : 0;
     } else {
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
       calculatedPkr = amountNum;
     }
 
-    const pkrAmount = orderType === "IR_TO_PK" ? calculatedPkr : amountNum;
+    const pkrAmount = (orderType === "IR_TO_PK" || orderType === "SELL_PKR") ? calculatedPkr : amountNum;
 
     let buyMarketProfit = 0;
     let sellMarketProfit = 0;
@@ -193,7 +193,7 @@ export async function PATCH(request: NextRequest) {
           orderId: order.id,
           currencyId: order.currencyId,
           type: order.orderType === "BUY_PKR" || order.orderType === "PK_TO_IR" ? "buy" : "sell",
-          amount: order.orderType === "IR_TO_PK" ? order.calculatedPkr || BigInt(0) : order.amount,
+          amount: (order.orderType === "IR_TO_PK" || order.orderType === "SELL_PKR") ? order.calculatedPkr || BigInt(0) : order.amount,
           rate: order.orderType === "BUY_PKR" || order.orderType === "PK_TO_IR" ? order.buyRateAtTime || BigInt(0) : order.sellRateAtTime || BigInt(0),
           totalToman: order.totalToman,
           profit: order.totalProfitAmount || BigInt(0),

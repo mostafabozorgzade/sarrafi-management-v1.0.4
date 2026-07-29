@@ -256,7 +256,6 @@ export default function NewOrderPage() {
                   <p className="text-[11px] font-bold text-emerald-700" dir="ltr">{currentRates.sellRate.toLocaleString("en-US")}</p>
                 </div>
               </div>
-              <p className="text-[9px] text-gray-400 text-center">نرخ‌ها از جدول currency_rates خوانده می‌شوند</p>
             </div>
           )}
 

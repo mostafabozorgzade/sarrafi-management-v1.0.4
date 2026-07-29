@@ -146,5 +146,5 @@ export function isHawalaType(orderType: string): boolean {
 }
 
 export function isTomanAmountType(orderType: string): boolean {
-  return orderType === "IR_TO_PK";
+  return orderType === "IR_TO_PK" || orderType === "SELL_PKR";
 }

@@ -498,7 +498,6 @@ export default function OrdersPage() {
                   <p className="text-[11px] font-bold text-emerald-700" dir="ltr">{currentRates.sellRate.toLocaleString("en-US")}</p>
                 </div>
               </div>
-              <p className="text-[9px] text-gray-400 text-center">نرخ‌ها از جدول currency_rates خوانده می‌شوند</p>
             </div>
           )}
 
@@ -749,7 +748,7 @@ export default function OrdersPage() {
             {/* Amounts */}
             {(() => {
               const ot = selectedOrder.orderType;
-              const isTomanAmt = ot === "IR_TO_PK";
+              const isTomanAmt = ot === "IR_TO_PK" || ot === "SELL_PKR";
               return (
                 <div className="grid grid-cols-2 gap-2">
                   <div className="rounded-xl border border-gray-100 p-3 text-center">
