@@ -599,7 +599,7 @@ export default function OrdersPage() {
                   {/* Top row: icon + type + status */}
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <div className={cn("flex h-10 w-10 items-center justify-center rounded-[5px]", o.orderType === "IR_TO_PK" ? "bg-emerald-50" : o.orderType === "PK_TO_IR" ? "bg-blue-50" : o.orderType === "BUY_PKR" ? "bg-violet-50" : "bg-amber-50")}>
+                      <div className="flex h-10 w-10 items-center justify-center rounded-[5px] bg-gray-50">
                         <Icon className={cn("h-[18px] w-[18px]", typeInfo.color)} strokeWidth={1.5} />
                       </div>
                       <div>
@@ -1054,7 +1054,7 @@ export default function OrdersPage() {
             {/* Header */}
             <div className="flex items-center gap-3">
               {(() => { const ti = ORDER_TYPE_LABELS[selectedOrder.orderType]; const Icon = ICON_MAP[selectedOrder.orderType] || ArrowDownToLine; return (
-                <div className={cn("flex h-12 w-12 items-center justify-center rounded-[5px]", selectedOrder.orderType === "IR_TO_PK" ? "bg-emerald-50" : selectedOrder.orderType === "PK_TO_IR" ? "bg-blue-50" : selectedOrder.orderType === "BUY_PKR" ? "bg-violet-50" : "bg-amber-50")}>
+                <div className="flex h-12 w-12 items-center justify-center rounded-[5px] bg-gray-50">
                   <Icon className={cn("h-5 w-5", ti?.color)} strokeWidth={1.5} />
                 </div>
               ); })()}
