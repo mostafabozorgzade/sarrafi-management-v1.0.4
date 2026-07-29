@@ -133,7 +133,6 @@ model Order {
   status           OrderStatus    @default(DRAFT)
 
   amount           BigInt
-  rate             BigInt
   totalToman       BigInt
   calculatedPkr    BigInt?
   fee              BigInt         @default(0)

@@ -38,30 +38,18 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const {
-      customerId, currencyId, orderType, amount, rate, fee, transferCost,
+      customerId, currencyId, orderType, amount, fee, transferCost,
       recipientName, recipientAccount, recipientMethod,
       destinationCard, destinationSheba, description,
     } = body;
 
-    if (!customerId || !currencyId || !orderType || !amount || !rate) {
+    if (!customerId || !currencyId || !orderType || !amount) {
       return safeJson({ error: "فیلدهای الزامی را پر کنید" }, { status: 400 });
     }
 
     const amountNum = Number(amount);
-    const rateNum = Number(rate);
     const feeNum = Number(fee || 0);
     const transferCostNum = Number(transferCost || 0);
-
-    let totalToman: number;
-    let calculatedPkr: number;
-
-    if (orderType === "IR_TO_PK") {
-      totalToman = amountNum;
-      calculatedPkr = rateNum > 0 ? Math.round(amountNum / rateNum) : 0;
-    } else {
-      totalToman = amountNum * rateNum;
-      calculatedPkr = amountNum;
-    }
 
     const currencyRate = await prisma.currencyRate.findUnique({
       where: { tenantId_currencyId: { tenantId: user.tenantId, currencyId } },
@@ -70,6 +58,19 @@ export async function POST(request: NextRequest) {
     const marketRateAtTime = currencyRate ? Number(currencyRate.marketRate ?? 0) : 0;
     const buyRateAtTime = currencyRate ? Number(currencyRate.buyRate ?? 0) : 0;
     const sellRateAtTime = currencyRate ? Number(currencyRate.sellRate ?? 0) : 0;
+
+    const orderRate = (orderType === "BUY_PKR" || orderType === "PK_TO_IR") ? buyRateAtTime : sellRateAtTime;
+
+    let totalToman: number;
+    let calculatedPkr: number;
+
+    if (orderType === "IR_TO_PK") {
+      totalToman = amountNum;
+      calculatedPkr = orderRate > 0 ? Math.round(amountNum / orderRate) : 0;
+    } else {
+      totalToman = amountNum * orderRate;
+      calculatedPkr = amountNum;
+    }
 
     const pkrAmount = orderType === "IR_TO_PK" ? calculatedPkr : amountNum;
 
@@ -101,7 +102,6 @@ export async function POST(request: NextRequest) {
         currencyId,
         orderType,
         amount: amountNum,
-        rate: rateNum,
         totalToman,
         calculatedPkr,
         fee: feeNum,
@@ -194,7 +194,7 @@ export async function PATCH(request: NextRequest) {
           currencyId: order.currencyId,
           type: order.orderType === "BUY_PKR" || order.orderType === "PK_TO_IR" ? "buy" : "sell",
           amount: order.orderType === "IR_TO_PK" ? order.calculatedPkr || BigInt(0) : order.amount,
-          rate: order.rate,
+          rate: order.orderType === "BUY_PKR" || order.orderType === "PK_TO_IR" ? order.buyRateAtTime || BigInt(0) : order.sellRateAtTime || BigInt(0),
           totalToman: order.totalToman,
           profit: order.totalProfitAmount || BigInt(0),
           description: `تکمیل سفارش ${order.orderType}`,

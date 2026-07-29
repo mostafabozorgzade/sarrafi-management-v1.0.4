@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
     prisma.order.findMany({
       where,
       select: {
-        id: true, orderType: true, status: true, amount: true, rate: true, totalToman: true,
+        id: true, orderType: true, status: true, amount: true, totalToman: true,
         calculatedPkr: true, fee: true, transferCost: true,
         buyMarketProfitAmount: true, sellMarketProfitAmount: true, spreadProfitAmount: true, feeAmount: true, totalProfitAmount: true,
         createdAt: true,

@@ -49,7 +49,6 @@ interface FilteredOrder {
   orderType: string;
   status: string;
   amount: bigint;
-  rate: bigint;
   totalToman: bigint;
   calculatedPkr: bigint | null;
   fee: bigint;
@@ -302,7 +301,7 @@ export default function ReportsPage() {
                       <span className="text-[10px] text-gray-400" dir="ltr">{Number(o.totalToman).toLocaleString("en-US")} تومان</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-gray-400" dir="ltr">{Number(o.amount).toLocaleString("en-US")} × {Number(o.rate).toLocaleString("en-US")}</span>
+                      <span className="text-[10px] text-gray-400" dir="ltr">{Number(o.totalToman).toLocaleString("en-US")} تومان</span>
                       <div className="flex items-center gap-2">
                         {Number(o.buyMarketProfitAmount) > 0 && (
                           <span className="text-[9px] font-medium text-green-500" dir="ltr">{Number(o.buyMarketProfitAmount).toLocaleString("en-US")}</span>

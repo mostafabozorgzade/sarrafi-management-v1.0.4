@@ -32,7 +32,6 @@ export default function NewOrderPage() {
   const [customerId, setCustomerId] = useState("");
   const [currencyId, setCurrencyId] = useState("");
   const [amount, setAmount] = useState("");
-  const [rate, setRate] = useState("");
   const [fee, setFee] = useState("");
   const [transferCost, setTransferCost] = useState("");
   const [recipientName, setRecipientName] = useState("");
@@ -46,6 +45,11 @@ export default function NewOrderPage() {
   const [success, setSuccess] = useState(false);
   const [currentRates, setCurrentRates] = useState<{ buyRate: number; sellRate: number; marketRate: number } | null>(null);
 
+  const getDefaultRate = (orderType: OrderTypeEnum, rates: { buyRate: number; sellRate: number }) => {
+    if (orderType === "BUY_PKR" || orderType === "PK_TO_IR") return rates.buyRate;
+    return rates.sellRate;
+  };
+
   useEffect(() => {
     Promise.all([api.get("/api/customers"), api.get("/api/currencies"), api.get("/api/rates")]).then(([c, cur, rates]) => {
       setCustomers(c);
@@ -54,7 +58,6 @@ export default function NewOrderPage() {
       if (pkrCurrency) setCurrencyId(pkrCurrency.id);
       const pkrRate = rates.find((r: Rate) => r.currency?.code === "PKR");
       if (pkrRate) {
-        setRate(String(pkrRate.sellRate));
         setCurrentRates({
           buyRate: Number(pkrRate.buyRate),
           sellRate: Number(pkrRate.sellRate),
@@ -65,7 +68,7 @@ export default function NewOrderPage() {
   }, []);
 
   const amountNum = parseFloat(amount || "0");
-  const rateNum = parseFloat(rate || "0");
+  const rateNum = currentRates && selectedType ? getDefaultRate(selectedType, currentRates) : 0;
   const feeNum = parseFloat(fee || "0");
   const transferCostNum = parseFloat(transferCost || "0");
   const isTomanAmount = selectedType ? isTomanAmountType(selectedType) : false;
@@ -84,14 +87,11 @@ export default function NewOrderPage() {
   const pkrAmount = isTomanAmount ? calculatedPkr : amountNum;
 
   let previewMainProfit = 0;
-  let previewSpreadProfit = 0;
   let previewTotalProfit = 0;
   let mainProfitLabel = "";
   let mainProfitFormula = "";
 
   if (currentRates && pkrAmount > 0) {
-    previewSpreadProfit = (currentRates.sellRate - currentRates.buyRate) * pkrAmount;
-
     if (selectedType === "BUY_PKR") {
       previewMainProfit = (currentRates.marketRate - currentRates.buyRate) * pkrAmount;
       mainProfitLabel = "سود خرید روپیه نسبت به بازار";
@@ -140,12 +140,12 @@ export default function NewOrderPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!customerId || !currencyId || !amount || !rate) { setError("فیلدهای الزامی را پر کنید"); return; }
+    if (!customerId || !currencyId || !amount) { setError("فیلدهای الزامی را پر کنید"); return; }
     if (isHawala && !recipientName) { setError("نام دریافت‌کننده الزامی است"); return; }
     setLoading(true);
     try {
       await api.post("/api/orders", {
-        customerId, currencyId, orderType: selectedType, amount, rate, fee, transferCost,
+        customerId, currencyId, orderType: selectedType, amount, fee, transferCost,
         recipientName, recipientAccount, recipientMethod,
         destinationCard, destinationSheba, description,
       });
@@ -375,17 +375,17 @@ export default function NewOrderPage() {
             />
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-gray-500">نرخ تبدیل (تومان)</label>
-            <Input
-              type="number"
-              value={rate}
-              onChange={(e) => setRate(e.target.value)}
-              placeholder="مثلاً 2950"
-              className="h-12 text-left rounded-xl"
-              inputMode="decimal"
-            />
-          </div>
+          {currentRates && selectedType && (
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-gray-500">
+                {(selectedType === "SELL_PKR" || selectedType === "IR_TO_PK") ? "نرخ فروش روپیه" : "نرخ خرید روپیه"}
+              </label>
+              <div className="flex h-12 items-center rounded-xl border border-gray-200 bg-gray-50 px-3">
+                <span className="text-sm text-gray-600" dir="ltr">{rateNum.toLocaleString("en-US")}</span>
+                <span className="mr-2 text-[10px] text-gray-400">تومان/روپیه</span>
+              </div>
+            </div>
+          )}
 
           {amountNum > 0 && rateNum > 0 && (
             <div className={cn("rounded-xl p-4", isTomanAmount ? "bg-green-50" : "bg-blue-50")}>
@@ -448,13 +448,6 @@ export default function NewOrderPage() {
                     <p className="text-[9px] text-green-500" dir="ltr">{mainProfitFormula}</p>
                   </div>
                 )}
-                <div className="rounded-lg bg-white p-2 border border-green-100">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] text-green-600">سود بالقوه (Spread)</span>
-                    <span className="text-xs font-bold text-green-700" dir="ltr">{previewSpreadProfit.toLocaleString("en-US")} تومان</span>
-                  </div>
-                  <p className="text-[9px] text-green-500" dir="ltr">(فروش {currentRates.sellRate.toLocaleString("en-US")} - خرید {currentRates.buyRate.toLocaleString("en-US")}) × {pkrAmount.toLocaleString("en-US")}</p>
-                </div>
                 {feeNum > 0 && (
                   <div className="rounded-lg bg-white p-2 border border-green-100">
                     <div className="flex items-center justify-between">

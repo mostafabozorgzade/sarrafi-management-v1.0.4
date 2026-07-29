@@ -12,6 +12,8 @@ import {
   FileText,
   ChevronLeft,
   Send,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -36,10 +38,11 @@ import {
 
 interface Order {
   id: string;
+  customerId: string;
+  currencyId: string;
   orderType: string;
   status: string;
   amount: bigint;
-  rate: bigint;
   totalToman: bigint;
   fee: bigint;
   transferCost: bigint;
@@ -84,7 +87,6 @@ export default function OrdersPage() {
   const [customerId, setCustomerId] = useState("");
   const [currencyId, setCurrencyId] = useState("");
   const [amount, setAmount] = useState("");
-  const [rate, setRate] = useState("");
   const [fee, setFee] = useState("");
   const [transferCost, setTransferCost] = useState("");
   const [recipientName, setRecipientName] = useState("");
@@ -98,11 +100,20 @@ export default function OrdersPage() {
   const [success, setSuccess] = useState(false);
   const [errorToast, setErrorToast] = useState<string | null>(null);
   const [currentRates, setCurrentRates] = useState<{ buyRate: number; sellRate: number; marketRate: number } | null>(null);
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [editSheetOpen, setEditSheetOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deletingOrder, setDeletingOrder] = useState<Order | null>(null);
 
   useEffect(() => {
     const params = filter === "all" ? "" : `?status=${filter}`;
     api.get(`/api/orders${params}`).then((data) => { setOrders(data); setLoading(false); }).catch(() => setLoading(false));
   }, [filter]);
+
+  const getDefaultRate = (orderType: OrderTypeEnum, rates: { buyRate: number; sellRate: number }) => {
+    if (orderType === "BUY_PKR" || orderType === "PK_TO_IR") return rates.buyRate;
+    return rates.sellRate;
+  };
 
   const loadFormData = () => {
     Promise.all([api.get("/api/customers"), api.get("/api/currencies"), api.get("/api/rates")]).then(([c, cur, rates]) => {
@@ -112,7 +123,6 @@ export default function OrdersPage() {
       if (pkrCurrency) setCurrencyId(pkrCurrency.id);
       const pkrRate = rates.find((r: Rate) => r.currency?.code === "PKR");
       if (pkrRate) {
-        setRate(String(pkrRate.sellRate));
         setCurrentRates({
           buyRate: Number(pkrRate.buyRate),
           sellRate: Number(pkrRate.sellRate),
@@ -176,7 +186,7 @@ export default function OrdersPage() {
   const isTomanAmount = selectedType ? isTomanAmountType(selectedType) : false;
   const isHawala = selectedType ? isHawalaType(selectedType) : false;
   const amountNum = parseFloat(amount || "0");
-  const rateNum = parseFloat(rate || "0");
+  const rateNum = currentRates && selectedType ? getDefaultRate(selectedType, currentRates) : 0;
   const feeNum = parseFloat(fee || "0");
   let totalToman = 0;
   let calculatedPkr = 0;
@@ -192,14 +202,11 @@ export default function OrdersPage() {
   const transferCostNum = parseFloat(transferCost || "0");
 
   let previewMainProfit = 0;
-  let previewSpreadProfit = 0;
   let previewTotalProfit = 0;
   let mainProfitLabel = "";
   let mainProfitFormula = "";
 
   if (currentRates && pkrAmount > 0) {
-    previewSpreadProfit = (currentRates.sellRate - currentRates.buyRate) * pkrAmount;
-
     if (selectedType === "BUY_PKR") {
       previewMainProfit = (currentRates.marketRate - currentRates.buyRate) * pkrAmount;
       mainProfitLabel = "سود خرید روپیه نسبت به بازار";
@@ -224,12 +231,12 @@ export default function OrdersPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!customerId || !currencyId || !amount || !rate) { setError("فیلدهای الزامی را پر کنید"); return; }
+    if (!customerId || !currencyId || !amount) { setError("فیلدهای الزامی را پر کنید"); return; }
     if (isHawala && !recipientName) { setError("نام دریافت‌کننده الزامی است"); return; }
     setSubmitting(true);
     try {
       const newOrder = await api.post("/api/orders", {
-        customerId, currencyId, orderType: selectedType, amount, rate, fee, transferCost,
+        customerId, currencyId, orderType: selectedType, amount, fee, transferCost,
         recipientName, recipientAccount, recipientMethod,
         destinationCard, destinationSheba, description,
       });
@@ -251,6 +258,75 @@ export default function OrdersPage() {
   const openDetail = (order: Order) => {
     setSelectedOrder(order);
     setDetailSheetOpen(true);
+  };
+
+  const openEdit = (order: Order) => {
+    setEditingOrder(order);
+    setSelectedType(order.orderType as OrderTypeEnum);
+    setCustomerId(order.customerId);
+    setCurrencyId(order.currencyId);
+    setAmount(String(Number(order.amount)));
+    setFee(String(Number(order.fee)));
+    setTransferCost(String(Number(order.transferCost)));
+    setRecipientName(order.recipientName || "");
+    setRecipientAccount(order.recipientAccount || "");
+    setRecipientMethod(order.recipientMethod || "EASYPAISA");
+    setDestinationCard(order.destinationCard || "");
+    setDestinationSheba(order.destinationSheba || "");
+    setDescription(order.description || "");
+    setError(null);
+    setDetailSheetOpen(false);
+    loadFormData();
+    setTimeout(() => setEditSheetOpen(true), 100);
+  };
+
+  const handleEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingOrder) return;
+    setError(null);
+    if (!customerId || !currencyId || !amount) { setError("فیلدهای الزامی را پر کنید"); return; }
+    const isHawalaEdit = isHawalaType(editingOrder.orderType);
+    if (isHawalaEdit && !recipientName) { setError("نام دریافت‌کننده الزامی است"); return; }
+    setSubmitting(true);
+    try {
+      const updated = await api.put(`/api/orders/${editingOrder.id}`, {
+        customerId, currencyId, amount, fee, transferCost,
+        recipientName, recipientAccount, recipientMethod,
+        destinationCard, destinationSheba, description,
+      });
+      setEditSheetOpen(false);
+      setOrders((prev) => prev.map((o) => o.id === editingOrder.id ? updated : o));
+      setEditingOrder(null);
+      resetForm();
+      setSelectedDirection(null);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "خطا در ویرایش سفارش";
+      setError(msg);
+      setErrorToast(msg);
+      setTimeout(() => setErrorToast(null), 4000);
+    }
+    setSubmitting(false);
+  };
+
+  const openDeleteConfirm = (order: Order) => {
+    setDeletingOrder(order);
+    setDetailSheetOpen(false);
+    setTimeout(() => setDeleteConfirmOpen(true), 100);
+  };
+
+  const handleDelete = async () => {
+    if (!deletingOrder) return;
+    try {
+      await api.delete(`/api/orders/${deletingOrder.id}`);
+      setOrders((prev) => prev.filter((o) => o.id !== deletingOrder.id));
+      setDeleteConfirmOpen(false);
+      setDeletingOrder(null);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "خطا در حذف سفارش";
+      setErrorToast(msg);
+      setTimeout(() => setErrorToast(null), 4000);
+      setDeleteConfirmOpen(false);
+    }
   };
 
   const typeInfo = selectedType ? ORDER_TYPE_LABELS[selectedType] : null;
@@ -300,7 +376,7 @@ export default function OrdersPage() {
                   </div>
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-[10px] text-gray-400">{o.customer.name}</span>
-                    <span className="text-[10px] text-gray-400">{Number(o.amount).toLocaleString("en-US")} × {Number(o.rate).toLocaleString("en-US")}</span>
+                    <span className="text-[10px] text-gray-400" dir="ltr">{Number(o.totalToman).toLocaleString("en-US")} تومان</span>
                   </div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-[10px] text-gray-400">{new Date(o.createdAt).toLocaleDateString("fa-IR")}</span>
@@ -434,10 +510,6 @@ export default function OrdersPage() {
                     <p className="text-[9px] text-amber-600" dir="ltr">(نرخ بازار - نرخ خرید) × مقدار روپیه</p>
                   </div>
                   <div className="rounded-lg bg-white p-2 border border-amber-100">
-                    <p className="text-[9px] text-amber-700 font-medium mb-1">سود بالقوه (Spread):</p>
-                    <p className="text-[9px] text-amber-600" dir="ltr">(نرخ فروش - نرخ خرید) × مقدار روپیه</p>
-                  </div>
-                  <div className="rounded-lg bg-white p-2 border border-amber-100">
                     <p className="text-[9px] text-amber-700 font-medium mb-1">سود نهایی:</p>
                     <p className="text-[9px] text-amber-600" dir="ltr">سود خرید + کارمزد - هزینه انتقال</p>
                   </div>
@@ -456,10 +528,6 @@ export default function OrdersPage() {
                   <div className="rounded-lg bg-white p-2 border border-amber-100">
                     <p className="text-[9px] text-amber-700 font-medium mb-1">سود فروش:</p>
                     <p className="text-[9px] text-amber-600" dir="ltr">(نرخ فروش - نرخ بازار) × مقدار روپیه</p>
-                  </div>
-                  <div className="rounded-lg bg-white p-2 border border-amber-100">
-                    <p className="text-[9px] text-amber-700 font-medium mb-1">سود بالقوه (Spread):</p>
-                    <p className="text-[9px] text-amber-600" dir="ltr">(نرخ فروش - نرخ خرید) × مقدار روپیه</p>
                   </div>
                   <div className="rounded-lg bg-white p-2 border border-amber-100">
                     <p className="text-[9px] text-amber-700 font-medium mb-1">سود نهایی:</p>
@@ -486,10 +554,6 @@ export default function OrdersPage() {
                     <p className="text-[9px] text-amber-600" dir="ltr">(نرخ فروش - نرخ بازار) × مقدار روپیه</p>
                   </div>
                   <div className="rounded-lg bg-white p-2 border border-amber-100">
-                    <p className="text-[9px] text-amber-700 font-medium mb-1">سود بالقوه (Spread):</p>
-                    <p className="text-[9px] text-amber-600" dir="ltr">(نرخ فروش - نرخ خرید) × مقدار روپیه</p>
-                  </div>
-                  <div className="rounded-lg bg-white p-2 border border-amber-100">
                     <p className="text-[9px] text-amber-700 font-medium mb-1">سود نهایی:</p>
                     <p className="text-[9px] text-amber-600" dir="ltr">سود حواله + کارمزد - هزینه انتقال</p>
                   </div>
@@ -508,10 +572,6 @@ export default function OrdersPage() {
                   <div className="rounded-lg bg-white p-2 border border-amber-100">
                     <p className="text-[9px] text-amber-700 font-medium mb-1">سود دریافت:</p>
                     <p className="text-[9px] text-amber-600" dir="ltr">(نرخ بازار - نرخ خرید) × مقدار روپیه</p>
-                  </div>
-                  <div className="rounded-lg bg-white p-2 border border-amber-100">
-                    <p className="text-[9px] text-amber-700 font-medium mb-1">سود بالقوه (Spread):</p>
-                    <p className="text-[9px] text-amber-600" dir="ltr">(نرخ فروش - نرخ خرید) × مقدار روپیه</p>
                   </div>
                   <div className="rounded-lg bg-white p-2 border border-amber-100">
                     <p className="text-[9px] text-amber-700 font-medium mb-1">سود نهایی:</p>
@@ -535,10 +595,17 @@ export default function OrdersPage() {
             <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" className="h-12 text-left rounded-xl" inputMode="decimal" />
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-gray-500">نرخ تبدیل (تومان)</label>
-            <Input type="number" value={rate} onChange={(e) => setRate(e.target.value)} placeholder="مثلاً 2950" className="h-12 text-left rounded-xl" inputMode="decimal" />
-          </div>
+          {currentRates && selectedType && (
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-gray-500">
+                {(selectedType === "SELL_PKR" || selectedType === "IR_TO_PK") ? "نرخ فروش روپیه" : "نرخ خرید روپیه"}
+              </label>
+              <div className="flex h-12 items-center rounded-xl border border-gray-200 bg-gray-50 px-3">
+                <span className="text-sm text-gray-600" dir="ltr">{rateNum.toLocaleString("en-US")}</span>
+                <span className="mr-2 text-[10px] text-gray-400">تومان/روپیه</span>
+              </div>
+            </div>
+          )}
 
           {amountNum > 0 && rateNum > 0 && (
             <div className={cn("rounded-xl p-4", isTomanAmount ? "bg-green-50" : "bg-blue-50")}>
@@ -567,13 +634,6 @@ export default function OrdersPage() {
                     <p className="text-[9px] text-green-500" dir="ltr">{mainProfitFormula}</p>
                   </div>
                 )}
-                <div className="rounded-lg bg-white p-2 border border-green-100">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] text-green-600">سود بالقوه (Spread)</span>
-                    <span className="text-xs font-bold text-green-700" dir="ltr">{previewSpreadProfit.toLocaleString("en-US")} تومان</span>
-                  </div>
-                  <p className="text-[9px] text-green-500" dir="ltr">(فروش {currentRates.sellRate.toLocaleString("en-US")} - خرید {currentRates.buyRate.toLocaleString("en-US")}) × {pkrAmount.toLocaleString("en-US")}</p>
-                </div>
                 {feeNum > 0 && (
                   <div className="rounded-lg bg-white p-2 border border-green-100">
                     <div className="flex items-center justify-between">
@@ -714,8 +774,10 @@ export default function OrdersPage() {
                     <p className="text-sm font-bold text-gray-900" dir="ltr">{Number(selectedOrder.amount).toLocaleString("en-US")}</p>
                   </div>
                   <div className="rounded-xl border border-gray-100 p-3 text-center">
-                    <p className="text-[10px] text-gray-400">نرخ تبدیل</p>
-                    <p className="text-sm font-bold text-gray-900" dir="ltr">{Number(selectedOrder.rate).toLocaleString("en-US")} <span className="text-[9px] font-normal text-gray-400">تومان/روپیه</span></p>
+                    <p className="text-[10px] text-gray-400">
+                      {(selectedOrder.orderType === "SELL_PKR" || selectedOrder.orderType === "IR_TO_PK") ? "نرخ فروش" : "نرخ خرید"}
+                    </p>
+                    <p className="text-sm font-bold text-gray-900" dir="ltr">{(selectedOrder.orderType === "SELL_PKR" || selectedOrder.orderType === "IR_TO_PK") ? Number(selectedOrder.sellRateAtTime || 0).toLocaleString("en-US") : Number(selectedOrder.buyRateAtTime || 0).toLocaleString("en-US")} <span className="text-[9px] font-normal text-gray-400">تومان/روپیه</span></p>
                   </div>
                   <div className="rounded-xl border border-gray-100 p-3 text-center">
                     <p className="text-[10px] text-gray-400">جمع کل (تومان)</p>
@@ -862,16 +924,168 @@ export default function OrdersPage() {
             {/* Action Buttons */}
             {selectedOrder.status !== "COMPLETED" && selectedOrder.status !== "CANCELLED" && (() => {
               const nextAction = getNextAction(selectedOrder.status, selectedOrder.orderType);
-              return nextAction ? (
-                <div className="flex gap-2">
-                  <button onClick={() => { handleStatus(selectedOrder.id, nextAction.next); setDetailSheetOpen(false); }} className="flex-1 rounded-xl bg-green-500 py-3 text-sm font-semibold text-white active:bg-green-600">{nextAction.label}</button>
-                  <button onClick={() => { handleStatus(selectedOrder.id, "CANCELLED"); setDetailSheetOpen(false); }} className="rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 active:bg-red-100">لغو</button>
+              return (
+                <div className="space-y-2">
+                  {nextAction && (
+                    <button onClick={() => { handleStatus(selectedOrder.id, nextAction.next); setDetailSheetOpen(false); }} className="w-full rounded-xl bg-green-500 py-3 text-sm font-semibold text-white active:bg-green-600">{nextAction.label}</button>
+                  )}
+                  <div className="flex gap-2">
+                    <button onClick={() => openEdit(selectedOrder)} className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-blue-50 py-2.5 text-xs font-medium text-blue-600 active:bg-blue-100">
+                      <Pencil className="h-3.5 w-3.5" strokeWidth={1.5} /> ویرایش
+                    </button>
+                    <button onClick={() => openDeleteConfirm(selectedOrder)} className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-red-50 py-2.5 text-xs font-medium text-red-600 active:bg-red-100">
+                      <Trash2 className="h-3.5 w-3.5" strokeWidth={1.5} /> حذف
+                    </button>
+                  </div>
                 </div>
-              ) : null;
+              );
             })()}
           </div>
         )}
       </BottomSheet>
+
+      {/* Edit BottomSheet */}
+      <BottomSheet isOpen={editSheetOpen} onClose={() => { setEditSheetOpen(false); setEditingOrder(null); resetForm(); }} title="ویرایش سفارش" className="max-h-[85vh]">
+        <form onSubmit={handleEdit} className="space-y-4">
+          {error && <ErrorAlert message={error} />}
+
+          {editingOrder && (
+            <div className="rounded-xl bg-blue-50 p-3 flex items-center justify-between">
+              <span className="text-xs text-blue-600">نوع سفارش</span>
+              <span className="text-xs font-bold text-blue-700">{ORDER_TYPE_LABELS[editingOrder.orderType]?.label}</span>
+            </div>
+          )}
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-gray-500">مشتری</label>
+            <select value={customerId} onChange={(e) => setCustomerId(e.target.value)} className="flex h-12 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+              <option value="">انتخاب مشتری</option>
+              {customers.map((c) => <option key={c.id} value={c.id}>{c.name} ({c.phone})</option>)}
+            </select>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-gray-500">{editingOrder?.orderType === "IR_TO_PK" ? "مبلغ پرداختی (تومان)" : "مبلغ پرداختی (روپیه)"}</label>
+            <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" className="h-12 text-left rounded-xl" inputMode="decimal" />
+          </div>
+
+          {currentRates && editingOrder && (
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-gray-500">
+                {(editingOrder.orderType === "SELL_PKR" || editingOrder.orderType === "IR_TO_PK") ? "نرخ فروش روپیه" : "نرخ خرید روپیه"}
+              </label>
+              <div className="flex h-12 items-center rounded-xl border border-gray-200 bg-gray-50 px-3">
+                <span className="text-sm text-gray-600" dir="ltr">{rateNum.toLocaleString("en-US")}</span>
+                <span className="mr-2 text-[10px] text-gray-400">تومان/روپیه</span>
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-gray-500">کارمزد (تومان)</label>
+            <Input type="number" value={fee} onChange={(e) => setFee(e.target.value)} placeholder="0" className="h-12 text-left rounded-xl" inputMode="decimal" />
+          </div>
+
+          {editingOrder && isHawalaType(editingOrder.orderType) && (
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-gray-500">هزینه انتقال (تومان)</label>
+              <Input type="number" value={transferCost} onChange={(e) => setTransferCost(e.target.value)} placeholder="0" className="h-12 text-left rounded-xl" inputMode="decimal" />
+            </div>
+          )}
+
+          {editingOrder && isHawalaType(editingOrder.orderType) && (<>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-gray-500">{editingOrder.orderType === "IR_TO_PK" ? "نام گیرنده" : "نام صاحب حساب"}</label>
+              <Input value={recipientName} onChange={(e) => setRecipientName(e.target.value)} placeholder="نام کامل" className="h-12 rounded-xl" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-gray-500">{editingOrder.orderType === "IR_TO_PK" ? "نحوه واریز" : "شماره شبا"}</label>
+              {editingOrder.orderType === "IR_TO_PK" ? (
+                <select value={recipientMethod} onChange={(e) => setRecipientMethod(e.target.value)} className="flex h-12 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                  <option value="EASYPAISA">Easypaisa</option>
+                  <option value="JAZZCASH">JazzCash</option>
+                  <option value="BANK_TRANSFER">حواله بانکی</option>
+                  <option value="CASH">نقدی</option>
+                </select>
+              ) : (
+                <Input value={recipientAccount} onChange={(e) => setRecipientAccount(e.target.value)} placeholder="IR..." className="h-12 rounded-xl" dir="ltr" />
+              )}
+            </div>
+            {editingOrder.orderType === "IR_TO_PK" ? (
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-500">شماره حساب / IBAN</label>
+                <Input value={recipientAccount} onChange={(e) => setRecipientAccount(e.target.value)} placeholder="شماره حساب" className="h-12 rounded-xl" dir="ltr" />
+              </div>
+            ) : (
+              <>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-gray-500">شماره کارت</label>
+                  <Input value={destinationCard} onChange={(e) => setDestinationCard(e.target.value)} placeholder="شماره کارت" className="h-12 rounded-xl" dir="ltr" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-gray-500">بانک</label>
+                  <Input value={recipientMethod} onChange={(e) => setRecipientMethod(e.target.value)} placeholder="نام بانک" className="h-12 rounded-xl" />
+                </div>
+              </>
+            )}
+          </>)}
+
+          {editingOrder && !isHawalaType(editingOrder.orderType) && (<>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-gray-500">{editingOrder.orderType === "BUY_PKR" ? "شماره حساب پاکستانی صراف" : "شماره کارت مقصد"}</label>
+              <Input value={destinationCard} onChange={(e) => setDestinationCard(e.target.value)} placeholder={editingOrder.orderType === "BUY_PKR" ? "شماره حساب پاکستانی" : "شماره کارت"} className="h-12 rounded-xl" dir="ltr" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-gray-500">شماره شبا (اختیاری)</label>
+              <Input value={destinationSheba} onChange={(e) => setDestinationSheba(e.target.value)} placeholder="IR..." className="h-12 rounded-xl" dir="ltr" />
+            </div>
+          </>)}
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-gray-500">توضیحات</label>
+            <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="اختیاری" rows={2} className="flex w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm placeholder:text-gray-300 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+          </div>
+
+          <Button type="submit" isLoading={submitting} className="w-full h-12 rounded-xl">ذخیره تغییرات</Button>
+        </form>
+      </BottomSheet>
+
+      {/* Delete Confirmation */}
+      {deleteConfirmOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setDeleteConfirmOpen(false)}>
+          <div className="mx-4 w-full max-w-sm rounded-2xl bg-white p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-50">
+                <Trash2 className="h-5 w-5 text-red-500" strokeWidth={1.5} />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-gray-900">حذف سفارش</p>
+                <p className="text-xs text-gray-500">آیا از حذف این سفارش مطمئن هستید؟</p>
+              </div>
+            </div>
+            {deletingOrder && (
+              <div className="rounded-xl bg-gray-50 p-3 space-y-1">
+                <div className="flex justify-between">
+                  <span className="text-xs text-gray-500">نوع</span>
+                  <span className="text-xs font-medium text-gray-900">{ORDER_TYPE_LABELS[deletingOrder.orderType]?.label}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-xs text-gray-500">مبلغ</span>
+                  <span className="text-xs font-medium text-gray-900" dir="ltr">{Number(deletingOrder.totalToman).toLocaleString("en-US")} تومان</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-xs text-gray-500">مشتری</span>
+                  <span className="text-xs font-medium text-gray-900">{deletingOrder.customer.name}</span>
+                </div>
+              </div>
+            )}
+            <div className="flex gap-2">
+              <button onClick={() => setDeleteConfirmOpen(false)} className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-medium text-gray-700 active:bg-gray-50">انصراف</button>
+              <button onClick={handleDelete} className="flex-1 rounded-xl bg-red-500 py-2.5 text-sm font-semibold text-white active:bg-red-600">حذف</button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
