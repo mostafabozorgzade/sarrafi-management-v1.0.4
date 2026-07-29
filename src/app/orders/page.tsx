@@ -521,17 +521,17 @@ export default function OrdersPage() {
         </div>
 
         {/* Filter Tabs */}
-        <div className="px-4 pb-0">
-          <div className="flex gap-1 p-1 bg-gray-100/70 rounded-xl">
+        <div className="px-4 pb-3">
+          <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
             {FILTER_TABS.map(({ value, label }) => (
               <button
                 key={value}
                 onClick={() => setFilter(value)}
                 className={cn(
-                  "relative flex-1 min-w-[60px] rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all duration-200 whitespace-nowrap",
+                  "rounded-full px-4 py-1.5 text-[11px] font-semibold transition-all duration-200 whitespace-nowrap",
                   filter === value
-                    ? "bg-white text-gray-900 shadow-sm"
-                    : "text-gray-400 hover:text-gray-600"
+                    ? "bg-gray-900 text-white shadow-sm"
+                    : "bg-gray-100/70 text-gray-400 hover:text-gray-600"
                 )}
               >
                 {label}
