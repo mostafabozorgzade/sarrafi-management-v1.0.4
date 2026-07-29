@@ -87,6 +87,7 @@ export default function OrdersPage() {
   const [customerId, setCustomerId] = useState("");
   const [currencyId, setCurrencyId] = useState("");
   const [amount, setAmount] = useState("");
+  const [rate, setRate] = useState("");
   const [fee, setFee] = useState("");
   const [transferCost, setTransferCost] = useState("");
   const [recipientName, setRecipientName] = useState("");
@@ -105,15 +106,18 @@ export default function OrdersPage() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deletingOrder, setDeletingOrder] = useState<Order | null>(null);
 
+  const onlyDigits = (v: string) => v.replace(/[^0-9]/g, "");
+  const formatNum = (v: string) => {
+    const d = onlyDigits(v);
+    if (!d) return "";
+    return Number(d).toLocaleString("en-US");
+  };
+  const parseFormatted = (v: string) => Number(onlyDigits(v) || "0");
+
   useEffect(() => {
     const params = filter === "all" ? "" : `?status=${filter}`;
     api.get(`/api/orders${params}`).then((data) => { setOrders(data); setLoading(false); }).catch(() => setLoading(false));
   }, [filter]);
-
-  const getDefaultRate = (orderType: OrderTypeEnum, rates: { buyRate: number; sellRate: number }) => {
-    if (orderType === "BUY_PKR" || orderType === "PK_TO_IR") return rates.buyRate;
-    return rates.sellRate;
-  };
 
   const loadFormData = () => {
     Promise.all([api.get("/api/customers"), api.get("/api/currencies"), api.get("/api/rates")]).then(([c, cur, rates]) => {
@@ -128,6 +132,7 @@ export default function OrdersPage() {
           sellRate: Number(pkrRate.sellRate),
           marketRate: Number(pkrRate.marketRate),
         });
+        setRate(Number(pkrRate.sellRate).toLocaleString("en-US"));
       }
     }).catch(() => {});
   };
@@ -178,16 +183,16 @@ export default function OrdersPage() {
   };
 
   const resetForm = () => {
-    setAmount(""); setFee(""); setTransferCost(""); setRecipientName(""); setRecipientAccount("");
+    setAmount(""); setRate(""); setFee(""); setTransferCost(""); setRecipientName(""); setRecipientAccount("");
     setDestinationCard(""); setDestinationSheba(""); setDescription(""); setError(null);
     setSelectedType(null); setCurrentRates(null);
   };
 
   const isTomanAmount = selectedType ? isTomanAmountType(selectedType) : false;
   const isHawala = selectedType ? isHawalaType(selectedType) : false;
-  const amountNum = parseFloat(amount || "0");
-  const rateNum = currentRates && selectedType ? getDefaultRate(selectedType, currentRates) : 0;
-  const feeNum = parseFloat(fee || "0");
+  const amountNum = parseFormatted(amount);
+  const rateNum = parseFormatted(rate);
+  const feeNum = parseFormatted(fee);
   let totalToman = 0;
   let calculatedPkr = 0;
   if (isTomanAmount) {
@@ -199,7 +204,7 @@ export default function OrdersPage() {
   }
 
   const pkrAmount = isTomanAmount ? calculatedPkr : amountNum;
-  const transferCostNum = parseFloat(transferCost || "0");
+  const transferCostNum = parseFormatted(transferCost);
 
   let previewMainProfit = 0;
   let previewTotalProfit = 0;
@@ -266,6 +271,8 @@ export default function OrdersPage() {
     setCustomerId(order.customerId);
     setCurrencyId(order.currencyId);
     setAmount(String(Number(order.amount)));
+    const storedRate = (order.orderType === "SELL_PKR" || order.orderType === "IR_TO_PK") ? Number(order.sellRateAtTime || 0) : Number(order.buyRateAtTime || 0);
+    setRate(storedRate > 0 ? storedRate.toLocaleString("en-US") : "");
     setFee(String(Number(order.fee)));
     setTransferCost(String(Number(order.transferCost)));
     setRecipientName(order.recipientName || "");
@@ -509,14 +516,6 @@ export default function OrdersPage() {
                     <p className="text-[9px] text-amber-700 font-medium mb-1">سود خرید:</p>
                     <p className="text-[9px] text-amber-600" dir="ltr">(نرخ بازار - نرخ خرید) × مقدار روپیه</p>
                   </div>
-                  <div className="rounded-lg bg-white p-2 border border-amber-100">
-                    <p className="text-[9px] text-amber-700 font-medium mb-1">سود نهایی:</p>
-                    <p className="text-[9px] text-amber-600" dir="ltr">سود خرید + کارمزد - هزینه انتقال</p>
-                  </div>
-                  <div className="rounded-lg bg-white p-2 border border-amber-100">
-                    <p className="text-[9px] text-amber-700 font-medium mb-1">مثال:</p>
-                    <p className="text-[9px] text-amber-600" dir="ltr">(2980 - 2950) × 100,000 = 3,000,000 تومان</p>
-                  </div>
                 </div>
               )}
               {selectedType === "SELL_PKR" && (
@@ -528,14 +527,6 @@ export default function OrdersPage() {
                   <div className="rounded-lg bg-white p-2 border border-amber-100">
                     <p className="text-[9px] text-amber-700 font-medium mb-1">سود فروش:</p>
                     <p className="text-[9px] text-amber-600" dir="ltr">(نرخ فروش - نرخ بازار) × مقدار روپیه</p>
-                  </div>
-                  <div className="rounded-lg bg-white p-2 border border-amber-100">
-                    <p className="text-[9px] text-amber-700 font-medium mb-1">سود نهایی:</p>
-                    <p className="text-[9px] text-amber-600" dir="ltr">سود فروش + کارمزد - هزینه انتقال</p>
-                  </div>
-                  <div className="rounded-lg bg-white p-2 border border-amber-100">
-                    <p className="text-[9px] text-amber-700 font-medium mb-1">مثال:</p>
-                    <p className="text-[9px] text-amber-600" dir="ltr">(3000 - 2980) × 100,000 = 2,000,000 تومان</p>
                   </div>
                 </div>
               )}
@@ -553,10 +544,6 @@ export default function OrdersPage() {
                     <p className="text-[9px] text-amber-700 font-medium mb-1">سود حواله:</p>
                     <p className="text-[9px] text-amber-600" dir="ltr">(نرخ فروش - نرخ بازار) × مقدار روپیه</p>
                   </div>
-                  <div className="rounded-lg bg-white p-2 border border-amber-100">
-                    <p className="text-[9px] text-amber-700 font-medium mb-1">سود نهایی:</p>
-                    <p className="text-[9px] text-amber-600" dir="ltr">سود حواله + کارمزد - هزینه انتقال</p>
-                  </div>
                 </div>
               )}
               {selectedType === "PK_TO_IR" && (
@@ -573,10 +560,6 @@ export default function OrdersPage() {
                     <p className="text-[9px] text-amber-700 font-medium mb-1">سود دریافت:</p>
                     <p className="text-[9px] text-amber-600" dir="ltr">(نرخ بازار - نرخ خرید) × مقدار روپیه</p>
                   </div>
-                  <div className="rounded-lg bg-white p-2 border border-amber-100">
-                    <p className="text-[9px] text-amber-700 font-medium mb-1">سود نهایی:</p>
-                    <p className="text-[9px] text-amber-600" dir="ltr">سود دریافت + کارمزد - هزینه انتقال</p>
-                  </div>
                 </div>
               )}
             </div>
@@ -584,15 +567,18 @@ export default function OrdersPage() {
 
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-gray-500">مشتری</label>
-            <select value={customerId} onChange={(e) => setCustomerId(e.target.value)} className="flex h-12 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
-              <option value="">انتخاب مشتری</option>
-              {customers.map((c) => <option key={c.id} value={c.id}>{c.name} ({c.phone})</option>)}
-            </select>
+            <div className="relative">
+              <select value={customerId} onChange={(e) => setCustomerId(e.target.value)} className="flex h-12 w-full appearance-none rounded-xl border border-gray-200 bg-white px-4 pr-10 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                <option value="">انتخاب مشتری</option>
+                {customers.map((c) => <option key={c.id} value={c.id}>{c.name} ({c.phone})</option>)}
+              </select>
+              <ChevronLeft className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 pointer-events-none" strokeWidth={1.5} />
+            </div>
           </div>
 
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-gray-500">{isTomanAmount ? "مبلغ پرداختی (تومان)" : "مبلغ پرداختی (روپیه)"}</label>
-            <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" className="h-12 text-left rounded-xl" inputMode="decimal" />
+            <Input type="text" inputMode="numeric" value={amount} onChange={(e) => setAmount(formatNum(e.target.value))} placeholder="0" className="h-12 text-left rounded-xl" />
           </div>
 
           {currentRates && selectedType && (
@@ -600,10 +586,7 @@ export default function OrdersPage() {
               <label className="text-xs font-medium text-gray-500">
                 {(selectedType === "SELL_PKR" || selectedType === "IR_TO_PK") ? "نرخ فروش روپیه" : "نرخ خرید روپیه"}
               </label>
-              <div className="flex h-12 items-center rounded-xl border border-gray-200 bg-gray-50 px-3">
-                <span className="text-sm text-gray-600" dir="ltr">{rateNum.toLocaleString("en-US")}</span>
-                <span className="mr-2 text-[10px] text-gray-400">تومان/روپیه</span>
-              </div>
+              <Input type="text" inputMode="numeric" value={rate} onChange={(e) => setRate(formatNum(e.target.value))} placeholder="0" className="h-12 text-left rounded-xl" />
             </div>
           )}
 
@@ -637,7 +620,7 @@ export default function OrdersPage() {
                 {feeNum > 0 && (
                   <div className="rounded-lg bg-white p-2 border border-green-100">
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-green-600">کارمزد</span>
+                      <span className="text-[10px] text-green-600">کارمزد (+)</span>
                       <span className="text-xs font-bold text-green-700" dir="ltr">{feeNum.toLocaleString("en-US")} تومان</span>
                     </div>
                   </div>
@@ -645,8 +628,8 @@ export default function OrdersPage() {
                 {transferCostNum > 0 && (
                   <div className="rounded-lg bg-white p-2 border border-red-100">
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-red-500">هزینه انتقال</span>
-                      <span className="text-xs font-bold text-red-600" dir="ltr">-{transferCostNum.toLocaleString("en-US")} تومان</span>
+                      <span className="text-[10px] text-red-500">هزینه انتقال (-)</span>
+                      <span className="text-xs font-bold text-red-600" dir="ltr">{transferCostNum.toLocaleString("en-US")} تومان</span>
                     </div>
                   </div>
                 )}
@@ -660,13 +643,13 @@ export default function OrdersPage() {
 
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-gray-500">کارمزد (تومان)</label>
-            <Input type="number" value={fee} onChange={(e) => setFee(e.target.value)} placeholder="0" className="h-12 text-left rounded-xl" inputMode="decimal" />
+            <Input type="text" inputMode="numeric" value={fee} onChange={(e) => setFee(formatNum(e.target.value))} placeholder="0" className="h-12 text-left rounded-xl" />
           </div>
 
           {isHawala && (
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-gray-500">هزینه انتقال (تومان)</label>
-              <Input type="number" value={transferCost} onChange={(e) => setTransferCost(e.target.value)} placeholder="0" className="h-12 text-left rounded-xl" inputMode="decimal" />
+              <Input type="text" inputMode="numeric" value={transferCost} onChange={(e) => setTransferCost(formatNum(e.target.value))} placeholder="0" className="h-12 text-left rounded-xl" />
             </div>
           )}
 
@@ -958,15 +941,18 @@ export default function OrdersPage() {
 
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-gray-500">مشتری</label>
-            <select value={customerId} onChange={(e) => setCustomerId(e.target.value)} className="flex h-12 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
-              <option value="">انتخاب مشتری</option>
-              {customers.map((c) => <option key={c.id} value={c.id}>{c.name} ({c.phone})</option>)}
-            </select>
+            <div className="relative">
+              <select value={customerId} onChange={(e) => setCustomerId(e.target.value)} className="flex h-12 w-full appearance-none rounded-xl border border-gray-200 bg-white px-4 pr-10 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                <option value="">انتخاب مشتری</option>
+                {customers.map((c) => <option key={c.id} value={c.id}>{c.name} ({c.phone})</option>)}
+              </select>
+              <ChevronLeft className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 pointer-events-none" strokeWidth={1.5} />
+            </div>
           </div>
 
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-gray-500">{editingOrder?.orderType === "IR_TO_PK" ? "مبلغ پرداختی (تومان)" : "مبلغ پرداختی (روپیه)"}</label>
-            <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" className="h-12 text-left rounded-xl" inputMode="decimal" />
+            <Input type="text" inputMode="numeric" value={amount} onChange={(e) => setAmount(formatNum(e.target.value))} placeholder="0" className="h-12 text-left rounded-xl" />
           </div>
 
           {currentRates && editingOrder && (
@@ -974,22 +960,19 @@ export default function OrdersPage() {
               <label className="text-xs font-medium text-gray-500">
                 {(editingOrder.orderType === "SELL_PKR" || editingOrder.orderType === "IR_TO_PK") ? "نرخ فروش روپیه" : "نرخ خرید روپیه"}
               </label>
-              <div className="flex h-12 items-center rounded-xl border border-gray-200 bg-gray-50 px-3">
-                <span className="text-sm text-gray-600" dir="ltr">{rateNum.toLocaleString("en-US")}</span>
-                <span className="mr-2 text-[10px] text-gray-400">تومان/روپیه</span>
-              </div>
+              <Input type="text" inputMode="numeric" value={rate} onChange={(e) => setRate(formatNum(e.target.value))} placeholder="0" className="h-12 text-left rounded-xl" />
             </div>
           )}
 
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-gray-500">کارمزد (تومان)</label>
-            <Input type="number" value={fee} onChange={(e) => setFee(e.target.value)} placeholder="0" className="h-12 text-left rounded-xl" inputMode="decimal" />
+            <Input type="text" inputMode="numeric" value={fee} onChange={(e) => setFee(formatNum(e.target.value))} placeholder="0" className="h-12 text-left rounded-xl" />
           </div>
 
           {editingOrder && isHawalaType(editingOrder.orderType) && (
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-gray-500">هزینه انتقال (تومان)</label>
-              <Input type="number" value={transferCost} onChange={(e) => setTransferCost(e.target.value)} placeholder="0" className="h-12 text-left rounded-xl" inputMode="decimal" />
+              <Input type="text" inputMode="numeric" value={transferCost} onChange={(e) => setTransferCost(formatNum(e.target.value))} placeholder="0" className="h-12 text-left rounded-xl" />
             </div>
           )}
 

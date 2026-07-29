@@ -32,6 +32,7 @@ export default function NewOrderPage() {
   const [customerId, setCustomerId] = useState("");
   const [currencyId, setCurrencyId] = useState("");
   const [amount, setAmount] = useState("");
+  const [rate, setRate] = useState("");
   const [fee, setFee] = useState("");
   const [transferCost, setTransferCost] = useState("");
   const [recipientName, setRecipientName] = useState("");
@@ -45,10 +46,13 @@ export default function NewOrderPage() {
   const [success, setSuccess] = useState(false);
   const [currentRates, setCurrentRates] = useState<{ buyRate: number; sellRate: number; marketRate: number } | null>(null);
 
-  const getDefaultRate = (orderType: OrderTypeEnum, rates: { buyRate: number; sellRate: number }) => {
-    if (orderType === "BUY_PKR" || orderType === "PK_TO_IR") return rates.buyRate;
-    return rates.sellRate;
+  const onlyDigits = (v: string) => v.replace(/[^0-9]/g, "");
+  const formatNum = (v: string) => {
+    const d = onlyDigits(v);
+    if (!d) return "";
+    return Number(d).toLocaleString("en-US");
   };
+  const parseFormatted = (v: string) => Number(onlyDigits(v) || "0");
 
   useEffect(() => {
     Promise.all([api.get("/api/customers"), api.get("/api/currencies"), api.get("/api/rates")]).then(([c, cur, rates]) => {
@@ -63,14 +67,15 @@ export default function NewOrderPage() {
           sellRate: Number(pkrRate.sellRate),
           marketRate: Number(pkrRate.marketRate),
         });
+        setRate(Number(pkrRate.sellRate).toLocaleString("en-US"));
       }
     }).catch(() => {});
   }, []);
 
-  const amountNum = parseFloat(amount || "0");
-  const rateNum = currentRates && selectedType ? getDefaultRate(selectedType, currentRates) : 0;
-  const feeNum = parseFloat(fee || "0");
-  const transferCostNum = parseFloat(transferCost || "0");
+  const amountNum = parseFormatted(amount);
+  const rateNum = parseFormatted(rate);
+  const feeNum = parseFormatted(fee);
+  const transferCostNum = parseFormatted(transferCost);
   const isTomanAmount = selectedType ? isTomanAmountType(selectedType) : false;
   const isHawala = selectedType ? isHawalaType(selectedType) : false;
 
@@ -127,6 +132,7 @@ export default function NewOrderPage() {
 
   const resetForm = () => {
     setAmount("");
+    setRate("");
     setFee("");
     setTransferCost("");
     setRecipientName("");
@@ -268,14 +274,6 @@ export default function NewOrderPage() {
                     <p className="text-[9px] text-amber-700 font-medium mb-1">سود خرید:</p>
                     <p className="text-[9px] text-amber-600" dir="ltr">(نرخ بازار - نرخ خرید) × مقدار روپیه</p>
                   </div>
-                  <div className="rounded-lg bg-white p-2 border border-amber-100">
-                    <p className="text-[9px] text-amber-700 font-medium mb-1">سود بالقوه (Spread):</p>
-                    <p className="text-[9px] text-amber-600" dir="ltr">(نرخ فروش - نرخ خرید) × مقدار روپیه</p>
-                  </div>
-                  <div className="rounded-lg bg-white p-2 border border-amber-100">
-                    <p className="text-[9px] text-amber-700 font-medium mb-1">سود نهایی:</p>
-                    <p className="text-[9px] text-amber-600" dir="ltr">سود خرید + کارمزد - هزینه انتقال</p>
-                  </div>
                 </div>
               )}
               {selectedType === "SELL_PKR" && (
@@ -287,14 +285,6 @@ export default function NewOrderPage() {
                   <div className="rounded-lg bg-white p-2 border border-amber-100">
                     <p className="text-[9px] text-amber-700 font-medium mb-1">سود فروش:</p>
                     <p className="text-[9px] text-amber-600" dir="ltr">(نرخ فروش - نرخ بازار) × مقدار روپیه</p>
-                  </div>
-                  <div className="rounded-lg bg-white p-2 border border-amber-100">
-                    <p className="text-[9px] text-amber-700 font-medium mb-1">سود بالقوه (Spread):</p>
-                    <p className="text-[9px] text-amber-600" dir="ltr">(نرخ فروش - نرخ خرید) × مقدار روپیه</p>
-                  </div>
-                  <div className="rounded-lg bg-white p-2 border border-amber-100">
-                    <p className="text-[9px] text-amber-700 font-medium mb-1">سود نهایی:</p>
-                    <p className="text-[9px] text-amber-600" dir="ltr">سود فروش + کارمزد - هزینه انتقال</p>
                   </div>
                 </div>
               )}
@@ -312,14 +302,6 @@ export default function NewOrderPage() {
                     <p className="text-[9px] text-amber-700 font-medium mb-1">سود حواله:</p>
                     <p className="text-[9px] text-amber-600" dir="ltr">(نرخ فروش - نرخ بازار) × مقدار روپیه</p>
                   </div>
-                  <div className="rounded-lg bg-white p-2 border border-amber-100">
-                    <p className="text-[9px] text-amber-700 font-medium mb-1">سود بالقوه (Spread):</p>
-                    <p className="text-[9px] text-amber-600" dir="ltr">(نرخ فروش - نرخ خرید) × مقدار روپیه</p>
-                  </div>
-                  <div className="rounded-lg bg-white p-2 border border-amber-100">
-                    <p className="text-[9px] text-amber-700 font-medium mb-1">سود نهایی:</p>
-                    <p className="text-[9px] text-amber-600" dir="ltr">سود حواله + کارمزد - هزینه انتقال</p>
-                  </div>
                 </div>
               )}
               {selectedType === "PK_TO_IR" && (
@@ -336,14 +318,6 @@ export default function NewOrderPage() {
                     <p className="text-[9px] text-amber-700 font-medium mb-1">سود دریافت:</p>
                     <p className="text-[9px] text-amber-600" dir="ltr">(نرخ بازار - نرخ خرید) × مقدار روپیه</p>
                   </div>
-                  <div className="rounded-lg bg-white p-2 border border-amber-100">
-                    <p className="text-[9px] text-amber-700 font-medium mb-1">سود بالقوه (Spread):</p>
-                    <p className="text-[9px] text-amber-600" dir="ltr">(نرخ فروش - نرخ خرید) × مقدار روپیه</p>
-                  </div>
-                  <div className="rounded-lg bg-white p-2 border border-amber-100">
-                    <p className="text-[9px] text-amber-700 font-medium mb-1">سود نهایی:</p>
-                    <p className="text-[9px] text-amber-600" dir="ltr">سود دریافت + کارمزد - هزینه انتقال</p>
-                  </div>
                 </div>
               )}
             </div>
@@ -351,14 +325,17 @@ export default function NewOrderPage() {
 
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-gray-500">مشتری</label>
-            <select
-              value={customerId}
-              onChange={(e) => setCustomerId(e.target.value)}
-              className="flex h-12 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-            >
-              <option value="">انتخاب مشتری</option>
-              {customers.map((c) => <option key={c.id} value={c.id}>{c.name} ({c.phone})</option>)}
-            </select>
+            <div className="relative">
+              <select
+                value={customerId}
+                onChange={(e) => setCustomerId(e.target.value)}
+                className="flex h-12 w-full appearance-none rounded-xl border border-gray-200 bg-white px-4 pr-10 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              >
+                <option value="">انتخاب مشتری</option>
+                {customers.map((c) => <option key={c.id} value={c.id}>{c.name} ({c.phone})</option>)}
+              </select>
+              <ChevronLeft className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 pointer-events-none" strokeWidth={1.5} />
+            </div>
           </div>
 
           <div className="space-y-1.5">
@@ -366,12 +343,12 @@ export default function NewOrderPage() {
               {isTomanAmount ? "مبلغ پرداختی (تومان)" : "مبلغ پرداختی (روپیه)"}
             </label>
             <Input
-              type="number"
+              type="text"
+              inputMode="numeric"
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              onChange={(e) => setAmount(formatNum(e.target.value))}
               placeholder="0"
               className="h-12 text-left rounded-xl"
-              inputMode="decimal"
             />
           </div>
 
@@ -380,10 +357,14 @@ export default function NewOrderPage() {
               <label className="text-xs font-medium text-gray-500">
                 {(selectedType === "SELL_PKR" || selectedType === "IR_TO_PK") ? "نرخ فروش روپیه" : "نرخ خرید روپیه"}
               </label>
-              <div className="flex h-12 items-center rounded-xl border border-gray-200 bg-gray-50 px-3">
-                <span className="text-sm text-gray-600" dir="ltr">{rateNum.toLocaleString("en-US")}</span>
-                <span className="mr-2 text-[10px] text-gray-400">تومان/روپیه</span>
-              </div>
+              <Input
+                type="text"
+                inputMode="numeric"
+                value={rate}
+                onChange={(e) => setRate(formatNum(e.target.value))}
+                placeholder="0"
+                className="h-12 text-left rounded-xl"
+              />
             </div>
           )}
 
@@ -411,12 +392,12 @@ export default function NewOrderPage() {
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-gray-500">کارمزد (تومان)</label>
             <Input
-              type="number"
+              type="text"
+              inputMode="numeric"
               value={fee}
-              onChange={(e) => setFee(e.target.value)}
+              onChange={(e) => setFee(formatNum(e.target.value))}
               placeholder="0"
               className="h-12 text-left rounded-xl"
-              inputMode="decimal"
             />
           </div>
 
@@ -424,12 +405,12 @@ export default function NewOrderPage() {
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-gray-500">هزینه انتقال (تومان)</label>
               <Input
-                type="number"
+                type="text"
+                inputMode="numeric"
                 value={transferCost}
-                onChange={(e) => setTransferCost(e.target.value)}
+                onChange={(e) => setTransferCost(formatNum(e.target.value))}
                 placeholder="0"
                 className="h-12 text-left rounded-xl"
-                inputMode="decimal"
               />
             </div>
           )}
@@ -451,7 +432,7 @@ export default function NewOrderPage() {
                 {feeNum > 0 && (
                   <div className="rounded-lg bg-white p-2 border border-green-100">
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-green-600">کارمزد</span>
+                      <span className="text-[10px] text-green-600">کارمزد (+)</span>
                       <span className="text-xs font-bold text-green-700" dir="ltr">{feeNum.toLocaleString("en-US")} تومان</span>
                     </div>
                   </div>
@@ -459,14 +440,14 @@ export default function NewOrderPage() {
                 {transferCostNum > 0 && (
                   <div className="rounded-lg bg-white p-2 border border-red-100">
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-red-500">هزینه انتقال</span>
-                      <span className="text-xs font-bold text-red-600" dir="ltr">-{transferCostNum.toLocaleString("en-US")} تومان</span>
+                      <span className="text-[10px] text-red-500">هزینه انتقال (-)</span>
+                      <span className="text-xs font-bold text-red-600" dir="ltr">{transferCostNum.toLocaleString("en-US")} تومان</span>
                     </div>
                   </div>
                 )}
               </div>
               <div className="flex items-center justify-between border-t border-green-200 pt-2">
-                <span className="text-xs font-medium text-green-600">سود نهایی</span>
+                <span className="text-xs font-medium text-green-600">سود کل</span>
                 <span className="text-base font-bold text-green-800" dir="ltr">{previewTotalProfit.toLocaleString("en-US")} تومان</span>
               </div>
             </div>
