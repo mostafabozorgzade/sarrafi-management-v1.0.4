@@ -11,6 +11,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status");
   const orderType = searchParams.get("orderType");
+  const search = searchParams.get("search");
   const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
   const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "10", 10)));
   const skip = (page - 1) * limit;
@@ -18,6 +19,12 @@ export async function GET(request: NextRequest) {
   const where: Record<string, unknown> = user.role === "OWNER" ? { tenantId: user.tenantId } : { tenantId: user.tenantId };
   if (status && status !== "all") where.status = status;
   if (orderType && orderType !== "all") where.orderType = orderType;
+  if (search && search.trim()) {
+    const q = search.trim();
+    where.OR = [
+      { customer: { name: { contains: q, mode: "insensitive" } } },
+    ];
+  }
 
   const [orders, total] = await Promise.all([
     prisma.order.findMany({

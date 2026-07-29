@@ -12,6 +12,8 @@ import {
   Send,
   Pencil,
   Trash2,
+  Loader2,
+  Search,
   X,
 } from "lucide-react";
 import { api } from "@/lib/api";
@@ -88,6 +90,9 @@ export default function OrdersPage() {
   const hasMoreRef = useRef(true);
   const filterRef = useRef("all");
   const PAGE_SIZE = 10;
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchRef = useRef("");
 
   const [directionSheetOpen, setDirectionSheetOpen] = useState(false);
   const [subTypeSheetOpen, setSubTypeSheetOpen] = useState(false);
@@ -122,6 +127,8 @@ export default function OrdersPage() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deletingOrder, setDeletingOrder] = useState<Order | null>(null);
   const [formLoading, setFormLoading] = useState(false);
+  const [statusLoading, setStatusLoading] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (selectedOrder && detailSheetOpen) {
@@ -148,6 +155,7 @@ export default function OrdersPage() {
     setLoading(true);
     const params = new URLSearchParams();
     if (filter !== "all") params.set("status", filter);
+    if (searchRef.current.trim()) params.set("search", searchRef.current.trim());
     params.set("page", "1");
     params.set("limit", String(PAGE_SIZE));
     api.get(`/api/orders?${params.toString()}`).then((data) => {
@@ -187,6 +195,7 @@ export default function OrdersPage() {
     const nextPage = pageRef.current + 1;
     const params = new URLSearchParams();
     if (filterRef.current !== "all") params.set("status", filterRef.current);
+    if (searchRef.current.trim()) params.set("search", searchRef.current.trim());
     params.set("page", String(nextPage));
     params.set("limit", String(PAGE_SIZE));
     api.get(`/api/orders?${params.toString()}`).then((data) => {
@@ -217,11 +226,61 @@ export default function OrdersPage() {
     return () => scrollContainer.removeEventListener("scroll", onScroll);
   }, [loadMore]);
 
+  const handleSearch = (value: string) => {
+    setSearchQuery(value);
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = setTimeout(() => {
+      searchRef.current = value;
+      pageRef.current = 1;
+      hasMoreRef.current = true;
+      loadingMoreRef.current = false;
+      setHasMore(true);
+      setLoadingMore(false);
+      setLoading(true);
+      const params = new URLSearchParams();
+      if (filterRef.current !== "all") params.set("status", filterRef.current);
+      if (value.trim()) params.set("search", value.trim());
+      params.set("page", "1");
+      params.set("limit", String(PAGE_SIZE));
+      api.get(`/api/orders?${params.toString()}`).then((data) => {
+        setOrders(data.orders);
+        const more = data.orders.length < data.total;
+        hasMoreRef.current = more;
+        setHasMore(more);
+        setLoading(false);
+      }).catch(() => setLoading(false));
+    }, 350);
+  };
+
+  const clearSearch = () => {
+    setSearchQuery("");
+    searchRef.current = "";
+    pageRef.current = 1;
+    hasMoreRef.current = true;
+    loadingMoreRef.current = false;
+    setHasMore(true);
+    setLoadingMore(false);
+    setLoading(true);
+    const params = new URLSearchParams();
+    if (filterRef.current !== "all") params.set("status", filterRef.current);
+    params.set("page", "1");
+    params.set("limit", String(PAGE_SIZE));
+    api.get(`/api/orders?${params.toString()}`).then((data) => {
+      setOrders(data.orders);
+      const more = data.orders.length < data.total;
+      hasMoreRef.current = more;
+      setHasMore(more);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  };
+
   const handleStatus = async (id: string, status: string) => {
+    setStatusLoading(id);
     try {
       await api.patch("/api/orders", { id, status });
       setOrders((prev) => prev.map((o) => o.id === id ? { ...o, status } : o));
     } catch {}
+    setStatusLoading(null);
   };
 
   const getNextAction = (status: string, orderType: string) => {
@@ -408,6 +467,7 @@ export default function OrdersPage() {
 
   const handleDelete = async () => {
     if (!deletingOrder) return;
+    setDeleting(true);
     try {
       await api.delete(`/api/orders/${deletingOrder.id}`);
       setOrders((prev) => prev.filter((o) => o.id !== deletingOrder.id));
@@ -419,6 +479,7 @@ export default function OrdersPage() {
       setTimeout(() => setErrorToast(null), 4000);
       setDeleteConfirmOpen(false);
     }
+    setDeleting(false);
   };
 
   const typeInfo = selectedType ? ORDER_TYPE_LABELS[selectedType] : null;
@@ -428,24 +489,55 @@ export default function OrdersPage() {
     <main className="min-h-dvh bg-[#fafafa]">
       {/* Header */}
       <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-gray-100/80">
-        <div className="flex h-14 items-center justify-center px-5">
-          <h1 className="text-[15px] font-semibold tracking-tight text-gray-900">سفارشات</h1>
+        {/* Title */}
+        <div className="flex h-14 items-center justify-between px-5">
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-[17px] font-bold tracking-tight text-gray-900">سفارشات</h1>
+            {!loading && orders.length > 0 && (
+              <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-gray-100 px-1.5 text-[10px] font-bold text-gray-500 tabular-nums">
+                {orders.length}
+              </span>
+            )}
+          </div>
         </div>
-        <div className="flex gap-1.5 px-4 pb-3 overflow-x-auto scrollbar-hide">
-          {FILTER_TABS.map(({ value, label }) => (
-            <button
-              key={value}
-              onClick={() => setFilter(value)}
-              className={cn(
-                "rounded-full px-3.5 py-1.5 text-[11px] font-medium transition-all duration-200 whitespace-nowrap",
-                filter === value
-                  ? "bg-gray-900 text-white shadow-sm"
-                  : "text-gray-400 hover:text-gray-600 hover:bg-gray-50"
-              )}
-            >
-              {label}
-            </button>
-          ))}
+
+        {/* Search */}
+        <div className="px-4 pb-3">
+          <div className="relative group">
+            <Search className="absolute right-3.5 top-1/2 h-[15px] w-[15px] -translate-y-1/2 text-gray-300 group-focus-within:text-gray-500 transition-colors" strokeWidth={1.5} />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+              placeholder="جستجو..."
+              className="h-10 w-full rounded-xl border border-gray-100 bg-gray-50/80 pr-10 pl-9 text-[13px] text-gray-700 placeholder:text-gray-300 focus:outline-none focus:border-gray-200 focus:bg-white focus:shadow-sm transition-all"
+            />
+            {searchQuery && (
+              <button onClick={clearSearch} className="absolute left-3 top-1/2 -translate-y-1/2 flex h-5 w-5 items-center justify-center rounded-full bg-gray-200/60 text-gray-400 hover:bg-gray-200 hover:text-gray-600 transition-colors">
+                <X className="h-3 w-3" strokeWidth={2} />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Filter Tabs */}
+        <div className="px-4 pb-3">
+          <div className="flex gap-1 p-1 bg-gray-100/70 rounded-xl overflow-x-auto scrollbar-hide">
+            {FILTER_TABS.map(({ value, label }) => (
+              <button
+                key={value}
+                onClick={() => setFilter(value)}
+                className={cn(
+                  "relative flex-1 min-w-[60px] rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all duration-200 whitespace-nowrap",
+                  filter === value
+                    ? "bg-white text-gray-900 shadow-sm"
+                    : "text-gray-400 hover:text-gray-600"
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -475,10 +567,18 @@ export default function OrdersPage() {
         ) : orders.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gray-50 mb-4">
-              <ArrowDownToLine className="h-7 w-7 text-gray-300" strokeWidth={1.5} />
+              {searchQuery ? (
+                <Search className="h-7 w-7 text-gray-300" strokeWidth={1.5} />
+              ) : (
+                <ArrowDownToLine className="h-7 w-7 text-gray-300" strokeWidth={1.5} />
+              )}
             </div>
-            <p className="text-sm font-medium text-gray-400">سفارشی ثبت نشده</p>
-            <p className="text-xs text-gray-300 mt-1">برای شروع، دکمه + را بزنید</p>
+            <p className="text-sm font-medium text-gray-400">
+              {searchQuery ? "نتیجه‌ای یافت نشد" : "سفارشی ثبت نشده"}
+            </p>
+            <p className="text-xs text-gray-300 mt-1">
+              {searchQuery ? `برای «${searchQuery}» سفارشی وجود ندارد` : "برای شروع، دکمه + را بزنید"}
+            </p>
           </div>
         ) : (
           <div className="space-y-2.5">
@@ -486,7 +586,10 @@ export default function OrdersPage() {
               const typeInfo = ORDER_TYPE_LABELS[o.orderType] || { label: o.orderType, short: o.orderType, color: "text-gray-600", bg: "bg-gray-50 text-gray-600" };
               const Icon = ICON_MAP[o.orderType] || ArrowDownToLine;
               const nextAction = getNextAction(o.status, o.orderType);
-              const iconBg = o.orderType === "IR_TO_PK" ? "bg-emerald-50" : o.orderType === "PK_TO_IR" ? "bg-blue-50" : o.orderType === "BUY_PKR" ? "bg-violet-50" : "bg-amber-50";
+              const isTomanAmt = o.orderType === "IR_TO_PK" || o.orderType === "SELL_PKR";
+              const orderRate = isTomanAmt ? Number(o.sellRateAtTime || 0) : Number(o.buyRateAtTime || 0);
+              const pkrValue = isTomanAmt && Number(o.calculatedPkr) > 0 ? Number(o.calculatedPkr) : Number(o.amount);
+              const isLoadingThis = statusLoading === o.id;
               return (
                 <div
                   key={o.id}
@@ -496,7 +599,7 @@ export default function OrdersPage() {
                   {/* Top row: icon + type + status */}
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <div className={cn("flex h-10 w-10 items-center justify-center rounded-xl", iconBg)}>
+                      <div className={cn("flex h-10 w-10 items-center justify-center rounded-xl", o.orderType === "IR_TO_PK" ? "bg-emerald-50" : o.orderType === "PK_TO_IR" ? "bg-blue-50" : o.orderType === "BUY_PKR" ? "bg-violet-50" : "bg-amber-50")}>
                         <Icon className={cn("h-[18px] w-[18px]", typeInfo.color)} strokeWidth={1.5} />
                       </div>
                       <div>
@@ -507,6 +610,22 @@ export default function OrdersPage() {
                     <span className={cn("rounded-full px-2.5 py-1 text-[10px] font-semibold", STATUS_COLORS[o.status])}>
                       {STATUS_LABELS[o.status]}
                     </span>
+                  </div>
+
+                  {/* Middle row: rate + PKR amount */}
+                  <div className="flex items-center gap-3 mb-2.5">
+                    {orderRate > 0 && (
+                      <div className="flex items-center gap-1 rounded-lg bg-gray-50 px-2 py-1">
+                        <span className="text-[10px] text-gray-400">{isTomanAmt ? "نرخ فروش" : "نرخ خرید"}</span>
+                        <span className="text-[11px] font-semibold text-gray-700 tabular-nums" dir="ltr">{orderRate.toLocaleString("en-US")}</span>
+                      </div>
+                    )}
+                    {pkrValue > 0 && (
+                      <div className="flex items-center gap-1 rounded-lg bg-gray-50 px-2 py-1">
+                        <span className="text-[10px] text-gray-400">روپیه</span>
+                        <span className="text-[11px] font-semibold text-gray-700 tabular-nums" dir="ltr">{pkrValue.toLocaleString("en-US")}</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Bottom row: date + amount */}
@@ -522,13 +641,16 @@ export default function OrdersPage() {
                     <div className="flex gap-2 mt-3 pt-3 border-t border-gray-50" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() => handleStatus(o.id, nextAction.next)}
-                        className="flex-1 rounded-xl bg-gray-900 py-2 text-[11px] font-semibold text-white active:bg-gray-800 transition-colors"
+                        disabled={isLoadingThis}
+                        className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-gray-900 py-2 text-[11px] font-semibold text-white active:bg-gray-800 transition-colors disabled:opacity-50"
                       >
-                        {nextAction.label}
+                        {isLoadingThis ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                        {isLoadingThis ? "در حال انجام..." : nextAction.label}
                       </button>
                       <button
                         onClick={() => handleStatus(o.id, "CANCELLED")}
-                        className="rounded-xl border border-gray-200 px-3.5 py-2 text-[11px] font-medium text-gray-500 active:bg-gray-50 transition-colors"
+                        disabled={isLoadingThis}
+                        className="rounded-xl border border-gray-200 px-3.5 py-2 text-[11px] font-medium text-gray-500 active:bg-gray-50 transition-colors disabled:opacity-50"
                       >
                         لغو
                       </button>
@@ -539,8 +661,29 @@ export default function OrdersPage() {
             })}
             {hasMore && <div className="h-1" />}
             {loadingMore && (
-              <div className="flex justify-center py-5">
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-200 border-t-gray-600" />
+              <div className="space-y-2.5">
+                {Array.from({ length: 2 }).map((_, i) => (
+                  <div key={`shimmer-${i}`} className="rounded-2xl bg-white border border-gray-100/60 p-4 animate-pulse">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="h-10 w-10 rounded-xl" />
+                        <div className="space-y-1.5">
+                          <Skeleton className="h-3 w-28" />
+                          <Skeleton className="h-2.5 w-16" />
+                        </div>
+                      </div>
+                      <Skeleton className="h-5 w-14 rounded-full" />
+                    </div>
+                    <div className="flex gap-2 mb-2.5">
+                      <Skeleton className="h-6 w-20 rounded-lg" />
+                      <Skeleton className="h-6 w-24 rounded-lg" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Skeleton className="h-2.5 w-20" />
+                      <Skeleton className="h-4 w-28" />
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -1056,10 +1199,14 @@ export default function OrdersPage() {
             {/* Action Buttons */}
             {selectedOrder.status !== "COMPLETED" && selectedOrder.status !== "CANCELLED" && (() => {
               const nextAction = getNextAction(selectedOrder.status, selectedOrder.orderType);
+              const isLoadingDetail = statusLoading === selectedOrder.id;
               return (
                 <div className="space-y-2">
                   {nextAction && (
-                    <button onClick={() => { handleStatus(selectedOrder.id, nextAction.next); setDetailSheetOpen(false); }} className="w-full rounded-xl bg-gray-900 py-3 text-[13px] font-semibold text-white active:bg-gray-800 transition-colors">{nextAction.label}</button>
+                    <button onClick={() => { handleStatus(selectedOrder.id, nextAction.next); setDetailSheetOpen(false); }} disabled={isLoadingDetail} className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-gray-900 py-3 text-[13px] font-semibold text-white active:bg-gray-800 transition-colors disabled:opacity-50">
+                      {isLoadingDetail ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                      {isLoadingDetail ? "در حال انجام..." : nextAction.label}
+                    </button>
                   )}
                   <div className="flex gap-2">
                     <button onClick={() => openEdit(selectedOrder)} className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-gray-200 py-2.5 text-[12px] font-medium text-gray-600 active:bg-gray-50 transition-colors">
@@ -1255,8 +1402,11 @@ export default function OrdersPage() {
               </div>
             )}
             <div className="flex gap-2.5">
-              <button onClick={() => setDeleteConfirmOpen(false)} className="flex-1 rounded-xl border border-gray-200 py-2.5 text-[13px] font-medium text-gray-600 active:bg-gray-50 transition-colors">انصراف</button>
-              <button onClick={handleDelete} className="flex-1 rounded-xl bg-red-500 py-2.5 text-[13px] font-semibold text-white active:bg-red-600 transition-colors">حذف</button>
+              <button onClick={() => setDeleteConfirmOpen(false)} disabled={deleting} className="flex-1 rounded-xl border border-gray-200 py-2.5 text-[13px] font-medium text-gray-600 active:bg-gray-50 transition-colors disabled:opacity-50">انصراف</button>
+              <button onClick={handleDelete} disabled={deleting} className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-red-500 py-2.5 text-[13px] font-semibold text-white active:bg-red-600 transition-colors disabled:opacity-50">
+                {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {deleting ? "در حال حذف..." : "حذف"}
+              </button>
             </div>
           </div>
         </div>
