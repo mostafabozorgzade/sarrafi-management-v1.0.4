@@ -125,6 +125,17 @@ export default function CustomersPage() {
     }).catch(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    const onPopState = () => {
+      if (deleteDialogOpen) { setDeleteDialogOpen(false); return; }
+      if (editSheetOpen) { setEditSheetOpen(false); return; }
+      if (addSheetOpen) { setAddSheetOpen(false); return; }
+      if (detailSheetOpen) { setDetailSheetOpen(false); return; }
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, [addSheetOpen, editSheetOpen, detailSheetOpen, deleteDialogOpen]);
+
   const handleSearch = (value: string) => {
     setSearchQuery(value);
     if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
@@ -174,6 +185,7 @@ export default function CustomersPage() {
   const openDetail = async (customer: Customer) => {
     setSelectedCustomer(null);
     setDetailSheetOpen(true);
+    window.history.pushState({}, "");
     setDetailLoading(true);
     try {
       const data = await api.get(`/api/customers/${customer.id}`);
@@ -189,11 +201,13 @@ export default function CustomersPage() {
     setAddress(customer.address || "");
     setError(null);
     setEditSheetOpen(true);
+    window.history.pushState({}, "");
   };
 
   const openDeleteDialog = () => {
     setDetailSheetOpen(false);
     setDeleteDialogOpen(true);
+    window.history.pushState({}, "");
   };
 
   const handleAddSubmit = async (e: React.FormEvent) => {
@@ -378,7 +392,7 @@ export default function CustomersPage() {
 
       {/* FAB */}
       <button
-        onClick={() => { resetForm(); setAddSheetOpen(true); }}
+        onClick={() => { resetForm(); setAddSheetOpen(true); window.history.pushState({}, ""); }}
         className="fixed bottom-24 left-4 z-30 flex h-12 items-center gap-2 rounded-[5px] bg-gray-900 pl-4 pr-3 text-white shadow-lg shadow-gray-900/20 transition-all active:scale-95 hover:bg-gray-800"
       >
         <span className="text-[13px] font-semibold">افزودن مشتری</span>
