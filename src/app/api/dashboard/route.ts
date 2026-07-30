@@ -13,27 +13,27 @@ export async function GET(request: NextRequest) {
   const now = new Date();
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
+  const completedStatus = "COMPLETED" as const;
+
   const [
-    todayTransactions,
-    todayProfit,
-    todayVolume,
-    totalProfit,
-    totalCustomers,
+    todayBuyProfit,
+    todaySellProfit,
     activeOrders,
-    registers,
     rates,
     recentOrders,
   ] = await Promise.all([
-    prisma.transaction.count({ where: { ...where, createdAt: { gte: startOfDay } } }),
-    prisma.transaction.aggregate({ where: { ...where, createdAt: { gte: startOfDay } }, _sum: { profit: true } }),
-    prisma.transaction.aggregate({ where: { ...where, createdAt: { gte: startOfDay } }, _sum: { totalToman: true } }),
-    prisma.transaction.aggregate({ where, _sum: { profit: true } }),
-    prisma.customer.count({ where }),
+    prisma.order.aggregate({
+      where: { ...where, createdAt: { gte: startOfDay }, status: completedStatus },
+      _sum: { buyMarketProfitAmount: true },
+    }),
+    prisma.order.aggregate({
+      where: { ...where, createdAt: { gte: startOfDay }, status: completedStatus },
+      _sum: { sellMarketProfitAmount: true },
+    }),
     prisma.order.count({ where: { ...where, status: "IN_PROGRESS" } }),
-    prisma.cashRegister.findMany({ where, select: { id: true, name: true, type: true, balance: true } }),
     prisma.currencyRate.findMany({
       where,
-      include: { currency: { select: { code: true, name: true } } },
+      select: { id: true, currency: { select: { code: true, name: true } }, buyRate: true, sellRate: true, marketRate: true },
     }),
     prisma.order.findMany({
       where,
@@ -48,16 +48,11 @@ export async function GET(request: NextRequest) {
 
   return safeJson({
     stats: {
-      todayTransactions,
-      todayProfit: todayProfit._sum.profit || 0,
-      todayVolume: todayVolume._sum.totalToman || 0,
-      totalProfit: totalProfit._sum.profit || 0,
-      totalCustomers,
+      todayBuyProfit: todayBuyProfit._sum.buyMarketProfitAmount || 0,
+      todaySellProfit: todaySellProfit._sum.sellMarketProfitAmount || 0,
       activeOrders,
     },
-    registers,
     rates,
     recentOrders,
-    profitByEmployee: [],
   });
 }
