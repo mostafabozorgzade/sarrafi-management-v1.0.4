@@ -15,6 +15,9 @@ import {
   X,
   Loader2,
   MapPin,
+  Pencil,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -50,7 +53,9 @@ export default function CustomersPage() {
   const [loading, setLoading] = useState(true);
 
   const [addSheetOpen, setAddSheetOpen] = useState(false);
+  const [editSheetOpen, setEditSheetOpen] = useState(false);
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
@@ -80,7 +85,21 @@ export default function CustomersPage() {
     setDetailLoading(false);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const openEditSheet = (customer: CustomerDetail | Customer) => {
+    setDetailSheetOpen(false);
+    setFullName(customer.name);
+    setPhone(customer.phone);
+    setAddress(customer.address || "");
+    setError(null);
+    setEditSheetOpen(true);
+  };
+
+  const openDeleteDialog = () => {
+    setDetailSheetOpen(false);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     if (!fullName.trim()) { setError("نام و نام خانوادگی الزامی است"); return; }
@@ -95,6 +114,40 @@ export default function CustomersPage() {
       setFullName(""); setPhone(""); setAddress("");
     } catch (err) { setError(err instanceof Error ? err.message : "خطا"); }
     setSubmitting(false);
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    if (!fullName.trim()) { setError("نام و نام خانوادگی الزامی است"); return; }
+    if (!phone.trim()) { setError("شماره موبایل الزامی است"); return; }
+    if (!selectedCustomer) return;
+    setSubmitting(true);
+    try {
+      const updated = await api.patch(`/api/customers/${selectedCustomer.id}`, { name: fullName.trim(), phone: phone.trim(), address: address.trim() || null });
+      setEditSheetOpen(false);
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 2000);
+      setCustomers((prev) => prev.map((c) => c.id === updated.id ? { ...c, name: updated.name, phone: updated.phone, address: updated.address } : c));
+      setSelectedCustomer((prev) => prev ? { ...prev, name: updated.name, phone: updated.phone, address: updated.address } : null);
+      setFullName(""); setPhone(""); setAddress("");
+    } catch (err) { setError(err instanceof Error ? err.message : "خطا"); }
+    setSubmitting(false);
+  };
+
+  const handleDelete = async () => {
+    if (!selectedCustomer) return;
+    setDeleting(true);
+    try {
+      await api.delete(`/api/customers/${selectedCustomer.id}`);
+      setDeleteDialogOpen(false);
+      setDetailSheetOpen(false);
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 2000);
+      setCustomers((prev) => prev.filter((c) => c.id !== selectedCustomer.id));
+      setSelectedCustomer(null);
+    } catch (err) { setError(err instanceof Error ? err.message : "خطا"); }
+    setDeleting(false);
   };
 
   const resetForm = () => {
@@ -224,7 +277,7 @@ export default function CustomersPage() {
 
       {/* Add Customer BottomSheet */}
       <BottomSheet isOpen={addSheetOpen} onClose={() => setAddSheetOpen(false)} title="افزودن مشتری">
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleAddSubmit} className="space-y-4">
           {error && <ErrorAlert message={error} />}
 
           <div className="space-y-1.5">
@@ -264,6 +317,79 @@ export default function CustomersPage() {
         </form>
       </BottomSheet>
 
+      {/* Edit Customer BottomSheet */}
+      <BottomSheet isOpen={editSheetOpen} onClose={() => setEditSheetOpen(false)} title="ویرایش مشتری">
+        <form onSubmit={handleEditSubmit} className="space-y-4">
+          {error && <ErrorAlert message={error} />}
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-gray-500">نام و نام خانوادگی <span className="text-red-400">*</span></label>
+            <Input
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="مثال: علی رضایی"
+              className="h-12 rounded-[5px]"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-gray-500">شماره موبایل <span className="text-red-400">*</span></label>
+            <Input
+              value={phone}
+              onChange={(e) => setPhone(e.target.value.replace(/[^0-9]/g, ""))}
+              placeholder="09123456789"
+              className="h-12 rounded-[5px] text-left"
+              dir="ltr"
+              inputMode="numeric"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-gray-500">آدرس</label>
+            <textarea
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="اختیاری"
+              rows={2}
+              className="flex w-full rounded-[5px] border border-gray-200 bg-white px-3 py-2.5 text-sm placeholder:text-gray-300 focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900/10 transition-colors"
+            />
+          </div>
+
+          <Button type="submit" isLoading={submitting} className="w-full h-12 rounded-[5px] bg-gray-900 hover:bg-gray-800">ذخیره تغییرات</Button>
+        </form>
+      </BottomSheet>
+
+      {/* Delete Confirmation Dialog */}
+      <BottomSheet isOpen={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)} title="حذف مشتری">
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-50">
+              <AlertTriangle className="h-6 w-6 text-red-500" strokeWidth={1.5} />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-900">آیا از حذف این مشتری مطمئن هستید؟</p>
+              <p className="text-xs text-gray-500 mt-1">این عمل قابل بازگشت نیست و تمام اطلاعات مشتری حذف خواهد شد.</p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setDeleteDialogOpen(false)}
+              className="flex-1 h-11 rounded-[5px] border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              انصراف
+            </button>
+            <Button
+              onClick={handleDelete}
+              isLoading={deleting}
+              className="flex-1 h-11 rounded-[5px] bg-red-600 hover:bg-red-700 text-white"
+            >
+              حذف مشتری
+            </Button>
+          </div>
+        </div>
+      </BottomSheet>
+
       {/* Customer Detail BottomSheet */}
       <BottomSheet isOpen={detailSheetOpen} onClose={() => setDetailSheetOpen(false)} title="جزئیات مشتری" className="max-h-[85vh]">
         {detailLoading ? (
@@ -274,8 +400,8 @@ export default function CustomersPage() {
           </div>
         ) : selectedCustomer ? (
           <div className="space-y-4">
-            {/* Header */}
-            <div className="flex items-center gap-3">
+            {/* Header with Actions */}
+            <div className="flex items-start gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-[5px] bg-gray-50 text-[15px] font-bold text-gray-500">
                 {selectedCustomer.name.split(" ").map((w) => w.charAt(0)).join("").slice(0, 2)}
               </div>
@@ -297,6 +423,21 @@ export default function CustomersPage() {
                     <span className="text-[11px] text-gray-400 tabular-nums" dir="ltr">{selectedCustomer.pakAccount}</span>
                   </div>
                 )}
+              </div>
+              {/* Action Buttons */}
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => openEditSheet(selectedCustomer)}
+                  className="flex h-9 w-9 items-center justify-center rounded-[5px] bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+                >
+                  <Pencil className="h-4 w-4" strokeWidth={1.5} />
+                </button>
+                <button
+                  onClick={openDeleteDialog}
+                  className="flex h-9 w-9 items-center justify-center rounded-[5px] bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                >
+                  <Trash2 className="h-4 w-4" strokeWidth={1.5} />
+                </button>
               </div>
             </div>
 

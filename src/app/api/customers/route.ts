@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
   if (!user.tenantId) return safeJson([]);
 
   const customers = await prisma.customer.findMany({
-    where: { tenantId: user.tenantId },
+    where: { tenantId: user.tenantId, deletedAt: null },
     orderBy: { createdAt: "desc" },
   });
 

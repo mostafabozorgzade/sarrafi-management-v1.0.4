@@ -109,6 +109,7 @@ model Customer {
   debt         BigInt        @default(0)
   totalBuy     BigInt        @default(0)
   totalSell    BigInt        @default(0)
+  deletedAt    DateTime?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -116,6 +117,7 @@ model Customer {
   transactions Transaction[]
 
   @@index([tenantId])
+  @@index([deletedAt])
   @@map("customers")
 }
 
