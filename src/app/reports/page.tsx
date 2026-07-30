@@ -206,7 +206,7 @@ export default function ReportsPage() {
                 </div>
                 <p className="text-[18px] font-bold text-emerald-700 tabular-nums" dir="ltr">{fmt(currentSummary.sellMarketProfit)}</p>
                 <p className="text-[10px] text-gray-400 mt-0.5">تومان</p>
-                <p className="text-[9px] text-gray-400 mt-1.5 leading-relaxed">(نرخ فروش − نرخ بازار) × مبلغ سفارش</p>
+                <p className="text-[9px] text-gray-400 mt-1.5 leading-relaxed">مجموع سود معاملات فروش</p>
               </div>
             </div>
 
@@ -231,7 +231,7 @@ export default function ReportsPage() {
               </div>
               <span className="text-[16px] font-bold text-emerald-800 tabular-nums" dir="ltr">{fmt(currentSummary.totalProfit)} <span className="text-[10px] font-normal text-emerald-600">تومان</span></span>
             </div>
-            <p className="text-[9px] text-gray-400 px-1 leading-relaxed">سود نهایی = سود خرید + سود فروش − هزینه انتقال</p>
+            <p className="text-[9px] text-gray-400 px-1 leading-relaxed">مجموع سود خرید و سود فروش</p>
           </div>
         )}
 
