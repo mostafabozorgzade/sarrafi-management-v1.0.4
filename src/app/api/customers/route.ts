@@ -8,8 +8,49 @@ export async function GET(request: NextRequest) {
   if (!user) return unauthorized();
   if (!user.tenantId) return safeJson([]);
 
+  const { searchParams } = new URL(request.url);
+  const search = searchParams.get("search");
+  const pageParam = searchParams.get("page");
+  const limitParam = searchParams.get("limit");
+
+  if (pageParam) {
+    const page = Math.max(1, parseInt(pageParam, 10));
+    const limit = Math.min(100, Math.max(1, parseInt(limitParam || "10", 10)));
+    const skip = (page - 1) * limit;
+
+    const where: Record<string, unknown> = { tenantId: user.tenantId, deletedAt: null };
+    if (search && search.trim()) {
+      const q = search.trim();
+      where.OR = [
+        { name: { contains: q, mode: "insensitive" } },
+        { phone: { contains: q, mode: "insensitive" } },
+      ];
+    }
+
+    const [customers, total] = await Promise.all([
+      prisma.customer.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.customer.count({ where }),
+    ]);
+
+    return safeJson({ customers, total, page, limit });
+  }
+
+  const where: Record<string, unknown> = { tenantId: user.tenantId, deletedAt: null };
+  if (search && search.trim()) {
+    const q = search.trim();
+    where.OR = [
+      { name: { contains: q, mode: "insensitive" } },
+      { phone: { contains: q, mode: "insensitive" } },
+    ];
+  }
+
   const customers = await prisma.customer.findMany({
-    where: { tenantId: user.tenantId, deletedAt: null },
+    where,
     orderBy: { createdAt: "desc" },
   });
 

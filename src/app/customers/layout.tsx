@@ -7,9 +7,9 @@ export default function CustomersLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-dvh flex-col bg-gray-50/50">
+    <div className="flex h-dvh flex-col bg-gray-50/50 overflow-hidden">
       <Header />
-      <main className="flex-1 overflow-y-auto pb-24 pt-2">{children}</main>
+      <main data-scroll-container className="flex-1 overflow-y-auto pb-24 pt-2">{children}</main>
       <BottomNav />
     </div>
   );

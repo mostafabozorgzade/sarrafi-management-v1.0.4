@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Search,
   Phone,
@@ -51,6 +51,12 @@ const typeLabels: Record<string, string> = {
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const pageRef = useRef(1);
+  const loadingMoreRef = useRef(false);
+  const hasMoreRef = useRef(true);
+  const PAGE_SIZE = 15;
 
   const [addSheetOpen, setAddSheetOpen] = useState(false);
   const [editSheetOpen, setEditSheetOpen] = useState(false);
@@ -60,6 +66,8 @@ export default function CustomersPage() {
   const [detailLoading, setDetailLoading] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState("");
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchRef = useRef("");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
@@ -68,11 +76,100 @@ export default function CustomersPage() {
   const [success, setSuccess] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => {
-    api.get("/api/customers").then((data) => { setCustomers(data); setLoading(false); }).catch(() => setLoading(false));
+  const loadMore = useCallback(() => {
+    if (loadingMoreRef.current || !hasMoreRef.current) return;
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+    const nextPage = pageRef.current + 1;
+    const params = new URLSearchParams();
+    if (searchRef.current.trim()) params.set("search", searchRef.current.trim());
+    params.set("page", String(nextPage));
+    params.set("limit", String(PAGE_SIZE));
+    api.get(`/api/customers?${params.toString()}`).then((data) => {
+      setCustomers((prev) => [...prev, ...data.customers]);
+      pageRef.current = nextPage;
+      const more = data.customers.length >= PAGE_SIZE;
+      hasMoreRef.current = more;
+      setHasMore(more);
+    }).catch(() => {}).finally(() => {
+      loadingMoreRef.current = false;
+      setLoadingMore(false);
+    });
   }, []);
 
-  const filtered = customers.filter((c) => c.name.includes(searchQuery) || c.phone.includes(searchQuery));
+  useEffect(() => {
+    const scrollContainer = document.querySelector("[data-scroll-container]");
+    if (!scrollContainer) return;
+
+    const onScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+      if (scrollHeight - scrollTop - clientHeight < 200) {
+        loadMore();
+      }
+    };
+
+    scrollContainer.addEventListener("scroll", onScroll, { passive: true });
+    return () => scrollContainer.removeEventListener("scroll", onScroll);
+  }, [loadMore]);
+
+  useEffect(() => {
+    const params = new URLSearchParams();
+    params.set("page", "1");
+    params.set("limit", String(PAGE_SIZE));
+    api.get(`/api/customers?${params.toString()}`).then((data) => {
+      setCustomers(data.customers);
+      const more = data.customers.length < data.total;
+      hasMoreRef.current = more;
+      setHasMore(more);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, []);
+
+  const handleSearch = (value: string) => {
+    setSearchQuery(value);
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = setTimeout(() => {
+      searchRef.current = value;
+      pageRef.current = 1;
+      hasMoreRef.current = true;
+      loadingMoreRef.current = false;
+      setHasMore(true);
+      setLoadingMore(false);
+      setLoading(true);
+      const params = new URLSearchParams();
+      if (value.trim()) params.set("search", value.trim());
+      params.set("page", "1");
+      params.set("limit", String(PAGE_SIZE));
+      api.get(`/api/customers?${params.toString()}`).then((data) => {
+        setCustomers(data.customers);
+        const more = data.customers.length < data.total;
+        hasMoreRef.current = more;
+        setHasMore(more);
+        setLoading(false);
+      }).catch(() => setLoading(false));
+    }, 350);
+  };
+
+  const clearSearch = () => {
+    setSearchQuery("");
+    searchRef.current = "";
+    pageRef.current = 1;
+    hasMoreRef.current = true;
+    loadingMoreRef.current = false;
+    setHasMore(true);
+    setLoadingMore(false);
+    setLoading(true);
+    const params = new URLSearchParams();
+    params.set("page", "1");
+    params.set("limit", String(PAGE_SIZE));
+    api.get(`/api/customers?${params.toString()}`).then((data) => {
+      setCustomers(data.customers);
+      const more = data.customers.length < data.total;
+      hasMoreRef.current = more;
+      setHasMore(more);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  };
 
   const openDetail = async (customer: Customer) => {
     setSelectedCustomer(null);
@@ -163,7 +260,7 @@ export default function CustomersPage() {
           <div className="flex items-center gap-2.5">
             <h1 className="text-[17px] font-bold tracking-tight text-gray-900">مشتریان</h1>
             {!loading && customers.length > 0 && (
-              <span className="flex h-5 min-w-[20px] items-center justify-center rounded-[3px] bg-gray-100 px-1.5 text-[10px] font-bold text-gray-500 tabular-nums">
+              <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-gray-100 px-1.5 text-[10px] font-bold text-gray-500 tabular-nums">
                 {customers.length}
               </span>
             )}
@@ -177,12 +274,12 @@ export default function CustomersPage() {
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearch(e.target.value)}
               placeholder="جستجو بر اساس نام یا شماره..."
               className="h-10 w-full rounded-[5px] border border-gray-100 bg-gray-50/80 pr-10 pl-9 text-[13px] text-gray-700 placeholder:text-gray-300 focus:outline-none focus:border-gray-200 focus:bg-white focus:shadow-sm transition-all"
             />
             {searchQuery && (
-              <button onClick={() => setSearchQuery("")} className="absolute left-3 top-1/2 -translate-y-1/2 flex h-5 w-5 items-center justify-center rounded-[3px] bg-gray-200/60 text-gray-400 hover:bg-gray-200 hover:text-gray-600 transition-colors">
+              <button onClick={clearSearch} className="absolute left-3 top-1/2 -translate-y-1/2 flex h-5 w-5 items-center justify-center rounded-full bg-gray-200/60 text-gray-400 hover:bg-gray-200 hover:text-gray-600 transition-colors">
                 <X className="h-3 w-3" strokeWidth={2} />
               </button>
             )}
@@ -207,7 +304,7 @@ export default function CustomersPage() {
               </div>
             ))}
           </div>
-        ) : filtered.length === 0 ? (
+        ) : customers.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20">
             <div className="flex h-16 w-16 items-center justify-center rounded-[5px] bg-gray-50 mb-4">
               {searchQuery ? (
@@ -225,7 +322,7 @@ export default function CustomersPage() {
           </div>
         ) : (
           <div className="space-y-2.5">
-            {filtered.map((c) => {
+            {customers.map((c) => {
               const initials = c.name.split(" ").map((w) => w.charAt(0)).join("").slice(0, 2);
               return (
                 <div
@@ -254,6 +351,23 @@ export default function CustomersPage() {
                 </div>
               );
             })}
+            {hasMore && <div className="h-1" />}
+            {loadingMore && (
+              <div className="space-y-2.5">
+                {Array.from({ length: 2 }).map((_, i) => (
+                  <div key={`shimmer-${i}`} className="rounded-[5px] bg-white border border-gray-200/80 p-4 animate-pulse">
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="h-10 w-10 rounded-[5px]" />
+                      <div className="flex-1 space-y-1.5">
+                        <Skeleton className="h-3 w-28" />
+                        <Skeleton className="h-2.5 w-20" />
+                      </div>
+                      <Skeleton className="h-4 w-4 rounded-[3px]" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

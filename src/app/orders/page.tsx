@@ -88,7 +88,7 @@ export default function OrdersPage() {
   const loadingMoreRef = useRef(false);
   const hasMoreRef = useRef(true);
   const filterRef = useRef("all");
-  const PAGE_SIZE = 10;
+  const PAGE_SIZE = 15;
   const [searchQuery, setSearchQuery] = useState("");
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchRef = useRef("");
