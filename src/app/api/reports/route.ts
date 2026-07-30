@@ -1,17 +1,17 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthUser, unauthorized } from "@/lib/api-helpers";
+import { getAuthUser, unauthorized, getTenantFilter } from "@/lib/api-helpers";
 import { safeJson } from "@/lib/safe-json";
 
 export async function GET(request: NextRequest) {
   const user = await getAuthUser(request);
   if (!user) return unauthorized();
-  if (!user.tenantId) return safeJson([]);
+  if (user.role !== "SUPER_ADMIN" && !user.tenantId) return safeJson([]);
 
   const { searchParams } = new URL(request.url);
   const report = searchParams.get("type") || "transactions";
 
-  const where = { tenantId: user.tenantId };
+  const where = getTenantFilter(user);
 
   switch (report) {
     case "transactions": {

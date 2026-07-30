@@ -1,12 +1,12 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthUser, unauthorized } from "@/lib/api-helpers";
+import { getAuthUser, unauthorized, getTenantFilter, requireTenantId } from "@/lib/api-helpers";
 import { safeJson } from "@/lib/safe-json";
 
 export async function GET(request: NextRequest) {
   const user = await getAuthUser(request);
   if (!user) return unauthorized();
-  if (!user.tenantId) return safeJson({ error: "tenant required" }, { status: 400 });
+  if (user.role !== "SUPER_ADMIN" && !user.tenantId) return safeJson([]);
 
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status");
@@ -16,7 +16,8 @@ export async function GET(request: NextRequest) {
   const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "10", 10)));
   const skip = (page - 1) * limit;
 
-  const where: Record<string, unknown> = user.role === "OWNER" ? { tenantId: user.tenantId } : { tenantId: user.tenantId };
+  const tenantWhere = getTenantFilter(user);
+  const where: Record<string, unknown> = { ...tenantWhere };
   if (status && status !== "all") where.status = status;
   if (orderType && orderType !== "all") where.orderType = orderType;
   if (search && search.trim()) {
@@ -47,7 +48,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const user = await getAuthUser(request);
   if (!user) return unauthorized();
-  if (!user.tenantId) return safeJson({ error: "tenant required" }, { status: 400 });
+
+  const tenantId = user.role === "SUPER_ADMIN" ? (await request.json().then((b) => b.tenantId).catch(() => null)) || user.tenantId : user.tenantId;
+  if (!tenantId) return safeJson({ error: "tenant required" }, { status: 400 });
 
   try {
     const body = await request.json();
@@ -69,7 +72,7 @@ export async function POST(request: NextRequest) {
     const transferCostNum = Number(String(transferCost || 0).replace(/,/g, ""));
 
     const currencyRate = await prisma.currencyRate.findUnique({
-      where: { tenantId_currencyId: { tenantId: user.tenantId, currencyId } },
+      where: { tenantId_currencyId: { tenantId, currencyId } },
     });
 
     const fallbackBuyRate = currencyRate ? Number(currencyRate.buyRate ?? 0) : 0;
@@ -117,7 +120,7 @@ export async function POST(request: NextRequest) {
 
     const order = await prisma.order.create({
       data: {
-        tenantId: user.tenantId,
+        tenantId,
         userId: user.userId,
         customerId,
         currencyId,
@@ -161,7 +164,7 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   const user = await getAuthUser(request);
   if (!user) return unauthorized();
-  if (!user.tenantId) return safeJson({ error: "tenant required" }, { status: 400 });
+  if (user.role !== "SUPER_ADMIN" && !user.tenantId) return safeJson({ error: "tenant required" }, { status: 400 });
 
   try {
     const body = await request.json();
@@ -185,7 +188,7 @@ export async function PATCH(request: NextRequest) {
     });
 
     if (status === "COMPLETED") {
-      const tomanReg = await prisma.cashRegister.findFirst({ where: { tenantId: user.tenantId, type: "toman" } });
+      const tomanReg = await prisma.cashRegister.findFirst({ where: { tenantId: order.tenantId, type: "toman" } });
       if (tomanReg) {
         await prisma.cashEntry.create({
           data: { registerId: tomanReg.id, type: "in", amount: order.totalToman, description: `دریافت تومان - سفارش ${order.orderType}` },
@@ -193,7 +196,7 @@ export async function PATCH(request: NextRequest) {
         await prisma.cashRegister.update({ where: { id: tomanReg.id }, data: { balance: { increment: order.totalToman } } });
       }
 
-      const pkrReg = await prisma.cashRegister.findFirst({ where: { tenantId: user.tenantId, type: "rupee" } });
+      const pkrReg = await prisma.cashRegister.findFirst({ where: { tenantId: order.tenantId, type: "rupee" } });
       if (pkrReg) {
         const pkrAmount = order.calculatedPkr || BigInt(0);
         await prisma.cashEntry.create({

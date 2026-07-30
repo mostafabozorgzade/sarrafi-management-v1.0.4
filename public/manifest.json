@@ -1,6 +1,6 @@
 {
-  "name": "SarafiX - مدیریت هوشمند صرافی",
-  "short_name": "SarafiX",
+  "name": "صرافیکس - مدیریت هوشمند صرافی",
+  "short_name": "صرافیکس",
   "description": "اپلیکیشن مدیریت هوشمند صرافی",
   "start_url": "/login",
   "scope": "/",

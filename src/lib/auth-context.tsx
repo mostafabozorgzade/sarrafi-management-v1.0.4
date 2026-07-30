@@ -8,7 +8,7 @@ interface User {
   mobile: string;
   firstName: string;
   lastName: string;
-  role: "OWNER" | "MANAGER" | "CASHIER" | "ACCOUNTANT";
+  role: "SUPER_ADMIN" | "OWNER" | "MANAGER" | "CASHIER" | "ACCOUNTANT";
   tenantId: string | null;
   tenantName: string | null;
 }

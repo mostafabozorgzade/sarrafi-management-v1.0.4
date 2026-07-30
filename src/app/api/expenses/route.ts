@@ -1,17 +1,15 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthUser, unauthorized } from "@/lib/api-helpers";
+import { getAuthUser, unauthorized, getTenantFilter } from "@/lib/api-helpers";
 import { safeJson } from "@/lib/safe-json";
 
 export async function GET(request: NextRequest) {
   const user = await getAuthUser(request);
   if (!user) return unauthorized();
-  if (!user.tenantId) return safeJson([]);
-
-  const where = { tenantId: user.tenantId };
+  if (user.role !== "SUPER_ADMIN" && !user.tenantId) return safeJson([]);
 
   const expenses = await prisma.expense.findMany({
-    where,
+    where: getTenantFilter(user),
     include: { user: { select: { firstName: true, lastName: true } } },
     orderBy: { createdAt: "desc" },
     take: 100,
@@ -23,7 +21,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const user = await getAuthUser(request);
   if (!user) return unauthorized();
-  if (!user.tenantId) return safeJson({ error: "tenant required" }, { status: 400 });
+
+  const tenantId = user.role === "SUPER_ADMIN" ? (await request.json().then((b) => b.tenantId).catch(() => null)) || user.tenantId : user.tenantId;
+  if (!tenantId) return safeJson({ error: "tenant required" }, { status: 400 });
 
   const body = await request.json();
   const { category, amount, description } = body;
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
 
   const expense = await prisma.expense.create({
     data: {
-      tenantId: user.tenantId,
+      tenantId,
       userId: user.userId,
       category,
       amount: BigInt(Number(amount)),

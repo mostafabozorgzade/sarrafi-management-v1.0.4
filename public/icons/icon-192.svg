@@ -1,13 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
-  <rect width="192" height="192" rx="40" fill="#1d4ed8"/>
-  <g transform="translate(96,96)">
-    <rect x="-30" y="-30" width="60" height="60" rx="8" fill="none" stroke="white" stroke-width="4"/>
-    <line x1="-15" y1="-15" x2="15" y2="-15" stroke="white" stroke-width="4" stroke-linecap="round"/>
-    <line x1="-15" y1="0" x2="15" y2="0" stroke="white" stroke-width="4" stroke-linecap="round"/>
-    <line x1="-15" y1="15" x2="10" y2="15" stroke="white" stroke-width="4" stroke-linecap="round"/>
-    <line x1="0" y1="-30" x2="0" y2="-45" stroke="white" stroke-width="4" stroke-linecap="round"/>
-    <line x1="0" y1="30" x2="0" y2="45" stroke="white" stroke-width="4" stroke-linecap="round"/>
-    <circle cx="0" cy="-45" r="4" fill="white"/>
-    <circle cx="0" cy="45" r="4" fill="white"/>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2563eb"/>
+      <stop offset="50%" stop-color="#1d4ed8"/>
+      <stop offset="100%" stop-color="#1e40af"/>
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="40" fill="url(#bg)"/>
+  <g transform="translate(96,96)" fill="none" stroke="white" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M-22,-6C-22,-6-14,-24 0,-24C14,-24 22,-6 22,-6"/>
+    <path d="M22,-6L17,-10M22,-6L18,0"/>
+    <path d="M22,6C22,6 14,24 0,24C-14,24 -22,6 -22,6"/>
+    <path d="M-22,6L-17,0M-22,6L-18,12"/>
   </g>
 </svg>

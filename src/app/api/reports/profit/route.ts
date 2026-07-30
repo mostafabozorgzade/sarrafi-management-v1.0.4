@@ -1,13 +1,13 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthUser, unauthorized } from "@/lib/api-helpers";
+import { getAuthUser, unauthorized, getTenantFilter } from "@/lib/api-helpers";
 import { safeJson } from "@/lib/safe-json";
 import { Prisma } from "@prisma/client";
 
 export async function GET(request: NextRequest) {
   const user = await getAuthUser(request);
   if (!user) return unauthorized();
-  if (!user.tenantId) return safeJson({ error: "tenant required" }, { status: 400 });
+  if (user.role !== "SUPER_ADMIN" && !user.tenantId) return safeJson({ error: "tenant required" }, { status: 400 });
 
   const { searchParams } = new URL(request.url);
   const from = searchParams.get("from");
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
 
   const completedStatus = "COMPLETED" as const;
 
-  const whereBase = { tenantId: user.tenantId };
+  const whereBase = getTenantFilter(user);
 
   const dateFilter: Prisma.DateTimeFilter = {};
   if (from) dateFilter.gte = new Date(from);
@@ -206,7 +206,7 @@ export async function GET(request: NextRequest) {
   const topCustomerIds = topCustomersRaw.map((c) => c.customerId);
   const topCustomerRecords = topCustomerIds.length > 0
     ? await prisma.customer.findMany({
-        where: { id: { in: topCustomerIds }, tenantId: user.tenantId },
+        where: { id: { in: topCustomerIds }, ...whereBase },
         select: { id: true, name: true },
       })
     : [];

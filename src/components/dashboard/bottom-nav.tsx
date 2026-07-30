@@ -9,8 +9,10 @@ import {
   Users,
   BarChart3,
   User,
+  Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth-context";
 
 const navItems = [
   { label: "داشبورد", icon: LayoutDashboard, href: "/dashboard" },
@@ -20,9 +22,15 @@ const navItems = [
   { label: "پروفایل", icon: User, href: "/profile" },
 ];
 
+const adminNavItem = { label: "مدیریت", icon: Shield, href: "/admin" };
+
 export function BottomNav() {
   const pathname = usePathname();
   const [pendingHref, setPendingHref] = useState<string | null>(null);
+  const { user } = useAuth();
+
+  const isSuperAdmin = user?.role === "SUPER_ADMIN";
+  const items = isSuperAdmin ? [...navItems.slice(0, 3), adminNavItem, ...navItems.slice(3)] : navItems;
 
   const handleClick = (href: string) => {
     if (pathname.startsWith(href)) return;
@@ -34,7 +42,7 @@ export function BottomNav() {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-gray-100 bg-white/95 backdrop-blur-sm">
       <div className="flex items-center justify-around px-2 pb-[env(safe-area-inset-bottom)]">
-        {navItems.map((item) => {
+        {items.map((item) => {
           const active = pathname.startsWith(item.href);
           const loading = isLoading(item.href);
           return (

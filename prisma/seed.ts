@@ -18,6 +18,7 @@ async function main() {
   await prisma.expense.deleteMany();
   await prisma.cashEntry.deleteMany();
   await prisma.currencyRate.deleteMany();
+  await prisma.rateHistory.deleteMany();
   await prisma.transaction.deleteMany();
   await prisma.order.deleteMany();
   await prisma.customer.deleteMany();
@@ -92,6 +93,17 @@ async function main() {
   });
 
   console.log("Users created.");
+
+  const superAdmin = await prisma.user.create({
+    data: {
+      mobile: "09000000001",
+      password: defaultPassword,
+      firstName: "سوپر",
+      lastName: "ادمین",
+      role: Role.SUPER_ADMIN,
+    },
+  });
+  console.log("Super Admin created.");
 
   const pkr = currencies.find((c) => c.code === "PKR")!;
 
@@ -235,6 +247,7 @@ async function main() {
 
   console.log("\n--- Seed Complete ---");
   console.log("Password for all: 123456\n");
+  console.log("Super Admin: 09000000001");
   console.log("Owner:        09000000000");
   console.log("Manager:      09121234567");
   console.log("Cashier:      09121111111");

@@ -7,7 +7,7 @@ export interface JwtPayload {
   userId: string;
   tenantId: string | null;
   mobile: string;
-  role: "OWNER" | "MANAGER" | "CASHIER" | "ACCOUNTANT";
+  role: "SUPER_ADMIN" | "OWNER" | "MANAGER" | "CASHIER" | "ACCOUNTANT";
   name: string;
 }
 

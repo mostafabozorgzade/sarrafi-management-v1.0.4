@@ -1,15 +1,15 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthUser, unauthorized } from "@/lib/api-helpers";
+import { getAuthUser, unauthorized, getTenantFilter } from "@/lib/api-helpers";
 import { safeJson } from "@/lib/safe-json";
 
 export async function GET(request: NextRequest) {
   const user = await getAuthUser(request);
   if (!user) return unauthorized();
-  if (!user.tenantId) return safeJson([]);
+  if (user.role !== "SUPER_ADMIN" && !user.tenantId) return safeJson([]);
 
   const rates = await prisma.currencyRate.findMany({
-    where: { tenantId: user.tenantId },
+    where: getTenantFilter(user),
     include: {
       currency: { select: { code: true, name: true } },
       changedBy: { select: { firstName: true, lastName: true } },
@@ -23,9 +23,11 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const user = await getAuthUser(request);
   if (!user) return unauthorized();
-  if (!user.tenantId) return safeJson({ error: "tenant required" }, { status: 400 });
 
-  if (user.role !== "OWNER" && user.role !== "MANAGER") {
+  const tenantId = user.role === "SUPER_ADMIN" ? (await request.json().then((b) => b.tenantId).catch(() => null)) || user.tenantId : user.tenantId;
+  if (!tenantId) return safeJson({ error: "tenant required" }, { status: 400 });
+
+  if (user.role !== "SUPER_ADMIN" && user.role !== "OWNER" && user.role !== "MANAGER") {
     return safeJson({ error: "فقط مدیر یا صراف اجازه تغییر نرخ دارد" }, { status: 403 });
   }
 
@@ -41,7 +43,7 @@ export async function POST(request: NextRequest) {
   const sellRateNum = Number(sellRate);
 
   const rate = await prisma.currencyRate.upsert({
-    where: { tenantId_currencyId: { tenantId: user.tenantId, currencyId } },
+    where: { tenantId_currencyId: { tenantId, currencyId } },
     update: {
       marketRate: BigInt(marketRateNum),
       buyRate: BigInt(buyRateNum),
@@ -49,7 +51,7 @@ export async function POST(request: NextRequest) {
       changedById: user.userId,
     },
     create: {
-      tenantId: user.tenantId,
+      tenantId,
       currencyId,
       marketRate: BigInt(marketRateNum),
       buyRate: BigInt(buyRateNum),
@@ -64,7 +66,7 @@ export async function POST(request: NextRequest) {
 
   await prisma.rateHistory.create({
     data: {
-      tenantId: user.tenantId,
+      tenantId,
       currencyId,
       marketRate: BigInt(marketRateNum),
       buyRate: BigInt(buyRateNum),

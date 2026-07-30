@@ -1,4 +1,18 @@
 export const PERMISSIONS = {
+  SUPER_ADMIN: {
+    dashboard: ["read"],
+    transactions: ["create", "read", "update", "delete"],
+    orders: ["create", "read", "update", "delete"],
+    customers: ["create", "read", "update", "delete"],
+    rates: ["read", "update"],
+    cashier: ["create", "read", "update"],
+    expenses: ["create", "read", "update", "delete"],
+    reports: ["read"],
+    settings: ["read", "update"],
+    users: ["create", "read", "update", "delete"],
+    currencies: ["create", "read", "update", "delete"],
+    tenants: ["create", "read", "update", "delete"],
+  },
   OWNER: {
     dashboard: ["read"],
     transactions: ["create", "read", "update", "delete"],

@@ -1,25 +1,27 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthUser, unauthorized } from "@/lib/api-helpers";
+import { getAuthUser, unauthorized, getTenantFilter, requireTenantId } from "@/lib/api-helpers";
 import { safeJson } from "@/lib/safe-json";
 
 export async function GET(request: NextRequest) {
   try {
     const user = await getAuthUser(request);
     if (!user) return unauthorized();
-    if (!user.tenantId) return safeJson({ customers: [], total: 0 });
+    if (user.role !== "SUPER_ADMIN" && !user.tenantId) return safeJson({ customers: [], total: 0 });
 
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search");
     const pageParam = searchParams.get("page");
     const limitParam = searchParams.get("limit");
 
+    const tenantWhere = getTenantFilter(user);
+
     if (pageParam) {
       const page = Math.max(1, parseInt(pageParam, 10));
       const limit = Math.min(100, Math.max(1, parseInt(limitParam || "10", 10)));
       const skip = (page - 1) * limit;
 
-      const where: Record<string, unknown> = { tenantId: user.tenantId, deletedAt: null };
+      const where: Record<string, unknown> = { ...tenantWhere, deletedAt: null };
       if (search && search.trim()) {
         const q = search.trim();
         where.OR = [
@@ -41,7 +43,7 @@ export async function GET(request: NextRequest) {
       return safeJson({ customers, total, page, limit });
     }
 
-    const where: Record<string, unknown> = { tenantId: user.tenantId, deletedAt: null };
+    const where: Record<string, unknown> = { ...tenantWhere, deletedAt: null };
     if (search && search.trim()) {
       const q = search.trim();
       where.OR = [
@@ -65,7 +67,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const user = await getAuthUser(request);
   if (!user) return unauthorized();
-  if (!user.tenantId) return safeJson({ error: "tenant required" }, { status: 400 });
+
+  const tenantId = user.role === "SUPER_ADMIN" ? (await request.json().then((b) => b.tenantId).catch(() => null)) || user.tenantId : user.tenantId;
+  if (!tenantId) return safeJson({ error: "tenant required" }, { status: 400 });
 
   try {
     const body = await request.json();
@@ -77,7 +81,7 @@ export async function POST(request: NextRequest) {
 
     const customer = await prisma.customer.create({
       data: {
-        tenantId: user.tenantId,
+        tenantId,
         name,
         phone,
         address: address || null,

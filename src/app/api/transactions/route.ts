@@ -1,19 +1,19 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthUser, unauthorized } from "@/lib/api-helpers";
+import { getAuthUser, unauthorized, getTenantFilter, requireTenantId } from "@/lib/api-helpers";
 import { safeJson } from "@/lib/safe-json";
 
 export async function GET(request: NextRequest) {
   const user = await getAuthUser(request);
   if (!user) return unauthorized();
-  if (!user.tenantId) return safeJson([]);
+  if (user.role !== "SUPER_ADMIN" && !user.tenantId) return safeJson([]);
 
   const { searchParams } = new URL(request.url);
   const type = searchParams.get("type");
   const customerId = searchParams.get("customerId");
   const currencyId = searchParams.get("currencyId");
 
-  const where: Record<string, unknown> = { tenantId: user.tenantId };
+  const where: Record<string, unknown> = { ...getTenantFilter(user) };
   if (type && type !== "all") where.type = type;
   if (customerId) where.customerId = customerId;
   if (currencyId) where.currencyId = currencyId;
@@ -35,7 +35,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const user = await getAuthUser(request);
   if (!user) return unauthorized();
-  if (!user.tenantId) return safeJson({ error: "tenant required" }, { status: 400 });
+
+  const tenantId = user.role === "SUPER_ADMIN" ? (await request.json().then((b) => b.tenantId).catch(() => null)) || user.tenantId : user.tenantId;
+  if (!tenantId) return safeJson({ error: "tenant required" }, { status: 400 });
 
   const body = await request.json();
   const { type, customerId, currencyId, amount, rate, description } = body;
@@ -49,7 +51,7 @@ export async function POST(request: NextRequest) {
   const totalToman = amountNum * rateNum;
 
   const currencyRate = await prisma.currencyRate.findUnique({
-    where: { tenantId_currencyId: { tenantId: user.tenantId, currencyId } },
+    where: { tenantId_currencyId: { tenantId, currencyId } },
   });
 
   let profit = 0;
@@ -63,7 +65,7 @@ export async function POST(request: NextRequest) {
 
   const transaction = await prisma.transaction.create({
     data: {
-      tenantId: user.tenantId,
+      tenantId,
       userId: user.userId,
       customerId,
       currencyId,
@@ -79,14 +81,14 @@ export async function POST(request: NextRequest) {
 
   if (type === "buy") {
     await prisma.customer.update({ where: { id: customerId }, data: { totalBuy: { increment: BigInt(totalToman) } } });
-    const register = await prisma.cashRegister.findFirst({ where: { tenantId: user.tenantId, type: "toman" } });
+    const register = await prisma.cashRegister.findFirst({ where: { tenantId, type: "toman" } });
     if (register) {
       await prisma.cashEntry.create({ data: { registerId: register.id, type: "out", amount: BigInt(totalToman), description: `خرید ${transaction.currency.code} - ${transaction.customer.name}` } });
       await prisma.cashRegister.update({ where: { id: register.id }, data: { balance: { decrement: BigInt(totalToman) } } });
     }
   } else {
     await prisma.customer.update({ where: { id: customerId }, data: { totalSell: { increment: BigInt(totalToman) } } });
-    const register = await prisma.cashRegister.findFirst({ where: { tenantId: user.tenantId, type: "toman" } });
+    const register = await prisma.cashRegister.findFirst({ where: { tenantId, type: "toman" } });
     if (register) {
       await prisma.cashEntry.create({ data: { registerId: register.id, type: "in", amount: BigInt(totalToman), description: `فروش ${transaction.currency.code} - ${transaction.customer.name}` } });
       await prisma.cashRegister.update({ where: { id: register.id }, data: { balance: { increment: BigInt(totalToman) } } });

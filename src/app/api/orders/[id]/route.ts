@@ -6,11 +6,12 @@ import { safeJson } from "@/lib/safe-json";
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getAuthUser(request);
   if (!user) return unauthorized();
-  if (!user.tenantId) return safeJson({ error: "tenant required" }, { status: 400 });
+  if (user.role !== "SUPER_ADMIN" && !user.tenantId) return safeJson({ error: "tenant required" }, { status: 400 });
 
   const { id } = await params;
+  const tenantWhere = user.role === "SUPER_ADMIN" ? {} : { tenantId: user.tenantId };
   const order = await prisma.order.findFirst({
-    where: { id, tenantId: user.tenantId },
+    where: { id, ...tenantWhere },
     include: {
       customer: { select: { name: true, phone: true } },
       currency: { select: { code: true, name: true } },
@@ -25,11 +26,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getAuthUser(request);
   if (!user) return unauthorized();
-  if (!user.tenantId) return safeJson({ error: "tenant required" }, { status: 400 });
+  if (user.role !== "SUPER_ADMIN" && !user.tenantId) return safeJson({ error: "tenant required" }, { status: 400 });
 
   try {
     const { id } = await params;
-    const existing = await prisma.order.findFirst({ where: { id, tenantId: user.tenantId } });
+    const tenantWhere = user.role === "SUPER_ADMIN" ? {} : { tenantId: user.tenantId };
+    const existing = await prisma.order.findFirst({ where: { id, ...tenantWhere } });
     if (!existing) return safeJson({ error: "سفارش یافت نشد" }, { status: 404 });
 
     if (existing.status === "COMPLETED" || existing.status === "CANCELLED") {
@@ -54,7 +56,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const transferCostNum = Number(String(transferCost || 0).replace(/,/g, ""));
 
     const currencyRate = await prisma.currencyRate.findUnique({
-      where: { tenantId_currencyId: { tenantId: user.tenantId, currencyId } },
+      where: { tenantId_currencyId: { tenantId: existing.tenantId, currencyId } },
     });
 
     const fallbackMarketRate = currencyRate ? Number(currencyRate.marketRate ?? 0) : 0;
@@ -141,11 +143,12 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getAuthUser(request);
   if (!user) return unauthorized();
-  if (!user.tenantId) return safeJson({ error: "tenant required" }, { status: 400 });
+  if (user.role !== "SUPER_ADMIN" && !user.tenantId) return safeJson({ error: "tenant required" }, { status: 400 });
 
   try {
     const { id } = await params;
-    const existing = await prisma.order.findFirst({ where: { id, tenantId: user.tenantId } });
+    const tenantWhere = user.role === "SUPER_ADMIN" ? {} : { tenantId: user.tenantId };
+    const existing = await prisma.order.findFirst({ where: { id, ...tenantWhere } });
     if (!existing) return safeJson({ error: "سفارش یافت نشد" }, { status: 404 });
 
     if (existing.status === "COMPLETED") {

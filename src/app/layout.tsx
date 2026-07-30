@@ -12,13 +12,13 @@ const vazirmatn = Vazirmatn({
 });
 
 export const metadata: Metadata = {
-  title: "SarafiX",
+  title: "صرافیکس",
   description: "مدیریت هوشمند صرافی",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "SarafiX",
+    title: "صرافیکس",
   },
 };
 
