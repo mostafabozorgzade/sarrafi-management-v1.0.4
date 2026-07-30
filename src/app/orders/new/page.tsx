@@ -60,8 +60,8 @@ export default function NewOrderPage() {
 
   useEffect(() => {
     Promise.all([api.get("/api/customers"), api.get("/api/currencies"), api.get("/api/rates")]).then(([c, cur, rates]) => {
-      setCustomers(c);
-      if (c.length > 0) setCustomerId(c[0].id);
+      setCustomers(c.customers || []);
+      if (c.customers && c.customers.length > 0) setCustomerId(c.customers[0].id);
       const pkrCurrency = cur.find((x: { code: string; id: string }) => x.code === "PKR");
       if (pkrCurrency) setCurrencyId(pkrCurrency.id);
       const pkrRate = rates.find((r: Rate) => r.currency?.code === "PKR");

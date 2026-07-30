@@ -4,19 +4,42 @@ import { getAuthUser, unauthorized } from "@/lib/api-helpers";
 import { safeJson } from "@/lib/safe-json";
 
 export async function GET(request: NextRequest) {
-  const user = await getAuthUser(request);
-  if (!user) return unauthorized();
-  if (!user.tenantId) return safeJson([]);
+  try {
+    const user = await getAuthUser(request);
+    if (!user) return unauthorized();
+    if (!user.tenantId) return safeJson({ customers: [], total: 0 });
 
-  const { searchParams } = new URL(request.url);
-  const search = searchParams.get("search");
-  const pageParam = searchParams.get("page");
-  const limitParam = searchParams.get("limit");
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get("search");
+    const pageParam = searchParams.get("page");
+    const limitParam = searchParams.get("limit");
 
-  if (pageParam) {
-    const page = Math.max(1, parseInt(pageParam, 10));
-    const limit = Math.min(100, Math.max(1, parseInt(limitParam || "10", 10)));
-    const skip = (page - 1) * limit;
+    if (pageParam) {
+      const page = Math.max(1, parseInt(pageParam, 10));
+      const limit = Math.min(100, Math.max(1, parseInt(limitParam || "10", 10)));
+      const skip = (page - 1) * limit;
+
+      const where: Record<string, unknown> = { tenantId: user.tenantId, deletedAt: null };
+      if (search && search.trim()) {
+        const q = search.trim();
+        where.OR = [
+          { name: { contains: q, mode: "insensitive" } },
+          { phone: { contains: q, mode: "insensitive" } },
+        ];
+      }
+
+      const [customers, total] = await Promise.all([
+        prisma.customer.findMany({
+          where,
+          orderBy: { createdAt: "desc" },
+          skip,
+          take: limit,
+        }),
+        prisma.customer.count({ where }),
+      ]);
+
+      return safeJson({ customers, total, page, limit });
+    }
 
     const where: Record<string, unknown> = { tenantId: user.tenantId, deletedAt: null };
     if (search && search.trim()) {
@@ -27,34 +50,16 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    const [customers, total] = await Promise.all([
-      prisma.customer.findMany({
-        where,
-        orderBy: { createdAt: "desc" },
-        skip,
-        take: limit,
-      }),
-      prisma.customer.count({ where }),
-    ]);
+    const customers = await prisma.customer.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+    });
 
-    return safeJson({ customers, total, page, limit });
+    return safeJson({ customers, total: customers.length });
+  } catch (err) {
+    console.error("Customers GET error:", err);
+    return safeJson({ error: err instanceof Error ? err.message : "خطا در دریافت مشتریان", customers: [], total: 0 }, { status: 500 });
   }
-
-  const where: Record<string, unknown> = { tenantId: user.tenantId, deletedAt: null };
-  if (search && search.trim()) {
-    const q = search.trim();
-    where.OR = [
-      { name: { contains: q, mode: "insensitive" } },
-      { phone: { contains: q, mode: "insensitive" } },
-    ];
-  }
-
-  const customers = await prisma.customer.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-  });
-
-  return safeJson(customers);
 }
 
 export async function POST(request: NextRequest) {

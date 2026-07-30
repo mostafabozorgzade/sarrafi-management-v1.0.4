@@ -129,6 +129,37 @@ export default function OrdersPage() {
   const [statusLoading, setStatusLoading] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  const hasHistoryRef = useRef(false);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      if (formSheetOpen) {
+        setFormSheetOpen(false);
+      } else if (subTypeSheetOpen) {
+        setSubTypeSheetOpen(false);
+      } else if (directionSheetOpen) {
+        setDirectionSheetOpen(false);
+      } else if (detailSheetOpen) {
+        setDetailSheetOpen(false);
+      } else if (editSheetOpen) {
+        setEditSheetOpen(false);
+      }
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [directionSheetOpen, subTypeSheetOpen, formSheetOpen, detailSheetOpen, editSheetOpen]);
+
+  const anySheetOpen = directionSheetOpen || subTypeSheetOpen || formSheetOpen || detailSheetOpen || editSheetOpen;
+
+  useEffect(() => {
+    if (anySheetOpen && !hasHistoryRef.current) {
+      hasHistoryRef.current = true;
+      window.history.pushState({ sheet: true }, "");
+    } else if (!anySheetOpen) {
+      hasHistoryRef.current = false;
+    }
+  }, [anySheetOpen]);
+
   useEffect(() => {
     if (selectedOrder && detailSheetOpen) {
       const updated = orders.find((o) => o.id === selectedOrder.id);
@@ -169,8 +200,8 @@ export default function OrdersPage() {
   const loadFormData = () => {
     setFormLoading(true);
     Promise.all([api.get("/api/customers"), api.get("/api/currencies"), api.get("/api/rates")]).then(([c, cur, rates]) => {
-      setCustomers(c);
-      if (c.length > 0) setCustomerId(c[0].id);
+      setCustomers(c.customers || []);
+      if (c.customers && c.customers.length > 0) setCustomerId(c.customers[0].id);
       const pkrCurrency = cur.find((x: { code: string; id: string }) => x.code === "PKR");
       if (pkrCurrency) setCurrencyId(pkrCurrency.id);
       const pkrRate = rates.find((r: Rate) => r.currency?.code === "PKR");
