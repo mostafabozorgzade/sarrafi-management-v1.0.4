@@ -21,6 +21,7 @@ export default function NewCustomerPage() {
     e.preventDefault();
     setError(null);
     if (!name || !phone) { setError("نام و شماره تماس الزامی است"); return; }
+    if (!/^[0-9]+$/.test(phone)) { setError("فقط اعداد انگلیسی مجاز است"); return; }
     setLoading(true);
     try {
       await api.post("/api/customers", { name, phone, pakAccount });
@@ -46,7 +47,7 @@ export default function NewCustomerPage() {
       <form onSubmit={handleSubmit} className="p-4 space-y-4">
         {error && <ErrorAlert message={error} />}
         <div className="space-y-1"><label className="text-xs font-medium text-gray-500">نام</label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="نام کامل" className="h-12" /></div>
-        <div className="space-y-1"><label className="text-xs font-medium text-gray-500">شماره موبایل</label><Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="09..." className="h-12" dir="ltr" inputMode="numeric" /></div>
+        <div className="space-y-1"><label className="text-xs font-medium text-gray-500">شماره موبایل</label><Input value={phone} onChange={(e) => setPhone(e.target.value.replace(/[^0-9]/g, ""))} placeholder="09..." className="h-12" dir="ltr" inputMode="numeric" /></div>
         <div className="space-y-1"><label className="text-xs font-medium text-gray-500">شماره حساب پاکستان</label><Input value={pakAccount} onChange={(e) => setPakAccount(e.target.value)} placeholder="اختیاری" className="h-12" dir="ltr" /></div>
         <Button type="submit" isLoading={loading} className="w-full h-12">ثبت مشتری</Button>
       </form>

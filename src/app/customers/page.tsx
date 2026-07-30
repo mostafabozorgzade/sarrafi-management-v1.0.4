@@ -73,7 +73,7 @@ export default function CustomersPage() {
   const [address, setAddress] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   const loadMore = useCallback(() => {
@@ -201,12 +201,12 @@ export default function CustomersPage() {
     setError(null);
     if (!fullName.trim()) { setError("نام و نام خانوادگی الزامی است"); return; }
     if (!phone.trim()) { setError("شماره موبایل الزامی است"); return; }
+    if (!/^[0-9]+$/.test(phone.trim())) { setError("فقط اعداد انگلیسی مجاز است"); return; }
     setSubmitting(true);
     try {
       const newCustomer = await api.post("/api/customers", { name: fullName.trim(), phone: phone.trim(), address: address.trim() || null });
       setAddSheetOpen(false);
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 2000);
+      showSuccess("مشتری با موفقیت اضافه شد");
       setCustomers((prev) => [{ ...newCustomer, totalBuy: BigInt(0), totalSell: BigInt(0), debt: BigInt(0) }, ...prev]);
       setFullName(""); setPhone(""); setAddress("");
     } catch (err) { setError(err instanceof Error ? err.message : "خطا"); }
@@ -218,13 +218,13 @@ export default function CustomersPage() {
     setError(null);
     if (!fullName.trim()) { setError("نام و نام خانوادگی الزامی است"); return; }
     if (!phone.trim()) { setError("شماره موبایل الزامی است"); return; }
+    if (!/^[0-9]+$/.test(phone.trim())) { setError("فقط اعداد انگلیسی مجاز است"); return; }
     if (!selectedCustomer) return;
     setSubmitting(true);
     try {
       const updated = await api.patch(`/api/customers/${selectedCustomer.id}`, { name: fullName.trim(), phone: phone.trim(), address: address.trim() || null });
       setEditSheetOpen(false);
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 2000);
+      showSuccess("مشتری با موفقیت ویرایش شد");
       setCustomers((prev) => prev.map((c) => c.id === updated.id ? { ...c, name: updated.name, phone: updated.phone, address: updated.address } : c));
       setSelectedCustomer((prev) => prev ? { ...prev, name: updated.name, phone: updated.phone, address: updated.address } : null);
       setFullName(""); setPhone(""); setAddress("");
@@ -239,12 +239,16 @@ export default function CustomersPage() {
       await api.delete(`/api/customers/${selectedCustomer.id}`);
       setDeleteDialogOpen(false);
       setDetailSheetOpen(false);
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 2000);
+      showSuccess("مشتری با موفقیت حذف شد");
       setCustomers((prev) => prev.filter((c) => c.id !== selectedCustomer.id));
       setSelectedCustomer(null);
     } catch (err) { setError(err instanceof Error ? err.message : "خطا"); }
     setDeleting(false);
+  };
+
+  const showSuccess = (message: string) => {
+    setSuccessMessage(message);
+    setTimeout(() => setSuccessMessage(null), 2000);
   };
 
   const resetForm = () => {
@@ -382,10 +386,10 @@ export default function CustomersPage() {
       </button>
 
       {/* Success Toast */}
-      {success && (
+      {successMessage && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 rounded-[5px] bg-white border border-gray-100 px-4 py-3 shadow-lg shadow-black/5 animate-slide-up">
           <CheckCircle2 className="h-4.5 w-4.5 text-emerald-500" />
-          <span className="text-[13px] font-medium text-gray-700">مشتری ثبت شد</span>
+          <span className="text-[13px] font-medium text-gray-700">{successMessage}</span>
         </div>
       )}
 
