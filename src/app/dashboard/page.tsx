@@ -7,8 +7,8 @@ import {
   BarChart3,
   ClipboardList,
   ArrowDownToLine,
-  ShoppingCart,
   Clock,
+  Target,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -62,6 +62,13 @@ export default function DashboardPage() {
               <Skeleton className="h-6 w-28" />
             </div>
           ))}
+        </div>
+        <div className="rounded-[5px] bg-emerald-50 border border-emerald-200/60 p-4 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <Skeleton className="h-8 w-8 rounded-[5px]" />
+            <Skeleton className="h-3 w-28" />
+          </div>
+          <Skeleton className="h-5 w-28" />
         </div>
         <div className="grid grid-cols-3 gap-2">
           {Array.from({ length: 3 }).map((_, i) => (
@@ -153,6 +160,22 @@ export default function DashboardPage() {
             <p className="text-[10px] text-gray-400 mt-0.5">تومان · امروز</p>
           </div>
         </div>
+
+        {/* Final Profit Today */}
+        {(() => {
+          const todayFinal = Number(data.stats.todayBuyProfit) + Number(data.stats.todaySellProfit);
+          return (
+            <div className="rounded-[5px] bg-emerald-50 border border-emerald-200/60 p-4 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-[5px] bg-emerald-100">
+                  <Target className="h-4 w-4 text-emerald-600" strokeWidth={1.5} />
+                </div>
+                <span className="text-[13px] font-semibold text-emerald-700">سود نهایی امروز</span>
+              </div>
+              <span className="text-[16px] font-bold text-emerald-800 tabular-nums" dir="ltr">{fmt(todayFinal)} <span className="text-[10px] font-normal text-emerald-600">تومان</span></span>
+            </div>
+          );
+        })()}
 
         {/* Quick Actions */}
         <div className="grid grid-cols-3 gap-2">
