@@ -273,11 +273,12 @@ export default function OrdersPage() {
     }).catch(() => setLoading(false));
   };
 
-  const handleStatus = async (id: string, status: string) => {
+  const handleStatus = async (id: string, status: string, onSuccess?: () => void) => {
     setStatusLoading(id);
     try {
       await api.patch("/api/orders", { id, status });
       setOrders((prev) => prev.map((o) => o.id === id ? { ...o, status } : o));
+      if (onSuccess) onSuccess();
     } catch {}
     setStatusLoading(null);
   };
@@ -616,26 +617,6 @@ export default function OrdersPage() {
                     </span>
                   </div>
 
-                  {/* Action buttons */}
-                  {o.status !== "COMPLETED" && o.status !== "CANCELLED" && nextAction && (
-                    <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        onClick={() => handleStatus(o.id, nextAction.next)}
-                        disabled={isLoadingThis}
-                        className="flex-1 flex items-center justify-center gap-1.5 rounded-[5px] bg-gray-900 py-2 text-[11px] font-semibold text-white active:bg-gray-800 transition-colors disabled:opacity-50"
-                      >
-                        {isLoadingThis ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-                        {isLoadingThis ? "در حال انجام..." : nextAction.label}
-                      </button>
-                      <button
-                        onClick={() => handleStatus(o.id, "CANCELLED")}
-                        disabled={isLoadingThis}
-                        className="rounded-[5px] border border-gray-200 px-3.5 py-2 text-[11px] font-medium text-gray-500 active:bg-gray-50 transition-colors disabled:opacity-50"
-                      >
-                        لغو
-                      </button>
-                    </div>
-                  )}
                 </div>
               );
             })}
@@ -1183,18 +1164,25 @@ export default function OrdersPage() {
               const isLoadingDetail = statusLoading === selectedOrder.id;
               return (
                 <div className="space-y-2">
+                  {isLoadingDetail && (
+                    <div className="flex items-center justify-center gap-2 py-2 text-[12px] text-gray-500">
+                      <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+                      <span>در حال پردازش...</span>
+                    </div>
+                  )}
                   {nextAction && (
-                    <button onClick={() => { handleStatus(selectedOrder.id, nextAction.next); setDetailSheetOpen(false); }} disabled={isLoadingDetail} className="w-full flex items-center justify-center gap-1.5 rounded-[5px] bg-gray-900 py-3 text-[13px] font-semibold text-white active:bg-gray-800 transition-colors disabled:opacity-50">
+                    <button onClick={() => handleStatus(selectedOrder.id, nextAction.next, () => setDetailSheetOpen(false))} disabled={isLoadingDetail} className="w-full flex items-center justify-center gap-1.5 rounded-[5px] bg-gray-900 py-3 text-[13px] font-semibold text-white active:bg-gray-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
                       {isLoadingDetail ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                      {isLoadingDetail ? "در حال انجام..." : nextAction.label}
+                      {isLoadingDetail ? "در حال تکمیل..." : nextAction.label}
                     </button>
                   )}
                   <div className="flex gap-2">
-                    <button onClick={() => openEdit(selectedOrder)} className="flex-1 flex items-center justify-center gap-1.5 rounded-[5px] border border-gray-200 py-2.5 text-[12px] font-medium text-gray-600 active:bg-gray-50 transition-colors">
-                      <Pencil className="h-3.5 w-3.5" strokeWidth={1.5} /> ویرایش
+                    <button onClick={() => handleStatus(selectedOrder.id, "CANCELLED", () => setDetailSheetOpen(false))} disabled={isLoadingDetail} className="flex-1 flex items-center justify-center gap-1.5 rounded-[5px] border border-red-200 bg-red-50 py-2.5 text-[12px] font-medium text-red-600 active:bg-red-100 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                      {isLoadingDetail ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                      {isLoadingDetail ? "در حال لغو..." : "لغو"}
                     </button>
-                    <button onClick={() => openDeleteConfirm(selectedOrder)} className="flex-1 flex items-center justify-center gap-1.5 rounded-[5px] border border-red-200 bg-red-50 py-2.5 text-[12px] font-medium text-red-600 active:bg-red-100 transition-colors">
-                      <Trash2 className="h-3.5 w-3.5" strokeWidth={1.5} /> حذف
+                    <button onClick={() => openEdit(selectedOrder)} disabled={isLoadingDetail} className="flex-1 flex items-center justify-center gap-1.5 rounded-[5px] border border-gray-200 py-2.5 text-[12px] font-medium text-gray-600 active:bg-gray-50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                      <Pencil className="h-3.5 w-3.5" strokeWidth={1.5} /> ویرایش
                     </button>
                   </div>
                 </div>

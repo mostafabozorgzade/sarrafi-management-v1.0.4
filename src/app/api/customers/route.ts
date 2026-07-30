@@ -21,22 +21,28 @@ export async function POST(request: NextRequest) {
   if (!user) return unauthorized();
   if (!user.tenantId) return safeJson({ error: "tenant required" }, { status: 400 });
 
-  const body = await request.json();
-  const { name, phone, pakAccount, address } = body;
+  try {
+    const body = await request.json();
+    const { name, phone, pakAccount, address } = body;
 
-  if (!name || !phone) {
-    return safeJson({ error: "نام و شماره تماس الزامی است" }, { status: 400 });
+    if (!name || !phone) {
+      return safeJson({ error: "نام و شماره تماس الزامی است" }, { status: 400 });
+    }
+
+    const customer = await prisma.customer.create({
+      data: {
+        tenantId: user.tenantId,
+        name,
+        phone,
+        address: address || null,
+        pakAccount: pakAccount || null,
+      },
+    });
+
+    return safeJson(customer);
+  } catch (err) {
+    console.error("Customer creation error:", err);
+    const message = err instanceof Error ? err.message : "خطا در ایجاد مشتری";
+    return safeJson({ error: message }, { status: 500 });
   }
-
-  const customer = await prisma.customer.create({
-    data: {
-      tenantId: user.tenantId,
-      name,
-      phone,
-      address: address || null,
-      pakAccount: pakAccount || null,
-    },
-  });
-
-  return safeJson(customer);
 }
