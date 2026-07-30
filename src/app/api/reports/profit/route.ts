@@ -159,7 +159,7 @@ export async function GET(request: NextRequest) {
 
   const statusMap: Record<string, number> = {};
   for (const s of statusCounts) {
-    statusMap[s.status] = s._count?._all ?? 0;
+    statusMap[s.status] = (s._count as unknown as { _all?: number })?._all ?? (s._count as number) ?? 0;
   }
 
   const dailyProfitMap = new Map<string, {
@@ -216,7 +216,7 @@ export async function GET(request: NextRequest) {
     .map((c) => ({
       customerId: c.customerId,
       customerName: customerNameMap.get(c.customerId) || "\u0646\u0627\u0645\u0634\u062e\u0635",
-      orderCount: c._count?._all ?? 0,
+      orderCount: (c._count as unknown as { _all?: number })?._all ?? (c._count as number) ?? 0,
       totalToman: c._sum?.totalToman || 0,
       totalProfit: c._sum?.totalProfitAmount || 0,
     }))
@@ -252,7 +252,7 @@ export async function GET(request: NextRequest) {
       totalProfit: p._sum?.totalProfitAmount || 0,
       totalToman: p._sum?.totalToman || 0,
       totalPkr: p._sum?.calculatedPkr || 0,
-      count: p._count?._all ?? 0,
+      count: (p._count as unknown as { _all?: number })?._all ?? (p._count as number) ?? 0,
     })),
     dailyProfit: dailyProfit,
     filteredOrders: orders,

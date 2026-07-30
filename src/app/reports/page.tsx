@@ -6,7 +6,6 @@ import {
   TrendingDown,
   Calendar,
   Receipt,
-  User,
   BarChart3,
   ShoppingCart,
   Target,
@@ -27,14 +26,6 @@ interface Summary {
   orderCount: number;
 }
 
-interface TopCustomer {
-  customerId: string;
-  customerName: string;
-  orderCount: number;
-  totalToman: bigint;
-  totalProfit: bigint;
-}
-
 interface StatusCounts {
   IN_PROGRESS: number;
   COMPLETED: number;
@@ -50,7 +41,6 @@ interface ReportData {
     allTime: Summary;
   };
   statusCounts: StatusCounts;
-  topCustomers: TopCustomer[];
   expenses: {
     totalExpenses: number;
     totalIncome: number;
@@ -203,7 +193,7 @@ export default function ReportsPage() {
                 </div>
                 <p className="text-[18px] font-bold text-green-700 tabular-nums" dir="ltr">{fmt(currentSummary.buyMarketProfit)}</p>
                 <p className="text-[10px] text-gray-400 mt-0.5">تومان</p>
-                <p className="text-[9px] text-gray-400 mt-1.5 leading-relaxed">(نرخ بازار − نرخ خرید) × مبلغ سفارش</p>
+                <p className="text-[9px] text-gray-400 mt-1.5 leading-relaxed">مجموع سود معاملات خرید</p>
               </div>
 
               {/* Sell Profit */}
@@ -313,36 +303,6 @@ export default function ReportsPage() {
                 <span className="text-[12px] font-bold text-gray-700 tabular-nums" dir="ltr">{fmt(data.expenses.netExpense)} تومان</span>
               </div>
             )}
-          </div>
-        )}
-
-        {/* Top Customers */}
-        {data?.topCustomers && data.topCustomers.length > 0 && (
-          <div className="rounded-[5px] bg-white border border-gray-200/80 p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-[5px] bg-cyan-50">
-                <User className="h-4 w-4 text-cyan-500" strokeWidth={1.5} />
-              </div>
-              <p className="text-[12px] font-semibold text-gray-900">برترین مشتریان</p>
-              <span className="mr-auto text-[10px] text-gray-400">بر اساس حجم</span>
-            </div>
-            <div className="space-y-2">
-              {data.topCustomers.map((c, idx) => (
-                <div key={c.customerId} className="flex items-center gap-3 rounded-[5px] bg-gray-50 p-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200/80">
-                    <span className="text-[11px] font-bold text-gray-600">{idx + 1}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[12px] font-semibold text-gray-900 truncate">{c.customerName}</p>
-                    <p className="text-[10px] text-gray-400">{c.orderCount} سفارش</p>
-                  </div>
-                  <div className="text-left">
-                    <p className="text-[12px] font-bold text-gray-900 tabular-nums" dir="ltr">{fmt(c.totalToman)}</p>
-                    <p className="text-[9px] text-gray-400">تومان</p>
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
         )}
       </div>
