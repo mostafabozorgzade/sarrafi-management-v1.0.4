@@ -3,7 +3,7 @@
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Users, ClipboardList, UserPlus, CheckCircle2, Trash2, Building2 } from "lucide-react";
+import { ArrowLeft, Users, ClipboardList, UserPlus, CheckCircle2, Trash2, Building2, Coins } from "lucide-react";
 import { api } from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,21 @@ import { ErrorAlert } from "@/components/ui/error-alert";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/lib/auth-context";
+
+interface CurrencyRate {
+  buyRate: number;
+  sellRate: number;
+  marketRate: number;
+}
+
+interface CurrencyItem {
+  id: string;
+  code: string;
+  name: string;
+  symbol: string | null;
+  isActive: boolean;
+  currencyRates: CurrencyRate[];
+}
 
 interface TenantDetail {
   id: string;
@@ -21,7 +36,7 @@ interface TenantDetail {
   createdAt: string;
   _count: { users: number; orders: number; customers: number; transactions: number; currencies: number; cashRegisters: number };
   users: { id: string; mobile: string; firstName: string; lastName: string; role: string; isActive: boolean; lastLogin: string | null }[];
-  currencies: { id: string; code: string; name: string }[];
+  currencies: CurrencyItem[];
 }
 
 const roleLabels: Record<string, string> = { SUPER_ADMIN: "سوپرادمین", OWNER: "مالک", MANAGER: "مدیر", CASHIER: "صندوق‌دار", ACCOUNTANT: "حسابدار" };
@@ -231,10 +246,6 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
                     </div>
                   )}
                   <div className="flex justify-between text-[12px]">
-                    <span className="text-gray-400">ارزها</span>
-                    <span className="font-medium text-gray-700">{tenant.currencies.map((c) => c.code).join(", ")}</span>
-                  </div>
-                  <div className="flex justify-between text-[12px]">
                     <span className="text-gray-400">صندوق‌ها</span>
                     <span className="font-medium text-gray-700">{tenant._count.cashRegisters}</span>
                   </div>
@@ -245,6 +256,56 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
                 </div>
               </div>
             )}
+
+            {/* Currencies & Rates */}
+            <div className="rounded-[5px] bg-white border border-gray-200/80 p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Coins className="h-4 w-4 text-gray-400" strokeWidth={1.5} />
+                <h3 className="text-[13px] font-semibold text-gray-900">ارزها و نرخ‌ها</h3>
+              </div>
+              {tenant.currencies.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8">
+                  <p className="text-[12px] text-gray-400">هنوز ارزی تعریف نشده</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {tenant.currencies.map((c) => {
+                    const rate = c.currencyRates[0];
+                    return (
+                      <div key={c.id} className="flex items-center justify-between rounded-lg border border-gray-100 p-2.5">
+                        <div className="flex items-center gap-2">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-blue-50 text-[10px] font-bold text-blue-600">
+                            {c.code}
+                          </div>
+                          <div>
+                            <span className="text-[12px] font-semibold text-gray-900">{c.name}</span>
+                            {c.symbol && <span className="text-[10px] text-gray-400 mr-1">({c.symbol})</span>}
+                          </div>
+                        </div>
+                        {rate && (
+                          <div className="flex items-center gap-2 text-[11px]">
+                            <div className="text-center">
+                              <p className="text-[9px] text-gray-400">مارکت</p>
+                              <p className="font-semibold text-gray-700" dir="ltr">{rate.marketRate.toLocaleString()}</p>
+                            </div>
+                            <div className="h-4 w-px bg-gray-200" />
+                            <div className="text-center">
+                              <p className="text-[9px] text-gray-400">خرید</p>
+                              <p className="font-semibold text-emerald-600" dir="ltr">{rate.buyRate.toLocaleString()}</p>
+                            </div>
+                            <div className="h-4 w-px bg-gray-200" />
+                            <div className="text-center">
+                              <p className="text-[9px] text-gray-400">فروش</p>
+                              <p className="font-semibold text-red-600" dir="ltr">{rate.sellRate.toLocaleString()}</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         )}
 

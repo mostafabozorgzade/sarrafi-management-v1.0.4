@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { name, address, phone } = body;
+    const { name, address, phone, currencies } = body;
 
     if (!name) {
       return safeJson({ error: "نام صرافی الزامی است" }, { status: 400 });
@@ -45,6 +45,30 @@ export async function POST(request: NextRequest) {
         phone: phone || null,
       },
     });
+
+    if (currencies && Array.isArray(currencies) && currencies.length > 0) {
+      for (const curr of currencies) {
+        const currency = await prisma.currency.create({
+          data: {
+            tenantId: tenant.id,
+            code: curr.code,
+            name: curr.name,
+            symbol: curr.symbol,
+          },
+        });
+
+        await prisma.currencyRate.create({
+          data: {
+            tenantId: tenant.id,
+            currencyId: currency.id,
+            buyRate: BigInt(curr.buyRate),
+            sellRate: BigInt(curr.sellRate),
+            marketRate: BigInt(curr.marketRate || Math.round((curr.buyRate + curr.sellRate) / 2)),
+            changedById: user.userId,
+          },
+        });
+      }
+    }
 
     return safeJson(tenant);
   } catch (err) {

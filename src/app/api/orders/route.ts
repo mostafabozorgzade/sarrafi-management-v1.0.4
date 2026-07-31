@@ -27,6 +27,8 @@ export async function GET(request: NextRequest) {
     ];
   }
 
+  const includeTenant = user.role === "SUPER_ADMIN";
+
   const [orders, total] = await Promise.all([
     prisma.order.findMany({
       where,
@@ -34,6 +36,7 @@ export async function GET(request: NextRequest) {
         customer: { select: { name: true, phone: true } },
         currency: { select: { code: true, name: true } },
         user: { select: { firstName: true, lastName: true } },
+        ...(includeTenant ? { tenant: { select: { id: true, name: true } } } : {}),
       },
       orderBy: { createdAt: "desc" },
       skip,

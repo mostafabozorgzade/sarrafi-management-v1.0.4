@@ -29,6 +29,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       },
       currencies: {
         orderBy: { code: "asc" },
+        include: {
+          currencyRates: {
+            select: { buyRate: true, sellRate: true, marketRate: true },
+          },
+        },
       },
     },
   });
