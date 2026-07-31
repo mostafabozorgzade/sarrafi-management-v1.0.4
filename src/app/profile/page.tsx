@@ -4,7 +4,19 @@ import { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
-import { Settings, LogOut, ChevronLeft, User, Shield, Phone, Pencil, CheckCircle2, AlertCircle } from "lucide-react";
+import {
+  Settings,
+  LogOut,
+  ChevronLeft,
+  User,
+  Shield,
+  Phone,
+  Pencil,
+  CheckCircle2,
+  AlertCircle,
+  Lock,
+  BarChart3,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
@@ -12,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 const roleLabels: Record<string, string> = {
+  SUPER_ADMIN: "سوپرادمین",
   OWNER: "مالک",
   MANAGER: "مدیر",
   CASHIER: "صندوق‌دار",
@@ -19,6 +32,7 @@ const roleLabels: Record<string, string> = {
 };
 
 const roleColors: Record<string, string> = {
+  SUPER_ADMIN: "bg-amber-50 text-amber-600",
   OWNER: "bg-red-50 text-red-600",
   MANAGER: "bg-blue-50 text-blue-600",
   CASHIER: "bg-green-50 text-green-600",
@@ -73,29 +87,38 @@ export default function ProfilePage() {
 
   if (isLoading || !user) {
     return (
-      <div className="px-4 py-4 space-y-4">
-        <div className="flex flex-col items-center gap-3 rounded-xl border border-gray-100 bg-white p-4">
-          <Skeleton className="h-16 w-16 rounded-full" />
-          <Skeleton className="h-4 w-28" />
-          <Skeleton className="h-3 w-20" />
+      <main className="min-h-dvh bg-[#fafafa]">
+        <div className="bg-white border-b border-gray-100/80">
+          <div className="flex h-14 items-center px-5">
+            <Skeleton className="h-5 w-20 rounded-[5px]" />
+          </div>
         </div>
-        <div className="space-y-1">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-3">
-              <Skeleton className="h-9 w-9 rounded-lg" />
-              <div className="flex-1 space-y-1">
-                <Skeleton className="h-3 w-20" />
-                <Skeleton className="h-2.5 w-28" />
-              </div>
+        <div className="p-4 space-y-3">
+          <div className="rounded-[5px] bg-white border border-gray-200/80 p-4">
+            <div className="flex flex-col items-center gap-3">
+              <Skeleton className="h-16 w-16 rounded-full" />
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-3 w-20" />
             </div>
-          ))}
+          </div>
+          <div className="rounded-[5px] bg-white border border-gray-200/80 p-4 space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <Skeleton className="h-10 w-10 rounded-[5px]" />
+                <div className="flex-1 space-y-1.5">
+                  <Skeleton className="h-3 w-20" />
+                  <Skeleton className="h-2.5 w-28" />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      </main>
     );
   }
 
   return (
-    <div className="px-4 py-4 space-y-4">
+    <main className="min-h-dvh bg-[#fafafa]">
       {toast && toast.type === "success" && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-2.5 rounded-[5px] bg-white border border-gray-100 px-4 py-3 shadow-lg shadow-black/5 animate-slide-up">
           <CheckCircle2 className="h-4.5 w-4.5 text-emerald-500" />
@@ -109,84 +132,122 @@ export default function ProfilePage() {
         </div>
       )}
 
-      <div className="flex flex-col items-center gap-3 rounded-xl border border-gray-100 bg-white p-4">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-50 text-xl font-bold text-blue-600">
-          {user.firstName.charAt(0)}
+      {/* Header */}
+      <div className="bg-white border-b border-gray-100/80">
+        <div className="flex h-14 items-center justify-between px-5">
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-[17px] font-bold tracking-tight text-gray-900">پروفایل</h1>
+          </div>
+          <BarChart3 className="h-4 w-4 text-gray-400" strokeWidth={1.5} />
         </div>
-        <div className="text-center">
-          <p className="text-sm font-semibold text-gray-900">{user.firstName} {user.lastName}</p>
-          <p className="text-[11px] text-gray-400 mt-0.5" dir="ltr">{user.mobile}</p>
-        </div>
-        <span className={cn("rounded-md px-2 py-0.5 text-[10px] font-medium", roleColors[user.role])}>
-          {roleLabels[user.role]}
-        </span>
       </div>
 
-      <div className="space-y-1">
+      <div className="p-4 pb-24 space-y-3">
+        {/* Avatar Card */}
+        <div className="rounded-[5px] bg-white border border-gray-200/80 p-4">
+          <div className="flex flex-col items-center gap-3">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-900 text-xl font-bold text-white">
+              {user.firstName.charAt(0)}
+            </div>
+            <div className="text-center">
+              <p className="text-[15px] font-bold text-gray-900">{user.firstName} {user.lastName}</p>
+              <p className="text-[11px] text-gray-400 mt-0.5" dir="ltr">{user.mobile}</p>
+            </div>
+            <span className={cn("rounded-[3px] px-2 py-0.5 text-[10px] font-semibold", roleColors[user.role])}>
+              {roleLabels[user.role]}
+            </span>
+          </div>
+        </div>
+
+        {/* Info Card */}
+        <div className="rounded-[5px] bg-white border border-gray-200/80 p-4 space-y-0">
+          <button
+            onClick={openEdit}
+            className="flex w-full items-center gap-3 py-3 border-b border-gray-100 last:border-0 active:bg-gray-50 -mx-4 px-4 transition-colors text-right"
+          >
+            <div className="flex h-10 w-10 items-center justify-center rounded-[5px] bg-gray-50">
+              <User className="h-[18px] w-[18px] text-gray-500" strokeWidth={1.5} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] text-gray-400">نام و نام خانوادگی</p>
+              <p className="text-[13px] font-semibold text-gray-900 mt-0.5">{user.firstName} {user.lastName}</p>
+            </div>
+            <Pencil className="h-4 w-4 text-gray-300 flex-shrink-0" strokeWidth={1.5} />
+          </button>
+
+          <button
+            onClick={openEdit}
+            className="flex w-full items-center gap-3 py-3 border-b border-gray-100 last:border-0 active:bg-gray-50 -mx-4 px-4 transition-colors text-right"
+          >
+            <div className="flex h-10 w-10 items-center justify-center rounded-[5px] bg-gray-50">
+              <Phone className="h-[18px] w-[18px] text-gray-500" strokeWidth={1.5} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] text-gray-400">شماره موبایل</p>
+              <p className="text-[13px] font-semibold text-gray-900 mt-0.5" dir="ltr">{user.mobile}</p>
+            </div>
+            <Pencil className="h-4 w-4 text-gray-300 flex-shrink-0" strokeWidth={1.5} />
+          </button>
+
+          <div className="flex items-center gap-3 py-3 border-b border-gray-100 last:border-0 -mx-4 px-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-[5px] bg-gray-50">
+              <Shield className="h-[18px] w-[18px] text-gray-500" strokeWidth={1.5} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] text-gray-400">نقش</p>
+              <p className="text-[13px] font-semibold text-gray-900 mt-0.5">{roleLabels[user.role]}</p>
+            </div>
+          </div>
+
+          <button
+            onClick={openEdit}
+            className="flex w-full items-center gap-3 py-3 active:bg-gray-50 -mx-4 px-4 transition-colors text-right"
+          >
+            <div className="flex h-10 w-10 items-center justify-center rounded-[5px] bg-gray-50">
+              <Lock className="h-[18px] w-[18px] text-gray-500" strokeWidth={1.5} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] text-gray-400">رمز عبور</p>
+              <p className="text-[13px] font-semibold text-gray-900 mt-0.5">تغییر رمز عبور</p>
+            </div>
+            <Pencil className="h-4 w-4 text-gray-300 flex-shrink-0" strokeWidth={1.5} />
+          </button>
+        </div>
+
+        {/* Settings Link */}
         {user.role !== "CASHIER" && (
-        <Link
-          href="/settings"
-          className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 active:bg-gray-50"
-        >
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gray-50">
-            <Settings className="h-4 w-4 text-gray-500" strokeWidth={1.5} />
+          <div className="rounded-[5px] bg-white border border-gray-200/80">
+            <Link
+              href="/settings"
+              className="flex items-center gap-3 p-4 active:bg-gray-50 transition-colors"
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-[5px] bg-gray-50">
+                <Settings className="h-[18px] w-[18px] text-gray-500" strokeWidth={1.5} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] font-semibold text-gray-900">تنظیمات کارکنان</p>
+                <p className="text-[11px] text-gray-400 mt-0.5">مدیریت کاربران و نقش‌ها</p>
+              </div>
+              <ChevronLeft className="h-5 w-5 flex-shrink-0 text-gray-300" strokeWidth={1.5} />
+            </Link>
           </div>
-          <div className="flex-1">
-            <p className="text-xs font-medium text-gray-900">تنظیمات کارکنان</p>
-            <p className="text-[10px] text-gray-400 mt-0.5">مدیریت کاربران و نقش‌ها</p>
-          </div>
-          <ChevronLeft className="h-4 w-4 text-gray-300" strokeWidth={1.5} />
-        </Link>
         )}
-      </div>
 
-      <div className="space-y-1">
+        {/* Logout */}
         <button
-          onClick={openEdit}
-          className="flex w-full items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 active:bg-gray-50 text-right"
+          onClick={logout}
+          className="flex w-full items-center justify-center gap-2 rounded-[5px] border border-red-200/60 bg-red-50 py-3 text-[13px] font-semibold text-red-600 active:bg-red-100 transition-colors"
         >
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gray-50">
-            <User className="h-4 w-4 text-gray-500" strokeWidth={1.5} />
-          </div>
-          <div className="flex-1">
-            <p className="text-xs font-medium text-gray-900">نام</p>
-            <p className="text-[11px] text-gray-400 mt-0.5">{user.firstName} {user.lastName}</p>
-          </div>
-          <Pencil className="h-4 w-4 text-gray-300" strokeWidth={1.5} />
+          <LogOut className="h-4 w-4" strokeWidth={1.5} />
+          خروج از حساب کاربری
         </button>
-        <div className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gray-50">
-            <Phone className="h-4 w-4 text-gray-500" strokeWidth={1.5} />
-          </div>
-          <div className="flex-1">
-            <p className="text-xs font-medium text-gray-900">شماره موبایل</p>
-            <p className="text-[11px] text-gray-400 mt-0.5" dir="ltr">{user.mobile}</p>
-          </div>
-          <Pencil className="h-4 w-4 text-gray-300" strokeWidth={1.5} />
-        </div>
-        <div className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gray-50">
-            <Shield className="h-4 w-4 text-gray-500" strokeWidth={1.5} />
-          </div>
-          <div className="flex-1">
-            <p className="text-xs font-medium text-gray-900">نقش</p>
-            <p className="text-[11px] text-gray-400 mt-0.5">{roleLabels[user.role]}</p>
-          </div>
-        </div>
       </div>
 
-      <button
-        onClick={logout}
-        className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-100 bg-red-50 py-3 text-xs font-medium text-red-600 active:bg-red-100 transition-colors"
-      >
-        <LogOut className="h-4 w-4" strokeWidth={1.5} />
-        خروج از حساب کاربری
-      </button>
-
-      <BottomSheet isOpen={editOpen} onClose={() => setEditOpen(false)} title="ویرایش پروفایل">
+      {/* Edit BottomSheet */}
+      <BottomSheet isOpen={editOpen} onClose={() => setEditOpen(false)} title="ویرایش پروفایل" className="max-h-[85vh]">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-gray-500">نام <span className="text-red-400">*</span></label>
+            <label className="text-[11px] font-medium text-gray-400">نام <span className="text-red-400">*</span></label>
             <Input
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
@@ -196,7 +257,7 @@ export default function ProfilePage() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-gray-500">نام خانوادگی <span className="text-red-400">*</span></label>
+            <label className="text-[11px] font-medium text-gray-400">نام خانوادگی <span className="text-red-400">*</span></label>
             <Input
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
@@ -206,7 +267,7 @@ export default function ProfilePage() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-gray-500">شماره موبایل <span className="text-red-400">*</span></label>
+            <label className="text-[11px] font-medium text-gray-400">شماره موبایل <span className="text-red-400">*</span></label>
             <Input
               value={mobile}
               onChange={(e) => setMobile(e.target.value.replace(/[^0-9]/g, ""))}
@@ -217,19 +278,18 @@ export default function ProfilePage() {
             />
           </div>
 
-          <div className="border-t border-gray-100 pt-4">
-            <p className="text-[11px] font-medium text-gray-400 mb-3">تغییر رمز عبور (اختیاری)</p>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-gray-500">رمز عبور جدید</label>
-            <Input
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="رمز عبور جدید"
-              className="h-12 rounded-[5px]"
-            />
+          <div className="rounded-[5px] bg-gray-50 p-3">
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">تغییر رمز عبور</p>
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-medium text-gray-400">رمز عبور جدید</label>
+              <Input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="رمز عبور جدید (اختیاری)"
+                className="h-12 rounded-[5px]"
+              />
+            </div>
           </div>
 
           <Button type="submit" isLoading={submitting} className="w-full h-12 rounded-[5px] bg-gray-900 hover:bg-gray-800">
@@ -237,6 +297,6 @@ export default function ProfilePage() {
           </Button>
         </form>
       </BottomSheet>
-    </div>
+    </main>
   );
 }
