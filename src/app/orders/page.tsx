@@ -1370,16 +1370,27 @@ export default function OrdersPage() {
             </div>
           )}
 
-          {/* Status Dropdown in Edit */}
+          {/* Status Selector in Edit */}
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-gray-500">وضعیت سفارش</label>
-            <div className="relative">
-              <select value={editStatus} onChange={(e) => setEditStatus(e.target.value)} className="flex h-12 w-full appearance-none rounded-[5px] border border-gray-200 bg-white px-4 pr-10 text-sm focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900/10 transition-colors">
-                <option value="IN_PROGRESS">در حال انجام</option>
-                <option value="COMPLETED">تکمیل شده</option>
-                <option value="CANCELLED">لغو شده</option>
-              </select>
-              <ChevronLeft className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 pointer-events-none" strokeWidth={1.5} />
+            <div className="flex gap-2">
+              {(["IN_PROGRESS", "COMPLETED", "CANCELLED"] as const).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setEditStatus(s)}
+                  className={cn(
+                    "flex-1 rounded-[5px] py-2.5 text-[12px] font-semibold transition-all border",
+                    editStatus === s
+                      ? s === "IN_PROGRESS" ? "bg-yellow-50 border-yellow-300 text-yellow-700"
+                        : s === "COMPLETED" ? "bg-green-50 border-green-300 text-green-700"
+                        : "bg-red-50 border-red-300 text-red-700"
+                      : "bg-white border-gray-200 text-gray-400"
+                  )}
+                >
+                  {STATUS_LABELS[s]}
+                </button>
+              ))}
             </div>
           </div>
 
