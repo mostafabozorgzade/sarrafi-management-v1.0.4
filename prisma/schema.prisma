@@ -35,12 +35,28 @@ enum DeliveryMethod {
   CASH
 }
 
+enum BillingMode {
+  FREE
+  SUBSCRIPTION
+  PERCENTAGE
+}
+
 model Tenant {
   id            String         @id @default(uuid()) @db.Uuid
   name          String
   address       String?
   phone         String?
   isActive      Boolean        @default(true)
+
+  billingMode              BillingMode @default(FREE)
+  subscriptionStart        DateTime?
+  subscriptionEnd          DateTime?
+  percentageBase           String?
+  percentageRate           Float?
+  fixedFeePer1000PKR       BigInt?
+  amountDue                BigInt      @default(0)
+  amountDueLastCalculated  DateTime?
+
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   cashRegisters CashRegister[]

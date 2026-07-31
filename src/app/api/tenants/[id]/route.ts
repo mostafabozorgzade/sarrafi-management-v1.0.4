@@ -50,19 +50,33 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   try {
     const { id } = await params;
     const body = await request.json();
-    const { name, address, phone, isActive } = body;
+    const {
+      name, address, phone, isActive,
+      billingMode, subscriptionStart, subscriptionEnd,
+      percentageBase, percentageRate, fixedFeePer1000PKR,
+      amountDue,
+    } = body;
 
     const existing = await prisma.tenant.findUnique({ where: { id } });
     if (!existing) return safeJson({ error: "صرافی یافت نشد" }, { status: 404 });
 
+    const updateData: Record<string, unknown> = {};
+    if (name !== undefined) updateData.name = name;
+    if (address !== undefined) updateData.address = address;
+    if (phone !== undefined) updateData.phone = phone;
+    if (isActive !== undefined) updateData.isActive = isActive;
+
+    if (billingMode !== undefined) updateData.billingMode = billingMode;
+    if (subscriptionStart !== undefined) updateData.subscriptionStart = subscriptionStart ? new Date(subscriptionStart) : null;
+    if (subscriptionEnd !== undefined) updateData.subscriptionEnd = subscriptionEnd ? new Date(subscriptionEnd) : null;
+    if (percentageBase !== undefined) updateData.percentageBase = percentageBase;
+    if (percentageRate !== undefined) updateData.percentageRate = percentageRate;
+    if (fixedFeePer1000PKR !== undefined) updateData.fixedFeePer1000PKR = fixedFeePer1000PKR != null ? BigInt(fixedFeePer1000PKR) : null;
+    if (amountDue !== undefined) updateData.amountDue = BigInt(amountDue);
+
     const tenant = await prisma.tenant.update({
       where: { id },
-      data: {
-        ...(name !== undefined && { name }),
-        ...(address !== undefined && { address }),
-        ...(phone !== undefined && { phone }),
-        ...(isActive !== undefined && { isActive }),
-      },
+      data: updateData,
     });
 
     return safeJson(tenant);

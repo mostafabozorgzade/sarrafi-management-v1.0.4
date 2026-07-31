@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
@@ -21,6 +20,7 @@ import {
   HelpCircle,
   FileText,
   Headphones,
+  CreditCard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -58,11 +58,30 @@ export default function ProfilePage() {
   const [newPassword, setNewPassword] = useState("");
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [tenantBilling, setTenantBilling] = useState<{
+    billingMode: string;
+    subscriptionEnd: string | null;
+    amountDue: string;
+  } | null>(null);
 
   const showToast = (type: "success" | "error", message: string) => {
     setToast({ type, message });
     setTimeout(() => setToast(null), 2500);
   };
+
+  useEffect(() => {
+    if (user?.tenantId) {
+      api.get(`/api/tenants/${user.tenantId}`)
+        .then((data) => {
+          setTenantBilling({
+            billingMode: data.billingMode,
+            subscriptionEnd: data.subscriptionEnd,
+            amountDue: data.amountDue,
+          });
+        })
+        .catch(() => {});
+    }
+  }, [user?.tenantId]);
 
   const openEdit = () => {
     if (!user) return;
@@ -223,6 +242,56 @@ export default function ProfilePage() {
             <Pencil className="h-4 w-4 text-gray-300 flex-shrink-0" strokeWidth={1.5} />
           </button>
         </div>
+
+        {/* Subscription Info - only for non-free billing */}
+        {tenantBilling && tenantBilling.billingMode !== "FREE" && (
+          <div className="rounded-[5px] bg-white border border-gray-200/80 p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <CreditCard className="h-4 w-4 text-gray-400" strokeWidth={1.5} />
+              <h3 className="text-[13px] font-semibold text-gray-900">اطلاعات اشتراک</h3>
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between text-[12px]">
+                <span className="text-gray-400">نوع اشتراک</span>
+                <span className={cn(
+                  "rounded-[3px] px-2 py-0.5 text-[10px] font-semibold",
+                  tenantBilling.billingMode === "SUBSCRIPTION" ? "bg-blue-50 text-blue-600" : "bg-amber-50 text-amber-600"
+                )}>
+                  {tenantBilling.billingMode === "SUBSCRIPTION" ? "اشتراک ماهیانه" : "درصدی/کارمزدی"}
+                </span>
+              </div>
+              {tenantBilling.billingMode === "SUBSCRIPTION" && tenantBilling.subscriptionEnd && (
+                <>
+                  <div className="flex justify-between text-[12px]">
+                    <span className="text-gray-400">تاریخ پایان اشتراک</span>
+                    <span className="font-medium text-gray-700">{new Date(tenantBilling.subscriptionEnd).toLocaleDateString("fa-IR")}</span>
+                  </div>
+                  <div className="flex justify-between text-[12px]">
+                    <span className="text-gray-400">روزهای باقی‌مانده</span>
+                    <span className={cn(
+                      "font-semibold",
+                      Math.ceil((new Date(tenantBilling.subscriptionEnd).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) < 0
+                        ? "text-red-600"
+                        : Math.ceil((new Date(tenantBilling.subscriptionEnd).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) <= 7
+                        ? "text-amber-600"
+                        : "text-emerald-600"
+                    )}>
+                      {Math.max(0, Math.ceil((new Date(tenantBilling.subscriptionEnd).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))} روز
+                    </span>
+                  </div>
+                </>
+              )}
+              {tenantBilling.billingMode === "PERCENTAGE" && (
+                <div className="flex justify-between text-[12px]">
+                  <span className="text-gray-400">مبلغ قابل پرداخت</span>
+                  <span className={cn("font-bold", Number(tenantBilling.amountDue) > 0 ? "text-red-600" : "text-emerald-600")}>
+                    {Number(tenantBilling.amountDue).toLocaleString("fa-IR")} تومان
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Settings Link */}
         {user.role !== "CASHIER" && (

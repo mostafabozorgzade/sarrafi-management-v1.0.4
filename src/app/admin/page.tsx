@@ -16,11 +16,12 @@ import {
   Trash2,
   AlertTriangle,
   Power,
+  Calendar,
+  CreditCard,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ErrorAlert } from "@/components/ui/error-alert";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -33,6 +34,12 @@ interface Tenant {
   phone: string | null;
   isActive: boolean;
   createdAt: string;
+  billingMode: "FREE" | "SUBSCRIPTION" | "PERCENTAGE";
+  subscriptionStart: string | null;
+  subscriptionEnd: string | null;
+  percentageRate: number | null;
+  fixedFeePer1000PKR: string | null;
+  amountDue: string;
   _count: { users: number; orders: number; customers: number; transactions: number };
 }
 
@@ -62,6 +69,31 @@ const FILTER_TABS = [
   { value: "active", label: "فعال" },
   { value: "inactive", label: "غیرفعال" },
 ] as const;
+
+function getBillingBadge(tenant: Tenant) {
+  if (tenant.billingMode === "SUBSCRIPTION" && tenant.subscriptionEnd) {
+    const endDate = new Date(tenant.subscriptionEnd);
+    const now = new Date();
+    const daysLeft = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    const isExpired = daysLeft < 0;
+    return {
+      label: isExpired ? "منقضی شده" : `${daysLeft} روز باقی‌مانده`,
+      subLabel: `اشتراک تا ${endDate.toLocaleDateString("fa-IR")}`,
+      color: isExpired ? "bg-red-50 text-red-600" : daysLeft <= 7 ? "bg-amber-50 text-amber-600" : "bg-blue-50 text-blue-600",
+      icon: Calendar,
+    };
+  }
+  if (tenant.billingMode === "PERCENTAGE") {
+    const amount = Number(tenant.amountDue || 0);
+    return {
+      label: amount > 0 ? `${amount.toLocaleString("fa-IR")} تومان` : "بدون بدهی",
+      subLabel: "صورتحساب درصدی",
+      color: amount > 0 ? "bg-amber-50 text-amber-600" : "bg-emerald-50 text-emerald-600",
+      icon: CreditCard,
+    };
+  }
+  return null;
+}
 
 export default function AdminPage() {
   const router = useRouter();
@@ -331,6 +363,21 @@ export default function AdminPage() {
                       </div>
                     )}
                   </div>
+
+                  {(() => {
+                    const badge = getBillingBadge(t);
+                    if (!badge) return null;
+                    const Icon = badge.icon;
+                    return (
+                      <div className={cn("flex items-center gap-1.5 rounded-[3px] px-2 py-1 mb-2.5", badge.color)}>
+                        <Icon className="h-3 w-3" strokeWidth={1.5} />
+                        <div>
+                          <span className="text-[10px] font-semibold">{badge.label}</span>
+                          <span className="text-[9px] mr-1 opacity-70">{badge.subLabel}</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">

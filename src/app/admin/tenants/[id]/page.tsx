@@ -3,7 +3,7 @@
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Users, ClipboardList, UserPlus, CheckCircle2, Trash2, Building2, Coins, Power, Pencil } from "lucide-react";
+import { ArrowLeft, Users, UserPlus, CheckCircle2, Coins, Power, Pencil, CreditCard, RefreshCw } from "lucide-react";
 import { api } from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,14 @@ interface TenantDetail {
   phone: string | null;
   isActive: boolean;
   createdAt: string;
+  billingMode: "FREE" | "SUBSCRIPTION" | "PERCENTAGE";
+  subscriptionStart: string | null;
+  subscriptionEnd: string | null;
+  percentageBase: string | null;
+  percentageRate: number | null;
+  fixedFeePer1000PKR: string | null;
+  amountDue: string;
+  amountDueLastCalculated: string | null;
   _count: { users: number; orders: number; customers: number; transactions: number; currencies: number; cashRegisters: number };
   users: { id: string; mobile: string; firstName: string; lastName: string; role: string; isActive: boolean; lastLogin: string | null }[];
   currencies: CurrencyItem[];
@@ -49,7 +57,7 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
   const { user, isLoading: authLoading } = useAuth();
   const [tenant, setTenant] = useState<TenantDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"info" | "users">("info");
+  const [tab, setTab] = useState<"info" | "users" | "billing">("info");
 
   useEffect(() => {
     if (!authLoading && user && user.role !== "SUPER_ADMIN") {
@@ -84,6 +92,17 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
 
   const [addUserOpen, setAddUserOpen] = useState(false);
 
+  const [editBillingMode, setEditBillingMode] = useState<"FREE" | "SUBSCRIPTION" | "PERCENTAGE">("FREE");
+  const [editSubStart, setEditSubStart] = useState("");
+  const [editSubEnd, setEditSubEnd] = useState("");
+  const [editPercentageBase, setEditPercentageBase] = useState("total");
+  const [editPercentageRate, setEditPercentageRate] = useState("");
+  const [editFixedFee, setEditFixedFee] = useState("");
+  const [editAmountDue, setEditAmountDue] = useState("");
+  const [billingSaving, setBillingSaving] = useState(false);
+  const [billingSuccess, setBillingSuccess] = useState(false);
+  const [calculating, setCalculating] = useState(false);
+
   const loadTenant = () => {
     api.get(`/api/tenants/${id}`)
       .then((data) => {
@@ -91,6 +110,13 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
         setEditName(data.name);
         setEditAddress(data.address || "");
         setEditPhone(data.phone || "");
+        setEditBillingMode(data.billingMode || "FREE");
+        setEditSubStart(data.subscriptionStart ? data.subscriptionStart.split("T")[0] : "");
+        setEditSubEnd(data.subscriptionEnd ? data.subscriptionEnd.split("T")[0] : "");
+        setEditPercentageBase(data.percentageBase || "total");
+        setEditPercentageRate(data.percentageRate?.toString() || "");
+        setEditFixedFee(data.fixedFeePer1000PKR?.toString() || "");
+        setEditAmountDue(data.amountDue?.toString() || "0");
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -171,6 +197,58 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
     } catch (err) { setError(err instanceof Error ? err.message : "خطا"); }
   };
 
+  const handleSaveBilling = async () => {
+    setError(null);
+    setBillingSaving(true);
+    try {
+      const data: Record<string, unknown> = {
+        billingMode: editBillingMode,
+      };
+
+      if (editBillingMode === "SUBSCRIPTION") {
+        if (!editSubStart || !editSubEnd) {
+          setError("تاریخ شروع و پایان اشتراک الزامی است");
+          setBillingSaving(false);
+          return;
+        }
+        data.subscriptionStart = editSubStart;
+        data.subscriptionEnd = editSubEnd;
+      } else if (editBillingMode === "PERCENTAGE") {
+        if (!editPercentageRate && !editFixedFee) {
+          setError("حداقل یکی از درصد یا مبلغ ثابت را وارد کنید");
+          setBillingSaving(false);
+          return;
+        }
+        data.percentageBase = editPercentageBase;
+        data.percentageRate = editPercentageRate ? parseFloat(editPercentageRate) : null;
+        data.fixedFeePer1000PKR = editFixedFee ? parseInt(editFixedFee) : null;
+        data.amountDue = editAmountDue || "0";
+      }
+
+      await api.put(`/api/tenants/${id}`, data);
+      setBillingSuccess(true);
+      loadTenant();
+      setTimeout(() => setBillingSuccess(false), 2000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "خطا در ذخیره اشتراک");
+    }
+    setBillingSaving(false);
+  };
+
+  const handleCalculateBilling = async () => {
+    setCalculating(true);
+    setError(null);
+    try {
+      await api.post("/api/admin/billing", { tenantId: id });
+      loadTenant();
+      setBillingSuccess(true);
+      setTimeout(() => setBillingSuccess(false), 2000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "خطا در محاسبه صورتحساب");
+    }
+    setCalculating(false);
+  };
+
   if (loading) return (
     <main className="min-h-dvh bg-[#fafafa]">
       <div className="bg-white border-b border-gray-100/80">
@@ -243,6 +321,17 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
               )}
             >
               کاربران ({tenant.users.length})
+            </button>
+            <button
+              onClick={() => setTab("billing")}
+              className={cn(
+                "rounded-[5px] px-4 py-1.5 text-[11px] font-semibold transition-all duration-200",
+                tab === "billing"
+                  ? "bg-gray-900 text-white shadow-sm"
+                  : "bg-gray-100/70 text-gray-400 hover:text-gray-600"
+              )}
+            >
+              اشتراک و صورتحساب
             </button>
           </div>
         </div>
@@ -445,6 +534,228 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
                 </div>
               ))
             )}
+          </div>
+        )}
+
+        {tab === "billing" && (
+          <div className="space-y-3">
+            {billingSuccess && (
+              <div className="flex items-center gap-2.5 rounded-[5px] bg-white border border-gray-100 px-4 py-3 shadow-lg shadow-black/5 animate-slide-up">
+                <CheckCircle2 className="h-4.5 w-4.5 text-emerald-500" />
+                <span className="text-[13px] font-medium text-gray-700">اطلاعات اشتراک ذخیره شد</span>
+              </div>
+            )}
+
+            {/* Current Status */}
+            <div className="rounded-[5px] bg-white border border-gray-200/80 p-4">
+              <h3 className="text-[13px] font-semibold text-gray-900 mb-3">وضعیت فعلی</h3>
+              <div className="space-y-2">
+                <div className="flex justify-between text-[12px]">
+                  <span className="text-gray-400">نوع اشتراک</span>
+                  <span className={cn(
+                    "rounded-[3px] px-2 py-0.5 text-[10px] font-semibold",
+                    tenant.billingMode === "FREE" ? "bg-gray-100 text-gray-600" :
+                    tenant.billingMode === "SUBSCRIPTION" ? "bg-blue-50 text-blue-600" :
+                    "bg-amber-50 text-amber-600"
+                  )}>
+                    {tenant.billingMode === "FREE" ? "رایگان" : tenant.billingMode === "SUBSCRIPTION" ? "اشتراک ماهیانه" : "درصدی/کارمزدی"}
+                  </span>
+                </div>
+                {tenant.billingMode === "SUBSCRIPTION" && tenant.subscriptionEnd && (
+                  <>
+                    <div className="flex justify-between text-[12px]">
+                      <span className="text-gray-400">شروع اشتراک</span>
+                      <span className="font-medium text-gray-700">{tenant.subscriptionStart ? new Date(tenant.subscriptionStart).toLocaleDateString("fa-IR") : "-"}</span>
+                    </div>
+                    <div className="flex justify-between text-[12px]">
+                      <span className="text-gray-400">پایان اشتراک</span>
+                      <span className="font-medium text-gray-700">{new Date(tenant.subscriptionEnd).toLocaleDateString("fa-IR")}</span>
+                    </div>
+                    <div className="flex justify-between text-[12px]">
+                      <span className="text-gray-400">روزهای باقی‌مانده</span>
+                      <span className={cn(
+                        "font-semibold",
+                        Math.ceil((new Date(tenant.subscriptionEnd).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) < 0
+                          ? "text-red-600"
+                          : Math.ceil((new Date(tenant.subscriptionEnd).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) <= 7
+                          ? "text-amber-600"
+                          : "text-emerald-600"
+                      )}>
+                        {Math.max(0, Math.ceil((new Date(tenant.subscriptionEnd).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))} روز
+                      </span>
+                    </div>
+                  </>
+                )}
+                {tenant.billingMode === "PERCENTAGE" && (
+                  <>
+                    {tenant.percentageRate && (
+                      <div className="flex justify-between text-[12px]">
+                        <span className="text-gray-400">درصد کارمزد</span>
+                        <span className="font-medium text-gray-700">{tenant.percentageRate}% از {tenant.percentageBase === "profit" ? "سود" : "کل مبلغ"}</span>
+                      </div>
+                    )}
+                    {tenant.fixedFeePer1000PKR && (
+                      <div className="flex justify-between text-[12px]">
+                        <span className="text-gray-400">مبلغ ثابت هر ۱۰۰۰ روپیه</span>
+                        <span className="font-medium text-gray-700">{Number(tenant.fixedFeePer1000PKR).toLocaleString("fa-IR")} تومان</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-[12px]">
+                      <span className="text-gray-400">مبلغ قابل پرداخت</span>
+                      <span className={cn("font-bold", Number(tenant.amountDue) > 0 ? "text-red-600" : "text-emerald-600")}>
+                        {Number(tenant.amountDue).toLocaleString("fa-IR")} تومان
+                      </span>
+                    </div>
+                    {tenant.amountDueLastCalculated && (
+                      <div className="flex justify-between text-[12px]">
+                        <span className="text-gray-400">آخرین محاسبه</span>
+                        <span className="font-medium text-gray-700">{new Date(tenant.amountDueLastCalculated).toLocaleDateString("fa-IR")}</span>
+                      </div>
+                    )}
+                    <button
+                      onClick={handleCalculateBilling}
+                      disabled={calculating}
+                      className="flex items-center justify-center gap-1.5 w-full h-10 rounded-[5px] bg-blue-50 text-[11px] font-semibold text-blue-600 hover:bg-blue-100 transition-colors mt-2"
+                    >
+                      <RefreshCw className={cn("h-3.5 w-3.5", calculating && "animate-spin")} strokeWidth={1.5} />
+                      {calculating ? "در حال محاسبه..." : "محاسبه مجدد صورتحساب"}
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Edit Billing */}
+            <div className="rounded-[5px] bg-white border border-gray-200/80 p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-[13px] font-semibold text-gray-900">تغییر نوع اشتراک</h3>
+              </div>
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-medium text-gray-500">نوع اشتراک</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { value: "FREE", label: "رایگان", color: "gray" },
+                      { value: "SUBSCRIPTION", label: "اشتراکی", color: "blue" },
+                      { value: "PERCENTAGE", label: "درصدی", color: "amber" },
+                    ].map((m) => (
+                      <button
+                        key={m.value}
+                        type="button"
+                        onClick={() => setEditBillingMode(m.value as typeof editBillingMode)}
+                        className={cn(
+                          "rounded-[5px] border px-3 py-2.5 text-[11px] font-semibold transition-all duration-200",
+                          editBillingMode === m.value
+                            ? m.color === "gray" ? "border-gray-500 bg-gray-50 text-gray-700 shadow-sm"
+                            : m.color === "blue" ? "border-blue-500 bg-blue-50 text-blue-700 shadow-sm"
+                            : "border-amber-500 bg-amber-50 text-amber-700 shadow-sm"
+                            : "border-gray-200 bg-white text-gray-500 hover:border-gray-300"
+                        )}
+                      >
+                        {m.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {editBillingMode === "SUBSCRIPTION" && (
+                  <>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-medium text-gray-500">تاریخ شروع</label>
+                      <input
+                        type="date"
+                        value={editSubStart}
+                        onChange={(e) => setEditSubStart(e.target.value)}
+                        className="h-11 w-full rounded-[5px] border border-gray-200 bg-white px-3 text-[13px] text-gray-700 focus:outline-none focus:border-gray-400 transition-all"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-medium text-gray-500">تاریخ پایان</label>
+                      <input
+                        type="date"
+                        value={editSubEnd}
+                        onChange={(e) => setEditSubEnd(e.target.value)}
+                        className="h-11 w-full rounded-[5px] border border-gray-200 bg-white px-3 text-[13px] text-gray-700 focus:outline-none focus:border-gray-400 transition-all"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {editBillingMode === "PERCENTAGE" && (
+                  <>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-medium text-gray-500">مبنا محاسبه درصد</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {[
+                          { value: "total", label: "کل مبلغ معامله" },
+                          { value: "profit", label: "سود معامله" },
+                        ].map((b) => (
+                          <button
+                            key={b.value}
+                            type="button"
+                            onClick={() => setEditPercentageBase(b.value)}
+                            className={cn(
+                              "rounded-[5px] border px-3 py-2.5 text-[11px] font-semibold transition-all duration-200",
+                              editPercentageBase === b.value
+                                ? "border-blue-500 bg-blue-50 text-blue-700 shadow-sm"
+                                : "border-gray-200 bg-white text-gray-500 hover:border-gray-300"
+                            )}
+                          >
+                            {b.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-medium text-gray-500">درصد کارمزد (%)</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={editPercentageRate}
+                        onChange={(e) => setEditPercentageRate(e.target.value)}
+                        placeholder="مثلاً 0.5"
+                        dir="ltr"
+                        className="h-11 w-full rounded-[5px] border border-gray-200 bg-white px-3 text-[13px] text-gray-700 placeholder:text-gray-300 focus:outline-none focus:border-gray-400 transition-all"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-medium text-gray-500">مبلغ ثابت به ازای هر ۱۰۰۰ روپیه (تومان)</label>
+                      <input
+                        type="number"
+                        value={editFixedFee}
+                        onChange={(e) => setEditFixedFee(e.target.value)}
+                        placeholder="اختیاری"
+                        dir="ltr"
+                        className="h-11 w-full rounded-[5px] border border-gray-200 bg-white px-3 text-[13px] text-gray-700 placeholder:text-gray-300 focus:outline-none focus:border-gray-400 transition-all"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-medium text-gray-500">مبلغ قابل پرداخت (تومان) - قابل ویرایش</label>
+                      <input
+                        type="number"
+                        value={editAmountDue}
+                        onChange={(e) => setEditAmountDue(e.target.value)}
+                        dir="ltr"
+                        className="h-11 w-full rounded-[5px] border border-gray-200 bg-white px-3 text-[13px] text-gray-700 focus:outline-none focus:border-gray-400 transition-all"
+                      />
+                    </div>
+                  </>
+                )}
+
+                <button
+                  onClick={handleSaveBilling}
+                  disabled={billingSaving}
+                  className="flex h-11 w-full items-center justify-center gap-2 rounded-[5px] bg-gray-900 text-[13px] font-semibold text-white shadow-sm transition-all active:scale-[0.98] hover:bg-gray-800 disabled:opacity-50"
+                >
+                  {billingSaving ? (
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+                  ) : (
+                    <CreditCard className="h-4 w-4" strokeWidth={1.5} />
+                  )}
+                  ذخیره تغییرات اشتراک
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
