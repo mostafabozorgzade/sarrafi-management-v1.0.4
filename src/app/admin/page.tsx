@@ -15,6 +15,7 @@ import {
   ArrowLeft,
   Trash2,
   AlertTriangle,
+  Power,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { Input } from "@/components/ui/input";
@@ -196,6 +197,15 @@ export default function AdminPage() {
     setDeleting(false);
   };
 
+  const handleToggleActive = async (tenant: Tenant) => {
+    try {
+      await api.put(`/api/tenants/${tenant.id}`, { isActive: !tenant.isActive });
+      loadTenants();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "خطا در بروزرسانی");
+    }
+  };
+
   return (
     <main className="min-h-dvh bg-[#fafafa]">
       {/* Header */}
@@ -335,8 +345,18 @@ export default function AdminPage() {
                   </div>
                 </Link>
 
-                {/* Delete Button */}
-                <div className="flex justify-end mt-3 pt-3 border-t border-gray-100">
+                {/* Action Buttons */}
+                <div className="flex justify-end gap-2 mt-3 pt-3 border-t border-gray-100">
+                  <button
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleToggleActive(t); }}
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-[3px] px-2.5 py-1.5 text-[10px] font-medium transition-colors",
+                      t.isActive ? "text-amber-600 hover:bg-amber-50" : "text-emerald-600 hover:bg-emerald-50"
+                    )}
+                  >
+                    <Power className="h-3 w-3" strokeWidth={1.5} />
+                    {t.isActive ? "غیرفعال" : "فعال"}
+                  </button>
                   <button
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDeleteDialog(t); }}
                     className="flex items-center gap-1.5 rounded-[3px] px-2.5 py-1.5 text-[10px] font-medium text-red-500 hover:bg-red-50 transition-colors"

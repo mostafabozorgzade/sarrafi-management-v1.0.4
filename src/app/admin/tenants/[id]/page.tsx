@@ -3,7 +3,7 @@
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Users, ClipboardList, UserPlus, CheckCircle2, Trash2, Building2, Coins } from "lucide-react";
+import { ArrowLeft, Users, ClipboardList, UserPlus, CheckCircle2, Trash2, Building2, Coins, Power } from "lucide-react";
 import { api } from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -160,11 +160,12 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
           <button
             onClick={handleToggleActive}
             className={cn(
-              "rounded-[3px] px-2 py-1 text-[10px] font-medium",
-              tenant.isActive ? "bg-green-50 text-green-600" : "bg-red-50 text-red-500"
+              "flex items-center gap-1 rounded-[3px] px-2.5 py-1.5 text-[10px] font-medium transition-colors",
+              tenant.isActive ? "bg-amber-50 text-amber-600 hover:bg-amber-100" : "bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
             )}
           >
-            {tenant.isActive ? "فعال" : "غیرفعال"}
+            <Power className="h-3 w-3" strokeWidth={1.5} />
+            {tenant.isActive ? "غیرفعال کردن" : "فعال کردن"}
           </button>
         </div>
         <div className="flex gap-1 px-4 pb-2">
