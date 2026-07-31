@@ -136,6 +136,12 @@ export default function OrdersPage() {
   const [quickCustomerPhone, setQuickCustomerPhone] = useState("");
   const [quickCustomerSaving, setQuickCustomerSaving] = useState(false);
   const [customerSheetOpen, setCustomerSheetOpen] = useState(false);
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [customerPage, setCustomerPage] = useState(1);
+  const [customerTotal, setCustomerTotal] = useState(0);
+  const [customerLoading, setCustomerLoading] = useState(false);
+  const [sheetCustomers, setSheetCustomers] = useState<Customer[]>([]);
+  const customerSearchRef = useRef("");
 
   const hasHistoryRef = useRef(false);
 
@@ -527,6 +533,7 @@ export default function OrdersPage() {
         phone: quickCustomerPhone.trim(),
       });
       setCustomers((prev) => [...prev, newCustomer]);
+      setSheetCustomers((prev) => [...prev, newCustomer]);
       setCustomerId(newCustomer.id);
       setQuickCustomerOpen(false);
       setQuickCustomerName("");
@@ -537,6 +544,44 @@ export default function OrdersPage() {
       setTimeout(() => setErrorToast(null), 4000);
     }
     setQuickCustomerSaving(false);
+  };
+
+  const loadSheetCustomers = (page: number, search: string, append = false) => {
+    setCustomerLoading(true);
+    const params = new URLSearchParams();
+    params.set("page", String(page));
+    params.set("limit", "15");
+    if (search.trim()) params.set("search", search.trim());
+    api.get(`/api/customers?${params.toString()}`).then((data) => {
+      if (append) {
+        setSheetCustomers((prev) => [...prev, ...(data.customers || [])]);
+      } else {
+        setSheetCustomers(data.customers || []);
+      }
+      setCustomerTotal(data.total || 0);
+      setCustomerPage(page);
+    }).catch(() => {}).finally(() => setCustomerLoading(false));
+  };
+
+  const openCustomerSheet = () => {
+    setCustomerSearch("");
+    customerSearchRef.current = "";
+    setSheetCustomers([]);
+    setCustomerSheetOpen(true);
+    loadSheetCustomers(1, "", false);
+  };
+
+  const handleCustomerSearch = (value: string) => {
+    setCustomerSearch(value);
+    customerSearchRef.current = value;
+    loadSheetCustomers(1, value, false);
+  };
+
+  const loadMoreCustomers = () => {
+    if (customerLoading) return;
+    const nextPage = customerPage + 1;
+    if ((nextPage - 1) * 15 >= customerTotal) return;
+    loadSheetCustomers(nextPage, customerSearchRef.current, true);
   };
 
   const typeInfo = selectedType ? ORDER_TYPE_LABELS[selectedType] : null;
@@ -937,7 +982,7 @@ export default function OrdersPage() {
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-gray-500">مشتری</label>
             <div className="flex gap-2">
-              <button type="button" onClick={() => setCustomerSheetOpen(true)} className="flex h-12 flex-1 items-center justify-between rounded-[5px] border border-gray-200 bg-white px-4 text-sm transition-colors active:bg-gray-50">
+              <button type="button" onClick={openCustomerSheet} className="flex h-12 flex-1 items-center justify-between rounded-[5px] border border-gray-200 bg-white px-4 text-sm transition-colors active:bg-gray-50">
                 {customerId ? (
                   <span className="font-sans text-gray-900">{customers.find((c) => c.id === customerId)?.name} ({customers.find((c) => c.id === customerId)?.phone})</span>
                 ) : (
@@ -1357,7 +1402,7 @@ export default function OrdersPage() {
 
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-gray-500">مشتری</label>
-            <button type="button" onClick={() => setCustomerSheetOpen(true)} className="flex h-12 w-full items-center justify-between rounded-[5px] border border-gray-200 bg-white px-4 text-sm transition-colors active:bg-gray-50">
+            <button type="button" onClick={openCustomerSheet} className="flex h-12 w-full items-center justify-between rounded-[5px] border border-gray-200 bg-white px-4 text-sm transition-colors active:bg-gray-50">
               {customerId ? (
                 <span className="font-sans text-gray-900">{customers.find((c) => c.id === customerId)?.name} ({customers.find((c) => c.id === customerId)?.phone})</span>
               ) : (
@@ -1521,29 +1566,64 @@ export default function OrdersPage() {
       </BottomSheet>
 
       {/* Customer Selector BottomSheet */}
-      <BottomSheet isOpen={customerSheetOpen} onClose={() => setCustomerSheetOpen(false)} title="انتخاب مشتری" className="max-h-[70vh]">
-        <div className="space-y-2">
-          {customers.length === 0 ? (
-            <p className="text-center text-sm text-gray-400 py-8">مشتری‌ای وجود ندارد</p>
-          ) : (
-            customers.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => { setCustomerId(c.id); setCustomerSheetOpen(false); }}
-                className={cn(
-                  "w-full flex items-center justify-between rounded-[5px] border p-4 text-right transition-all active:bg-gray-50",
-                  customerId === c.id ? "border-gray-900 bg-gray-50" : "border-gray-200"
-                )}
-              >
-                <div>
-                  <p className="text-[13px] font-semibold text-gray-900">{c.name}</p>
-                  <p className="text-[11px] text-gray-400 mt-0.5" dir="ltr">{c.phone}</p>
-                </div>
-                {customerId === c.id && <CheckCircle2 className="h-5 w-5 text-gray-900" strokeWidth={1.5} />}
+      <BottomSheet isOpen={customerSheetOpen} onClose={() => setCustomerSheetOpen(false)} title="انتخاب مشتری" className="h-[70vh] flex flex-col">
+        <div className="flex flex-col flex-1 min-h-0">
+          <div className="relative mb-3">
+            <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" strokeWidth={1.5} />
+            <input
+              type="text"
+              value={customerSearch}
+              onChange={(e) => handleCustomerSearch(e.target.value)}
+              placeholder="جستجو بر اساس نام یا شماره..."
+              className="h-11 w-full rounded-[5px] border border-gray-200 bg-white pr-10 pl-4 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900/10 transition-colors"
+            />
+          </div>
+
+          <div className="flex-1 overflow-y-auto space-y-2">
+            {sheetCustomers.length === 0 && !customerLoading ? (
+              <p className="text-center text-sm text-gray-400 py-8">{customerSearch ? "مشتری یافت نشد" : "مشتری‌ای وجود ندارد"}</p>
+            ) : (
+              sheetCustomers.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => { setCustomerId(c.id); setCustomerSheetOpen(false); }}
+                  className={cn(
+                    "w-full flex items-center justify-between rounded-[5px] border p-4 text-right transition-all active:bg-gray-50",
+                    customerId === c.id ? "border-gray-900 bg-gray-50" : "border-gray-200"
+                  )}
+                >
+                  <div>
+                    <p className="text-[13px] font-semibold text-gray-900">{c.name}</p>
+                    <p className="text-[11px] text-gray-400 mt-0.5" dir="ltr">{c.phone}</p>
+                  </div>
+                  {customerId === c.id && <CheckCircle2 className="h-5 w-5 text-gray-900" strokeWidth={1.5} />}
+                </button>
+              ))
+            )}
+
+            {customerLoading && (
+              <div className="space-y-2">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={`skeleton-${i}`} className="rounded-[5px] border border-gray-200 p-4 animate-pulse">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-2">
+                        <Skeleton className="h-3.5 w-32 rounded-[3px]" />
+                        <Skeleton className="h-2.5 w-24 rounded-[3px]" />
+                      </div>
+                      <Skeleton className="h-5 w-5 rounded-full" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {!customerLoading && sheetCustomers.length > 0 && (customerPage * 15) < customerTotal && (
+              <button type="button" onClick={loadMoreCustomers} className="w-full py-2.5 text-[12px] font-medium text-gray-500 active:bg-gray-50 rounded-[5px] transition-colors">
+                بارگذاری بیشتر
               </button>
-            ))
-          )}
+            )}
+          </div>
         </div>
       </BottomSheet>
 
