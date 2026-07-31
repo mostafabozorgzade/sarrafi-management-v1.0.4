@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     const tenantId = user.role === "SUPER_ADMIN" ? (bodyTenantId || user.tenantId) : user.tenantId;
     if (!tenantId) return safeJson({ error: "tenant required" }, { status: 400 });
 
-    if (user.role !== "SUPER_ADMIN" && user.role !== "OWNER" && user.role !== "MANAGER") {
+    if (user.role !== "SUPER_ADMIN" && user.role !== "OWNER" && user.role !== "MANAGER" && user.role !== "CASHIER") {
       return safeJson({ error: "فقط مدیر یا صراف اجازه تغییر نرخ دارد" }, { status: 403 });
     }
 

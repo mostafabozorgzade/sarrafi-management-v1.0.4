@@ -14,6 +14,7 @@ import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { STATUS_LABELS, STATUS_COLORS, ICON_MAP } from "@/lib/order-types";
+import { useAuth } from "@/lib/auth-context";
 
 interface DashboardData {
   stats: {
@@ -35,8 +36,10 @@ const QUICK_ACTIONS = [
 ];
 
 export default function DashboardPage() {
+  const { user } = useAuth();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const showProfit = user?.role !== "CASHIER";
 
   useEffect(() => {
     api.get("/api/dashboard")
@@ -137,7 +140,8 @@ export default function DashboardPage() {
       </div>
 
       <div className="p-4 pb-24 space-y-3">
-        {/* Buy & Sell Profit Today */}
+        {/* Buy & Sell Profit Today - hidden for CASHIER */}
+        {showProfit && (
         <div className="grid grid-cols-2 gap-2.5">
           <div className="rounded-[5px] bg-white border border-gray-200/80 p-4">
             <div className="flex items-center gap-2 mb-2.5">
@@ -160,9 +164,10 @@ export default function DashboardPage() {
             <p className="text-[10px] text-gray-400 mt-0.5">تومان · امروز</p>
           </div>
         </div>
+        )}
 
-        {/* Final Profit Today */}
-        {(() => {
+        {/* Final Profit Today - hidden for CASHIER */}
+        {showProfit && (() => {
           const todayFinal = Number(data.stats.todayBuyProfit) + Number(data.stats.todaySellProfit);
           return (
             <div className="rounded-[5px] bg-emerald-50 border border-emerald-200/60 p-4 flex items-center justify-between">

@@ -62,6 +62,7 @@ export default function ProfilePage() {
       </div>
 
       <div className="space-y-1">
+        {user.role !== "CASHIER" && (
         <Link
           href="/settings"
           className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 active:bg-gray-50"
@@ -75,6 +76,7 @@ export default function ProfilePage() {
           </div>
           <ChevronLeft className="h-4 w-4 text-gray-300" strokeWidth={1.5} />
         </Link>
+        )}
       </div>
 
       <div className="space-y-1">

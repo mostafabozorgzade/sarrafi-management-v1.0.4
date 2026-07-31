@@ -42,9 +42,9 @@ export const PERMISSIONS = {
   CASHIER: {
     dashboard: ["read"],
     transactions: ["create", "read"],
-    orders: ["create", "read"],
-    customers: ["read"],
-    rates: ["read"],
+    orders: ["create", "read", "update"],
+    customers: ["read", "update"],
+    rates: ["read", "update"],
     cashier: ["read"],
     expenses: ["read"],
     reports: [],

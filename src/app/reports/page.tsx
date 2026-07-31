@@ -13,6 +13,7 @@ import {
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/lib/auth-context";
 
 interface Summary {
   buyMarketProfit: bigint;
@@ -49,9 +50,11 @@ interface ReportData {
 }
 
 export default function ReportsPage() {
+  const { user } = useAuth();
   const [data, setData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<"today" | "week" | "month" | "all">("month");
+  const showProfit = user?.role !== "CASHIER";
 
   useEffect(() => {
     setLoading(true);
@@ -179,8 +182,8 @@ export default function ReportsPage() {
       </div>
 
       <div className="p-4 pb-24 space-y-3">
-        {/* Main Summary Cards */}
-        {currentSummary && (
+        {/* Main Summary Cards - hidden for CASHIER */}
+        {showProfit && currentSummary && (
           <div className="space-y-2.5">
             <div className="grid grid-cols-2 gap-2.5">
               {/* Buy Profit */}
