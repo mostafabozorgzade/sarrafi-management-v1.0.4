@@ -220,6 +220,13 @@ export default function OrdersPage() {
     }).catch(() => {}).finally(() => setFormLoading(false));
   };
 
+  const loadEditFormData = () => {
+    setFormLoading(true);
+    api.get("/api/customers").then((c) => {
+      setCustomers(c.customers || []);
+    }).catch(() => {}).finally(() => setFormLoading(false));
+  };
+
   const loadMore = useCallback(() => {
     if (loadingMoreRef.current || !hasMoreRef.current) return;
     loadingMoreRef.current = true;
@@ -440,9 +447,14 @@ export default function OrdersPage() {
     setDestinationSheba(order.destinationSheba || "");
     setDescription(order.description || "");
     setEditStatus(order.status);
+    setCurrentRates({
+      buyRate: Number(order.buyRateAtTime || 0),
+      sellRate: Number(order.sellRateAtTime || 0),
+      marketRate: Number(order.marketRateAtTime || 0),
+    });
     setError(null);
     setDetailSheetOpen(false);
-    loadFormData();
+    loadEditFormData();
     setTimeout(() => setEditSheetOpen(true), 100);
   };
 
