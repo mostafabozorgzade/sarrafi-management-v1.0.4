@@ -3,7 +3,7 @@
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Users, ClipboardList, UserPlus, CheckCircle2, Trash2, Building2, Coins, Power } from "lucide-react";
+import { ArrowLeft, Users, ClipboardList, UserPlus, CheckCircle2, Trash2, Building2, Coins, Power, Pencil } from "lucide-react";
 import { api } from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { ErrorAlert } from "@/components/ui/error-alert";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/lib/auth-context";
+import { BottomSheet } from "@/components/ui/bottom-sheet";
 
 interface CurrencyRate {
   buyRate: number;
@@ -72,6 +73,15 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
   const [editSuccess, setEditSuccess] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
 
+  const [editingUser, setEditingUser] = useState<{ id: string; firstName: string; lastName: string; mobile: string; role: string; isActive: boolean } | null>(null);
+  const [editUserFirstName, setEditUserFirstName] = useState("");
+  const [editUserLastName, setEditUserLastName] = useState("");
+  const [editUserMobile, setEditUserMobile] = useState("");
+  const [editUserRole, setEditUserRole] = useState("");
+  const [editUserPassword, setEditUserPassword] = useState("");
+  const [editUserSaving, setEditUserSaving] = useState(false);
+  const [editUserSuccess, setEditUserSuccess] = useState(false);
+
   const loadTenant = () => {
     api.get(`/api/tenants/${id}`)
       .then((data) => {
@@ -118,6 +128,43 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
     if (!tenant) return;
     try {
       await api.put(`/api/tenants/${id}`, { isActive: !tenant.isActive });
+      loadTenant();
+    } catch (err) { setError(err instanceof Error ? err.message : "خطا"); }
+  };
+
+  const openEditUser = (u: { id: string; firstName: string; lastName: string; mobile: string; role: string; isActive: boolean }) => {
+    setEditingUser(u);
+    setEditUserFirstName(u.firstName);
+    setEditUserLastName(u.lastName);
+    setEditUserMobile(u.mobile);
+    setEditUserRole(u.role);
+    setEditUserPassword("");
+    setEditUserSuccess(false);
+  };
+
+  const handleEditUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    setEditUserSaving(true);
+    try {
+      const data: Record<string, unknown> = {
+        firstName: editUserFirstName,
+        lastName: editUserLastName,
+        mobile: editUserMobile,
+        role: editUserRole,
+      };
+      if (editUserPassword) data.password = editUserPassword;
+      await api.put(`/api/users/${editingUser.id}`, data);
+      setEditUserSuccess(true);
+      loadTenant();
+      setTimeout(() => { setEditUserSuccess(false); setEditingUser(null); }, 1500);
+    } catch (err) { setError(err instanceof Error ? err.message : "خطا"); }
+    setEditUserSaving(false);
+  };
+
+  const handleToggleUserActive = async (u: { id: string; isActive: boolean }) => {
+    try {
+      await api.put(`/api/users/${u.id}`, { isActive: !u.isActive });
       loadTenant();
     } catch (err) { setError(err instanceof Error ? err.message : "خطا"); }
   };
@@ -326,21 +373,45 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
               </div>
             ) : (
               tenant.users.map((u) => (
-                <div key={u.id} className="flex items-center gap-3 rounded-[5px] bg-white border border-gray-200/80 p-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-[5px] bg-blue-50 text-xs font-bold text-blue-600">
-                    {u.firstName.charAt(0)}
+                <div key={u.id} className="rounded-[5px] bg-white border border-gray-200/80 p-3">
+                  <div className="flex items-center gap-3">
+                    <div className={cn(
+                      "flex h-9 w-9 items-center justify-center rounded-[5px] text-xs font-bold",
+                      u.isActive ? "bg-blue-50 text-blue-600" : "bg-gray-50 text-gray-400"
+                    )}>
+                      {u.firstName.charAt(0)}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[12px] font-semibold text-gray-900">{u.firstName} {u.lastName}</span>
+                        <span className={cn("rounded-[3px] px-1.5 py-0.5 text-[9px] font-medium", roleColors[u.role])}>{roleLabels[u.role]}</span>
+                      </div>
+                      <div className="flex items-center justify-between mt-0.5">
+                        <span className="text-[10px] text-gray-400" dir="ltr">{u.mobile}</span>
+                        {u.lastLogin && (
+                          <span className="text-[9px] text-gray-300">آخرین ورود: {new Date(u.lastLogin).toLocaleDateString("fa-IR")}</span>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[12px] font-semibold text-gray-900">{u.firstName} {u.lastName}</span>
-                      <span className={cn("rounded-[3px] px-1.5 py-0.5 text-[9px] font-medium", roleColors[u.role])}>{roleLabels[u.role]}</span>
-                    </div>
-                    <div className="flex items-center justify-between mt-0.5">
-                      <span className="text-[10px] text-gray-400" dir="ltr">{u.mobile}</span>
-                      {u.lastLogin && (
-                        <span className="text-[9px] text-gray-300">آخرین ورود: {new Date(u.lastLogin).toLocaleDateString("fa-IR")}</span>
+                  <div className="flex justify-end gap-2 mt-2 pt-2 border-t border-gray-100">
+                    <button
+                      onClick={() => openEditUser(u)}
+                      className="flex items-center gap-1 rounded-[3px] px-2 py-1 text-[10px] font-medium text-blue-600 hover:bg-blue-50 transition-colors"
+                    >
+                      <Pencil className="h-3 w-3" strokeWidth={1.5} />
+                      ویرایش
+                    </button>
+                    <button
+                      onClick={() => handleToggleUserActive(u)}
+                      className={cn(
+                        "flex items-center gap-1 rounded-[3px] px-2 py-1 text-[10px] font-medium transition-colors",
+                        u.isActive ? "text-amber-600 hover:bg-amber-50" : "text-emerald-600 hover:bg-emerald-50"
                       )}
-                    </div>
+                    >
+                      <Power className="h-3 w-3" strokeWidth={1.5} />
+                      {u.isActive ? "غیرفعال" : "فعال"}
+                    </button>
                   </div>
                 </div>
               ))
@@ -390,6 +461,46 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
           </div>
         )}
       </div>
+
+      {/* Edit User BottomSheet */}
+      <BottomSheet isOpen={!!editingUser} onClose={() => setEditingUser(null)} title="ویرایش کاربر">
+        {editingUser && (
+          <div>
+            {editUserSuccess && (
+              <div className="flex items-center gap-2 rounded-lg bg-green-50 p-3 text-xs text-green-600 mb-3">
+                <CheckCircle2 className="h-4 w-4" />کاربر بروزرسانی شد
+              </div>
+            )}
+            <form onSubmit={handleEditUser} className="space-y-3">
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-gray-500">نام</label>
+                <Input value={editUserFirstName} onChange={(e) => setEditUserFirstName(e.target.value)} className="h-11" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-gray-500">نام خانوادگی</label>
+                <Input value={editUserLastName} onChange={(e) => setEditUserLastName(e.target.value)} className="h-11" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-gray-500">نقش</label>
+                <select value={editUserRole} onChange={(e) => setEditUserRole(e.target.value)} className="flex h-11 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm focus:outline-none focus:border-blue-500">
+                  <option value="CASHIER">صندوق‌دار</option>
+                  <option value="MANAGER">مدیر</option>
+                  <option value="OWNER">مالک</option>
+                  <option value="ACCOUNTANT">حسابدار</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-gray-500">رمز عبور جدید (اختیاری)</label>
+                <Input type="password" value={editUserPassword} onChange={(e) => setEditUserPassword(e.target.value)} placeholder="برای تغییر رمز وارد کنید" className="h-11" />
+              </div>
+              <Button type="submit" isLoading={editUserSaving} className="w-full h-11">
+                <Pencil className="h-4 w-4" strokeWidth={1.5} />
+                ذخیره تغییرات
+              </Button>
+            </form>
+          </div>
+        )}
+      </BottomSheet>
     </main>
   );
 }
