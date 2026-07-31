@@ -5,6 +5,7 @@ const secret = new TextEncoder().encode(process.env.JWT_SECRET || "fallback-secr
 
 const protectedRoutes = ["/dashboard", "/transactions", "/customers", "/rates", "/cashier", "/expenses", "/reports", "/settings", "/orders", "/profile", "/admin"];
 const superAdminRoutes = ["/admin"];
+const cashierRestrictedRoutes = ["/settings"];
 const authRoutes = ["/login"];
 
 export async function middleware(request: NextRequest) {
@@ -37,6 +38,12 @@ export async function middleware(request: NextRequest) {
 
       if (superAdminRoutes.some((route) => pathname.startsWith(route))) {
         if (payload.role !== "SUPER_ADMIN") {
+          return NextResponse.redirect(new URL("/dashboard", request.url));
+        }
+      }
+
+      if (cashierRestrictedRoutes.some((route) => pathname.startsWith(route))) {
+        if (payload.role === "CASHIER") {
           return NextResponse.redirect(new URL("/dashboard", request.url));
         }
       }

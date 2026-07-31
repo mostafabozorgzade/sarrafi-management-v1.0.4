@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { UserPlus, CheckCircle2, TrendingUp } from "lucide-react";
 import { api } from "@/lib/api";
 import { Input } from "@/components/ui/input";
@@ -8,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { ErrorAlert } from "@/components/ui/error-alert";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/lib/auth-context";
 
 interface User { id: string; mobile: string; firstName: string; lastName: string; role: string; isActive: boolean; lastLogin: string | null; }
 interface Rate { id: string; currencyId: string; marketRate: bigint; buyRate: bigint; sellRate: bigint; currency: { code: string; name: string }; changedBy: { firstName: string; lastName: string } | null; }
@@ -16,6 +18,8 @@ const roleLabels: Record<string, string> = { SUPER_ADMIN: "سوپرادمین", 
 const roleColors: Record<string, string> = { SUPER_ADMIN: "bg-amber-50 text-amber-600", OWNER: "bg-red-50 text-red-600", MANAGER: "bg-blue-50 text-blue-600", CASHIER: "bg-green-50 text-green-600", ACCOUNTANT: "bg-violet-50 text-violet-600" };
 
 export default function SettingsPage() {
+  const router = useRouter();
+  const { user, isLoading: authLoading } = useAuth();
   const [tab, setTab] = useState<"list" | "add" | "rates">("list");
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,6 +46,12 @@ export default function SettingsPage() {
   const loadUsers = () => api.get("/api/users").then((data) => { setUsers(data); setLoading(false); }).catch(() => setLoading(false));
   const loadRates = () => api.get("/api/rates").then((data) => { setRates(data); setRatesLoading(false); }).catch(() => setRatesLoading(false));
   useEffect(() => { loadUsers(); loadRates(); }, []);
+
+  useEffect(() => {
+    if (!authLoading && user && user.role === "CASHIER") {
+      router.push("/dashboard");
+    }
+  }, [user, authLoading, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
