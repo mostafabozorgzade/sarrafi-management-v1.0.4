@@ -15,6 +15,13 @@ export const metadata: Metadata = {
   title: "صرافیکس",
   description: "مدیریت هوشمند صرافی",
   manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/icons/icon-192.svg", type: "image/svg+xml" },
+      { url: "/icons/icon-512.svg", type: "image/svg+xml" },
+    ],
+    apple: "/icons/icon-192.svg",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -37,11 +44,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fa" dir="rtl" className={vazirmatn.variable}>
-      <head>
-        <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-      </head>
+
       <body className="min-h-dvh bg-white font-sans text-gray-900 antialiased">
         <AuthProvider>
           <ServiceWorkerRegister />

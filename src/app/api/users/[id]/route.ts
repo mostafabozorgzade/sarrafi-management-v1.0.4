@@ -17,7 +17,7 @@ export async function PUT(
 
   try {
     const body = await request.json();
-    const { firstName, lastName, role, password, isActive } = body;
+    const { firstName, lastName, mobile, role, password, isActive } = body;
 
     const targetUser = await prisma.user.findUnique({
       where: { id },
@@ -35,6 +35,7 @@ export async function PUT(
     const data: Record<string, unknown> = {};
     if (firstName) data.firstName = firstName;
     if (lastName) data.lastName = lastName;
+    if (mobile) data.mobile = mobile;
     if (role) data.role = role;
     if (typeof isActive === "boolean") data.isActive = isActive;
     if (password) {

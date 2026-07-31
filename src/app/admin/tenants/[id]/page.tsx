@@ -473,6 +473,10 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
             )}
             <form onSubmit={handleEditUser} className="space-y-3">
               <div className="space-y-1">
+                <label className="text-[11px] font-medium text-gray-500">شماره موبایل</label>
+                <Input value={editUserMobile} onChange={(e) => setEditUserMobile(e.target.value)} className="h-11" dir="ltr" inputMode="numeric" />
+              </div>
+              <div className="space-y-1">
                 <label className="text-[11px] font-medium text-gray-500">نام</label>
                 <Input value={editUserFirstName} onChange={(e) => setEditUserFirstName(e.target.value)} className="h-11" />
               </div>
@@ -480,14 +484,33 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
                 <label className="text-[11px] font-medium text-gray-500">نام خانوادگی</label>
                 <Input value={editUserLastName} onChange={(e) => setEditUserLastName(e.target.value)} className="h-11" />
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <label className="text-[11px] font-medium text-gray-500">نقش</label>
-                <select value={editUserRole} onChange={(e) => setEditUserRole(e.target.value)} className="flex h-11 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm focus:outline-none focus:border-blue-500">
-                  <option value="CASHIER">صندوق‌دار</option>
-                  <option value="MANAGER">مدیر</option>
-                  <option value="OWNER">مالک</option>
-                  <option value="ACCOUNTANT">حسابدار</option>
-                </select>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { value: "CASHIER", label: "صندوق‌دار", color: "green" },
+                    { value: "MANAGER", label: "مدیر", color: "blue" },
+                    { value: "OWNER", label: "مالک", color: "red" },
+                    { value: "ACCOUNTANT", label: "حسابدار", color: "violet" },
+                  ].map((r) => (
+                    <button
+                      key={r.value}
+                      type="button"
+                      onClick={() => setEditUserRole(r.value)}
+                      className={cn(
+                        "rounded-[5px] border px-3 py-2.5 text-[12px] font-medium transition-colors",
+                        editUserRole === r.value
+                          ? r.color === "green" ? "border-green-500 bg-green-50 text-green-700"
+                          : r.color === "blue" ? "border-blue-500 bg-blue-50 text-blue-700"
+                          : r.color === "red" ? "border-red-500 bg-red-50 text-red-700"
+                          : "border-violet-500 bg-violet-50 text-violet-700"
+                          : "border-gray-200 bg-white text-gray-500"
+                      )}
+                    >
+                      {r.label}
+                    </button>
+                  ))}
+                </div>
               </div>
               <div className="space-y-1">
                 <label className="text-[11px] font-medium text-gray-500">رمز عبور جدید (اختیاری)</label>
