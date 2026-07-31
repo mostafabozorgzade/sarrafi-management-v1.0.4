@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, ArrowRight, ChevronLeft, Send, ArrowDownToLine } from "lucide-react";
+import { CheckCircle2, ArrowRight, ChevronLeft, Send, ArrowDownToLine, AlertCircle } from "lucide-react";
 import { api } from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -50,6 +50,7 @@ export default function NewOrderPage() {
   const [currentRates, setCurrentRates] = useState<{ buyRate: number; sellRate: number; marketRate: number } | null>(null);
   const [formLoading, setFormLoading] = useState(true);
   const [customerSheetOpen, setCustomerSheetOpen] = useState(false);
+  const [errorToast, setErrorToast] = useState<string | null>(null);
 
   const onlyDigits = (v: string) => v.replace(/[^0-9]/g, "");
   const formatNum = (v: string) => {
@@ -158,8 +159,8 @@ export default function NewOrderPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!customerId || !currencyId || !amount) { setError("فیلدهای الزامی را پر کنید"); return; }
-    if (isHawala && !recipientName) { setError("نام دریافت‌کننده الزامی است"); return; }
+    if (!customerId || !currencyId || !amount) { setErrorToast("فیلدهای الزامی را پر کنید"); setTimeout(() => setErrorToast(null), 4000); return; }
+    if (isHawala && !recipientName) { setErrorToast("نام دریافت‌کننده الزامی است"); setTimeout(() => setErrorToast(null), 4000); return; }
     setLoading(true);
     try {
       await api.post("/api/orders", {
@@ -213,6 +214,13 @@ export default function NewOrderPage() {
             <CheckCircle2 className="h-16 w-16 text-green-500" />
             <p className="text-base font-semibold text-gray-900">سفارش ثبت شد</p>
           </div>
+        </div>
+      )}
+
+      {errorToast && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 rounded-[5px] bg-white border border-gray-100 px-4 py-3 shadow-lg shadow-black/5 animate-slide-up max-w-[90vw]">
+          <AlertCircle className="h-4.5 w-4.5 text-red-500 flex-shrink-0" />
+          <span className="text-[13px] font-medium text-gray-700">{errorToast}</span>
         </div>
       )}
 
@@ -281,7 +289,6 @@ export default function NewOrderPage() {
           </div>
         ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
-          {error && <ErrorAlert message={error} />}
 
           {/* Rate Display Card */}
           {currentRates && (
@@ -370,7 +377,7 @@ export default function NewOrderPage() {
           )}
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-gray-500">مشتری</label>
+            <label className="text-xs font-medium text-gray-500">مشتری <span className="text-red-500">*</span></label>
             <button type="button" onClick={() => setCustomerSheetOpen(true)} className="flex h-12 w-full items-center justify-between rounded-xl border border-gray-200 bg-white px-4 text-sm transition-colors active:bg-gray-50">
               {customerId ? (
                 <span className="font-sans text-gray-900">{customers.find((c) => c.id === customerId)?.name} ({customers.find((c) => c.id === customerId)?.phone})</span>
@@ -383,7 +390,7 @@ export default function NewOrderPage() {
 
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-gray-500">
-              {isTomanAmount ? "مبلغ پرداختی (تومان)" : "مبلغ پرداختی (روپیه)"}
+              {isTomanAmount ? "مبلغ پرداختی (تومان)" : "مبلغ پرداختی (روپیه)"} <span className="text-red-500">*</span>
             </label>
             <Input
               type="text"
@@ -513,7 +520,7 @@ export default function NewOrderPage() {
           {/* Hawala fields: IR_TO_PK and PK_TO_IR */}
           {isHawala && (<>
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-gray-500">{selectedType === "IR_TO_PK" ? "نام گیرنده" : "نام صاحب حساب"}</label>
+              <label className="text-xs font-medium text-gray-500">{selectedType === "IR_TO_PK" ? "نام گیرنده" : "نام صاحب حساب"} <span className="text-red-500">*</span></label>
               <Input
                 value={recipientName}
                 onChange={(e) => setRecipientName(e.target.value)}

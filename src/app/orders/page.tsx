@@ -414,8 +414,8 @@ export default function OrdersPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!customerId || !currencyId || !amount) { setError("فیلدهای الزامی را پر کنید"); return; }
-    if (isHawala && !recipientName) { setError("نام دریافت‌کننده الزامی است"); return; }
+    if (!customerId || !currencyId || !amount) { setErrorToast("فیلدهای الزامی را پر کنید"); setTimeout(() => setErrorToast(null), 4000); return; }
+    if (isHawala && !recipientName) { setErrorToast("نام دریافت‌کننده الزامی است"); setTimeout(() => setErrorToast(null), 4000); return; }
     setSubmitting(true);
     try {
       const newOrder = await api.post("/api/orders", {
@@ -477,9 +477,9 @@ export default function OrdersPage() {
     e.preventDefault();
     if (!editingOrder) return;
     setError(null);
-    if (!customerId || !currencyId || !amount) { setError("فیلدهای الزامی را پر کنید"); return; }
+    if (!customerId || !currencyId || !amount) { setErrorToast("فیلدهای الزامی را پر کنید"); setTimeout(() => setErrorToast(null), 4000); return; }
     const isHawalaEdit = isHawalaType(editingOrder.orderType);
-    if (isHawalaEdit && !recipientName) { setError("نام دریافت‌کننده الزامی است"); return; }
+    if (isHawalaEdit && !recipientName) { setErrorToast("نام دریافت‌کننده الزامی است"); setTimeout(() => setErrorToast(null), 4000); return; }
     setSubmitting(true);
     try {
       const updated = await api.put(`/api/orders/${editingOrder.id}`, {
@@ -891,7 +891,6 @@ export default function OrdersPage() {
           </div>
         ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
-          {error && <ErrorAlert message={error} />}
 
           {/* Rate Display Card */}
           {currentRates && (
@@ -980,7 +979,7 @@ export default function OrdersPage() {
           )}
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-gray-500">مشتری</label>
+            <label className="text-xs font-medium text-gray-500">مشتری <span className="text-red-500">*</span></label>
             <div className="flex gap-2">
               <button type="button" onClick={openCustomerSheet} className="flex h-12 flex-1 items-center justify-between rounded-[5px] border border-gray-200 bg-white px-4 text-sm transition-colors active:bg-gray-50">
                 {customerId ? (
@@ -997,7 +996,7 @@ export default function OrdersPage() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-gray-500">{isTomanAmount ? "مبلغ پرداختی (تومان)" : "مبلغ پرداختی (روپیه)"}</label>
+            <label className="text-xs font-medium text-gray-500">{isTomanAmount ? "مبلغ پرداختی (تومان)" : "مبلغ پرداختی (روپیه)"} <span className="text-red-500">*</span></label>
             <Input type="text" inputMode="numeric" value={amount} onChange={(e) => setAmount(formatNum(e.target.value))} placeholder="0" className="h-12 text-left rounded-[5px]" />
           </div>
 
@@ -1083,7 +1082,7 @@ export default function OrdersPage() {
           {/* Hawala fields */}
           {isHawala && (<>
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-gray-500">{selectedType === "IR_TO_PK" ? "نام گیرنده" : "نام صاحب حساب"}</label>
+              <label className="text-xs font-medium text-gray-500">{selectedType === "IR_TO_PK" ? "نام گیرنده" : "نام صاحب حساب"} <span className="text-red-500">*</span></label>
               <Input value={recipientName} onChange={(e) => setRecipientName(e.target.value)} placeholder="نام کامل" className="h-12 rounded-[5px]" />
             </div>
             <div className="space-y-1.5">
@@ -1391,7 +1390,6 @@ export default function OrdersPage() {
           </div>
         ) : (
         <form onSubmit={handleEdit} className="space-y-4">
-          {error && <ErrorAlert message={error} />}
 
           {editingOrder && (
             <div className="rounded-[5px] bg-blue-50 p-3 flex items-center justify-between">
@@ -1401,7 +1399,7 @@ export default function OrdersPage() {
           )}
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-gray-500">مشتری</label>
+            <label className="text-xs font-medium text-gray-500">مشتری <span className="text-red-500">*</span></label>
             <button type="button" onClick={openCustomerSheet} className="flex h-12 w-full items-center justify-between rounded-[5px] border border-gray-200 bg-white px-4 text-sm transition-colors active:bg-gray-50">
               {customerId ? (
                 <span className="font-sans text-gray-900">{customers.find((c) => c.id === customerId)?.name} ({customers.find((c) => c.id === customerId)?.phone})</span>
@@ -1413,7 +1411,7 @@ export default function OrdersPage() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-gray-500">{editingOrder?.orderType === "IR_TO_PK" ? "مبلغ پرداختی (تومان)" : "مبلغ پرداختی (روپیه)"}</label>
+            <label className="text-xs font-medium text-gray-500">{editingOrder?.orderType === "IR_TO_PK" ? "مبلغ پرداختی (تومان)" : "مبلغ پرداختی (روپیه)"} <span className="text-red-500">*</span></label>
             <Input type="text" inputMode="numeric" value={amount} onChange={(e) => setAmount(formatNum(e.target.value))} placeholder="0" className="h-12 text-left rounded-[5px]" />
           </div>
 
@@ -1509,7 +1507,7 @@ export default function OrdersPage() {
 
           {editingOrder && isHawalaType(editingOrder.orderType) && (<>
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-gray-500">{editingOrder.orderType === "IR_TO_PK" ? "نام گیرنده" : "نام صاحب حساب"}</label>
+              <label className="text-xs font-medium text-gray-500">{editingOrder.orderType === "IR_TO_PK" ? "نام گیرنده" : "نام صاحب حساب"} <span className="text-red-500">*</span></label>
               <Input value={recipientName} onChange={(e) => setRecipientName(e.target.value)} placeholder="نام کامل" className="h-12 rounded-[5px]" />
             </div>
             <div className="space-y-1.5">
