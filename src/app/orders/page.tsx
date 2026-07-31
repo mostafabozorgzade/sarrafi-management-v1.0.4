@@ -131,6 +131,10 @@ export default function OrdersPage() {
   const [formLoading, setFormLoading] = useState(false);
   const [statusLoading, setStatusLoading] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [quickCustomerOpen, setQuickCustomerOpen] = useState(false);
+  const [quickCustomerName, setQuickCustomerName] = useState("");
+  const [quickCustomerPhone, setQuickCustomerPhone] = useState("");
+  const [quickCustomerSaving, setQuickCustomerSaving] = useState(false);
 
   const hasHistoryRef = useRef(false);
 
@@ -508,6 +512,27 @@ export default function OrdersPage() {
       setDeleteConfirmOpen(false);
     }
     setDeleting(false);
+  };
+
+  const handleQuickCustomer = async () => {
+    if (!quickCustomerName.trim() || !quickCustomerPhone.trim()) return;
+    setQuickCustomerSaving(true);
+    try {
+      const newCustomer = await api.post("/api/customers", {
+        name: quickCustomerName.trim(),
+        phone: quickCustomerPhone.trim(),
+      });
+      setCustomers((prev) => [...prev, newCustomer]);
+      setCustomerId(newCustomer.id);
+      setQuickCustomerOpen(false);
+      setQuickCustomerName("");
+      setQuickCustomerPhone("");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "خطا در ایجاد مشتری";
+      setErrorToast(msg);
+      setTimeout(() => setErrorToast(null), 4000);
+    }
+    setQuickCustomerSaving(false);
   };
 
   const typeInfo = selectedType ? ORDER_TYPE_LABELS[selectedType] : null;
@@ -907,12 +932,17 @@ export default function OrdersPage() {
 
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-gray-500">مشتری</label>
-            <div className="relative">
-              <select value={customerId} onChange={(e) => setCustomerId(e.target.value)} className="flex h-12 w-full appearance-none rounded-[5px] border border-gray-200 bg-white px-4 pr-10 text-sm focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900/10 transition-colors">
-                <option value="">انتخاب مشتری</option>
-                {customers.map((c) => <option key={c.id} value={c.id}>{c.name} ({c.phone})</option>)}
-              </select>
-              <ChevronLeft className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 pointer-events-none" strokeWidth={1.5} />
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <select value={customerId} onChange={(e) => setCustomerId(e.target.value)} className="flex h-12 w-full appearance-none rounded-[5px] border border-gray-200 bg-white px-4 pr-10 text-sm focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900/10 transition-colors">
+                  <option value="">انتخاب مشتری</option>
+                  {customers.map((c) => <option key={c.id} value={c.id}>{c.name} ({c.phone})</option>)}
+                </select>
+                <ChevronLeft className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 pointer-events-none" strokeWidth={1.5} />
+              </div>
+              <button type="button" onClick={() => setQuickCustomerOpen(true)} className="flex h-12 w-12 items-center justify-center rounded-[5px] border border-gray-200 bg-white text-gray-500 active:bg-gray-50 transition-colors">
+                <Plus className="h-5 w-5" strokeWidth={2} />
+              </button>
             </div>
           </div>
 
@@ -1482,6 +1512,21 @@ export default function OrdersPage() {
           <Button type="submit" isLoading={submitting} className="w-full h-12 rounded-[5px] bg-gray-900 hover:bg-gray-800">ذخیره تغییرات</Button>
         </form>
         )}
+      </BottomSheet>
+
+      {/* Quick Customer BottomSheet */}
+      <BottomSheet isOpen={quickCustomerOpen} onClose={() => { setQuickCustomerOpen(false); setQuickCustomerName(""); setQuickCustomerPhone(""); }} title="افزودن مشتری جدید">
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-gray-500">نام مشتری</label>
+            <Input value={quickCustomerName} onChange={(e) => setQuickCustomerName(e.target.value)} placeholder="نام کامل" className="h-12 rounded-[5px]" />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-gray-500">شماره تماس</label>
+            <Input value={quickCustomerPhone} onChange={(e) => setQuickCustomerPhone(e.target.value)} placeholder="09..." className="h-12 rounded-[5px]" dir="ltr" />
+          </div>
+          <Button onClick={handleQuickCustomer} isLoading={quickCustomerSaving} disabled={!quickCustomerName.trim() || !quickCustomerPhone.trim()} className="w-full h-12 rounded-[5px] bg-gray-900 hover:bg-gray-800">افزودن مشتری</Button>
+        </div>
       </BottomSheet>
 
       {/* Delete Confirmation */}
