@@ -81,6 +81,9 @@ export default function AdminPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletingTenant, setDeletingTenant] = useState<Tenant | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!authLoading && user && user.role !== "SUPER_ADMIN") {
@@ -171,12 +174,26 @@ export default function AdminPage() {
     setCreating(false);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("آیا از حذف این صرافی اطمینان دارید؟ تمام اطلاعات مرتبط حذف خواهد شد.")) return;
+  const openDeleteDialog = (tenant: Tenant) => {
+    setDeletingTenant(tenant);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!deletingTenant) return;
+    setDeleting(true);
     try {
-      await api.delete(`/api/tenants/${id}`);
+      await api.delete(`/api/tenants/${deletingTenant.id}`);
+      setDeleteDialogOpen(false);
+      setDeletingTenant(null);
       loadTenants();
-    } catch (err) { setError(err instanceof Error ? err.message : "خطا در حذف"); }
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 2000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "خطا در حذف");
+      setDeleteDialogOpen(false);
+    }
+    setDeleting(false);
   };
 
   return (
@@ -269,54 +286,66 @@ export default function AdminPage() {
         ) : (
           <div className="space-y-2.5">
             {filteredTenants.map((t) => (
-              <Link
+              <div
                 key={t.id}
-                href={`/admin/tenants/${t.id}`}
-                className="block rounded-[5px] bg-white border border-gray-200/80 p-4 active:bg-gray-50/50 transition-colors"
+                className="rounded-[5px] bg-white border border-gray-200/80 p-4 active:bg-gray-50/50 transition-colors"
               >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className={cn(
-                      "flex h-10 w-10 items-center justify-center rounded-[5px] text-xs font-bold",
-                      t.isActive ? "bg-blue-50 text-blue-600" : "bg-gray-50 text-gray-400"
+                <Link href={`/admin/tenants/${t.id}`} className="block">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className={cn(
+                        "flex h-10 w-10 items-center justify-center rounded-[5px] text-xs font-bold",
+                        t.isActive ? "bg-blue-50 text-blue-600" : "bg-gray-50 text-gray-400"
+                      )}>
+                        {t.name.charAt(0)}
+                      </div>
+                      <div>
+                        <p className="text-[13px] font-semibold text-gray-900 leading-tight">{t.name}</p>
+                        {t.address && (
+                          <p className="text-[11px] text-gray-400 mt-0.5">{t.address}</p>
+                        )}
+                      </div>
+                    </div>
+                    <span className={cn(
+                      "rounded-[3px] px-2 py-0.5 text-[10px] font-semibold",
+                      t.isActive ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-500"
                     )}>
-                      {t.name.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="text-[13px] font-semibold text-gray-900 leading-tight">{t.name}</p>
-                      {t.address && (
-                        <p className="text-[11px] text-gray-400 mt-0.5">{t.address}</p>
-                      )}
-                    </div>
-                  </div>
-                  <span className={cn(
-                    "rounded-[3px] px-2 py-0.5 text-[10px] font-semibold",
-                    t.isActive ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-500"
-                  )}>
-                    {t.isActive ? "فعال" : "غیرفعال"}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-3 mb-2.5">
-                  {t.phone && (
-                    <div className="flex items-center gap-1 rounded-[3px] bg-gray-50 px-2 py-1">
-                      <span className="text-[11px] font-semibold text-gray-700 tabular-nums" dir="ltr">{t.phone}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="text-[10px] text-gray-400">
-                      <Users className="inline h-3 w-3 ml-0.5" strokeWidth={1.5} />{t._count.users}
-                    </span>
-                    <span className="text-[10px] text-gray-400">
-                      <ClipboardList className="inline h-3 w-3 ml-0.5" strokeWidth={1.5} />{t._count.orders}
+                      {t.isActive ? "فعال" : "غیرفعال"}
                     </span>
                   </div>
-                  <ArrowLeft className="h-4 w-4 text-gray-300" strokeWidth={1.5} />
+
+                  <div className="flex items-center gap-3 mb-2.5">
+                    {t.phone && (
+                      <div className="flex items-center gap-1 rounded-[3px] bg-gray-50 px-2 py-1">
+                        <span className="text-[11px] font-semibold text-gray-700 tabular-nums" dir="ltr">{t.phone}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="text-[10px] text-gray-400">
+                        <Users className="inline h-3 w-3 ml-0.5" strokeWidth={1.5} />{t._count.users}
+                      </span>
+                      <span className="text-[10px] text-gray-400">
+                        <ClipboardList className="inline h-3 w-3 ml-0.5" strokeWidth={1.5} />{t._count.orders}
+                      </span>
+                    </div>
+                    <ArrowLeft className="h-4 w-4 text-gray-300" strokeWidth={1.5} />
+                  </div>
+                </Link>
+
+                {/* Delete Button */}
+                <div className="flex justify-end mt-3 pt-3 border-t border-gray-100">
+                  <button
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDeleteDialog(t); }}
+                    className="flex items-center gap-1.5 rounded-[3px] px-2.5 py-1.5 text-[10px] font-medium text-red-500 hover:bg-red-50 transition-colors"
+                  >
+                    <Trash2 className="h-3 w-3" strokeWidth={1.5} />
+                    حذف صرافی
+                  </button>
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
         )}
@@ -456,6 +485,40 @@ export default function AdminPage() {
             </div>
           </form>
         )}
+      </BottomSheet>
+
+      {/* Delete Confirmation BottomSheet */}
+      <BottomSheet isOpen={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)} title="حذف صرافی">
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-50">
+              <AlertTriangle className="h-6 w-6 text-red-500" strokeWidth={1.5} />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-900">آیا از حذف این صرافی مطمئن هستید؟</p>
+              <p className="text-xs text-gray-500 mt-1">
+                تمام اطلاعات مرتبط با <span className="font-semibold">{deletingTenant?.name}</span> شامل کاربران، سفارشات، مشتریان، تراکنش‌ها و ارزها حذف خواهد شد.
+              </p>
+              <p className="text-xs text-red-500 mt-1 font-medium">این عمل قابل بازگشت نیست.</p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setDeleteDialogOpen(false)}
+              className="flex-1 h-11 rounded-[5px] border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              انصراف
+            </button>
+            <Button
+              onClick={handleDelete}
+              isLoading={deleting}
+              className="flex-1 h-11 rounded-[5px] bg-red-600 hover:bg-red-700 text-white"
+            >
+              حذف صرافی
+            </Button>
+          </div>
+        </div>
       </BottomSheet>
     </main>
   );
