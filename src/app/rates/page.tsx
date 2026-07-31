@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   TrendingUp,
@@ -11,6 +11,7 @@ import {
   ArrowRight,
   BarChart3,
   AlertCircle,
+  Loader2,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { Input } from "@/components/ui/input";
@@ -46,6 +47,12 @@ export default function RatesPage() {
   const [history, setHistory] = useState<RateHistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyHasMore, setHistoryHasMore] = useState(true);
+  const [historyLoadingMore, setHistoryLoadingMore] = useState(false);
+  const historyPageRef = useRef(1);
+  const historyHasMoreRef = useRef(true);
+  const historyLoadingMoreRef = useRef(false);
+  const HISTORY_PAGE_SIZE = 20;
   const [pkrRate, setPkrRate] = useState<Rate | null>(null);
   const [marketRate, setMarketRate] = useState("");
   const [buyRate, setBuyRate] = useState("");
@@ -79,13 +86,68 @@ export default function RatesPage() {
     }).catch(() => setLoading(false));
   };
 
-  const loadHistory = () => {
-    setHistoryLoading(true);
-    api.get("/api/rates/history").then((h) => {
-      setHistory(h);
+  const loadHistory = (reset = true) => {
+    if (reset) {
+      setHistoryLoading(true);
+      setHistory([]);
+      historyPageRef.current = 1;
+      historyHasMoreRef.current = true;
+      setHistoryHasMore(true);
+    }
+
+    const params = new URLSearchParams();
+    params.set("page", "1");
+    params.set("limit", String(HISTORY_PAGE_SIZE));
+
+    api.get(`/api/rates/history?${params.toString()}`).then((data) => {
+      setHistory(data.history);
+      const more = data.history.length >= HISTORY_PAGE_SIZE && data.total > HISTORY_PAGE_SIZE;
+      historyHasMoreRef.current = more;
+      setHistoryHasMore(more);
       setHistoryLoading(false);
     }).catch(() => setHistoryLoading(false));
   };
+
+  const loadMoreHistory = useCallback(() => {
+    if (historyLoadingMoreRef.current || !historyHasMoreRef.current) return;
+    historyLoadingMoreRef.current = true;
+    setHistoryLoadingMore(true);
+
+    const nextPage = historyPageRef.current + 1;
+    const params = new URLSearchParams();
+    params.set("page", String(nextPage));
+    params.set("limit", String(HISTORY_PAGE_SIZE));
+
+    api.get(`/api/rates/history?${params.toString()}`).then((data) => {
+      setHistory((prev) => [...prev, ...data.history]);
+      historyPageRef.current = nextPage;
+      const more = data.history.length >= HISTORY_PAGE_SIZE && (nextPage * HISTORY_PAGE_SIZE) < data.total;
+      historyHasMoreRef.current = more;
+      setHistoryHasMore(more);
+    }).catch(() => {}).finally(() => {
+      historyLoadingMoreRef.current = false;
+      setHistoryLoadingMore(false);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (tab !== "history") return;
+
+    const scrollContainer = document.querySelector("[data-scroll-container]");
+    if (!scrollContainer) return;
+
+    const onScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+      if (scrollHeight - scrollTop - clientHeight < 200) {
+        loadMoreHistory();
+      }
+    };
+
+    scrollContainer.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+
+    return () => scrollContainer.removeEventListener("scroll", onScroll);
+  }, [tab, loadMoreHistory]);
 
   useEffect(() => {
     loadRates();
@@ -403,6 +465,18 @@ export default function RatesPage() {
                   </div>
                 </div>
               ))}
+
+              {historyLoadingMore && (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="h-5 w-5 text-gray-300 animate-spin" />
+                </div>
+              )}
+
+              {!historyHasMore && history.length > 0 && (
+                <div className="py-4 text-center">
+                  <p className="text-[11px] text-gray-300">همه تاریخچه بارگذاری شد</p>
+                </div>
+              )}
             </div>
           )
         )}

@@ -1,14 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   TrendingUp,
   BarChart3,
   ClipboardList,
-  ArrowDownToLine,
+  Users,
   Clock,
   Target,
+  Loader2,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -32,14 +34,21 @@ interface DashboardData {
 const QUICK_ACTIONS = [
   { label: "ثبت سفارش", icon: ClipboardList, bg: "bg-gray-900", href: "/orders" },
   { label: "نرخ ارز", icon: TrendingUp, bg: "bg-blue-600", href: "/rates" },
-  { label: "مشتریان", icon: ArrowDownToLine, bg: "bg-violet-600", href: "/customers" },
+  { label: "مشتریان", icon: Users, bg: "bg-violet-600", href: "/customers" },
 ];
 
 export default function DashboardPage() {
+  const router = useRouter();
   const { user } = useAuth();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [navigating, setNavigating] = useState<string | null>(null);
   const showProfit = user?.role !== "CASHIER";
+
+  const navigate = useCallback((href: string) => {
+    setNavigating(href);
+    router.push(href);
+  }, [router]);
 
   useEffect(() => {
     api.get("/api/dashboard")
@@ -185,12 +194,21 @@ export default function DashboardPage() {
         {/* Quick Actions */}
         <div className="grid grid-cols-3 gap-2">
           {QUICK_ACTIONS.map((a) => (
-            <Link key={a.href} href={a.href} className="flex flex-col items-center gap-2 rounded-[5px] bg-white border border-gray-200/80 p-3 active:bg-gray-50 transition-colors">
+            <button
+              key={a.href}
+              onClick={() => navigate(a.href)}
+              disabled={navigating !== null}
+              className="flex flex-col items-center gap-2 rounded-[5px] bg-white border border-gray-200/80 p-3 active:bg-gray-50 transition-colors disabled:opacity-50"
+            >
               <div className={cn("flex h-10 w-10 items-center justify-center rounded-[5px]", a.bg)}>
-                <a.icon className="h-4 w-4 text-white" strokeWidth={1.5} />
+                {navigating === a.href ? (
+                  <Loader2 className="h-4 w-4 text-white animate-spin" strokeWidth={1.5} />
+                ) : (
+                  <a.icon className="h-4 w-4 text-white" strokeWidth={1.5} />
+                )}
               </div>
               <span className="text-[10px] font-medium text-gray-500">{a.label}</span>
-            </Link>
+            </button>
           ))}
         </div>
 
@@ -244,9 +262,14 @@ export default function DashboardPage() {
           ) : (
             <div className="space-y-0">
               {data.recentOrders.map((o) => {
-                const Icon = ICON_MAP[o.orderType] || ArrowDownToLine;
+                const Icon = ICON_MAP[o.orderType] || ClipboardList;
                 return (
-                  <Link key={o.id} href="/orders" className="flex items-center gap-3 py-3 border-b border-gray-100 last:border-0 active:bg-gray-50 -mx-4 px-4 transition-colors">
+                  <button
+                    key={o.id}
+                    onClick={() => navigate("/orders")}
+                    disabled={navigating !== null}
+                    className="flex w-full items-center gap-3 py-3 border-b border-gray-100 last:border-0 active:bg-gray-50 -mx-4 px-4 transition-colors text-left disabled:opacity-50"
+                  >
                     <div className="flex h-9 w-9 items-center justify-center rounded-[5px] bg-gray-50">
                       <Icon className="h-4 w-4 text-gray-500" strokeWidth={1.5} />
                     </div>
@@ -268,7 +291,7 @@ export default function DashboardPage() {
                         </span>
                       </div>
                     </div>
-                  </Link>
+                  </button>
                 );
               })}
             </div>
