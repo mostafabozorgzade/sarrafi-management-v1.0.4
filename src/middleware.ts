@@ -4,6 +4,7 @@ import { jwtVerify } from "jose";
 const secret = new TextEncoder().encode(process.env.JWT_SECRET || "fallback-secret");
 
 const protectedRoutes = ["/dashboard", "/transactions", "/customers", "/rates", "/cashier", "/expenses", "/reports", "/settings", "/orders", "/profile", "/admin"];
+const superAdminRoutes = ["/admin"];
 const authRoutes = ["/login"];
 
 export async function middleware(request: NextRequest) {
@@ -32,6 +33,12 @@ export async function middleware(request: NextRequest) {
         const response = NextResponse.redirect(new URL("/login", request.url));
         response.cookies.delete("token");
         return response;
+      }
+
+      if (superAdminRoutes.some((route) => pathname.startsWith(route))) {
+        if (payload.role !== "SUPER_ADMIN") {
+          return NextResponse.redirect(new URL("/dashboard", request.url));
+        }
       }
     } catch {
       const response = NextResponse.redirect(new URL("/login", request.url));

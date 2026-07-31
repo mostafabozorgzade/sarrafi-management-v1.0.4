@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, Users, ClipboardList, UserPlus, CheckCircle2, Trash2, Building2 } from "lucide-react";
 import { api } from "@/lib/api";
 import { Input } from "@/components/ui/input";
@@ -9,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { ErrorAlert } from "@/components/ui/error-alert";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/lib/auth-context";
 
 interface TenantDetail {
   id: string;
@@ -27,9 +29,17 @@ const roleColors: Record<string, string> = { SUPER_ADMIN: "bg-amber-50 text-ambe
 
 export default function TenantDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const router = useRouter();
+  const { user, isLoading: authLoading } = useAuth();
   const [tenant, setTenant] = useState<TenantDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"info" | "users" | "add-user">("info");
+
+  useEffect(() => {
+    if (!authLoading && user && user.role !== "SUPER_ADMIN") {
+      router.push("/dashboard");
+    }
+  }, [user, authLoading, router]);
 
   const [mobile, setMobile] = useState("");
   const [firstName, setFirstName] = useState("");

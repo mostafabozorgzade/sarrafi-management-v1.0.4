@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Building2, Users, ClipboardList, ArrowLeft, Plus, CheckCircle2, Trash2, Settings } from "lucide-react";
 import { api } from "@/lib/api";
 import { Input } from "@/components/ui/input";
@@ -9,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { ErrorAlert } from "@/components/ui/error-alert";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/lib/auth-context";
 
 interface Tenant {
   id: string;
@@ -21,6 +23,8 @@ interface Tenant {
 }
 
 export default function AdminPage() {
+  const router = useRouter();
+  const { user, isLoading: authLoading } = useAuth();
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -30,6 +34,12 @@ export default function AdminPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [creating, setCreating] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && user && user.role !== "SUPER_ADMIN") {
+      router.push("/dashboard");
+    }
+  }, [user, authLoading, router]);
 
   const loadTenants = () => {
     api.get("/api/tenants")

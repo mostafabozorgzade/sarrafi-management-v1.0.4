@@ -15,6 +15,7 @@ import {
   Loader2,
   Search,
   X,
+  TrendingUp,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -640,12 +641,21 @@ export default function OrdersPage() {
                     )}
                   </div>
 
-                  {/* Bottom row: date + amount */}
+                  {/* Bottom row: date + profit + amount */}
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] text-gray-400">{new Date(o.createdAt).toLocaleDateString("fa-IR")}</span>
-                    <span className="text-sm font-bold text-gray-900 tabular-nums" dir="ltr">
-                      {Number(o.totalToman).toLocaleString("en-US")} <span className="text-[10px] font-normal text-gray-400">تومان</span>
-                    </span>
+                    <div className="flex items-center gap-3">
+                      {Number(o.totalProfitAmount) > 0 && (
+                        <div className="flex items-center gap-1 rounded-[3px] bg-emerald-50 px-2 py-1">
+                          <TrendingUp className="h-3 w-3 text-emerald-600" strokeWidth={2} />
+                          <span className="text-[11px] font-semibold text-emerald-700 tabular-nums" dir="ltr">{Number(o.totalProfitAmount).toLocaleString("en-US")}</span>
+                          <span className="text-[9px] text-emerald-500">سود</span>
+                        </div>
+                      )}
+                      <span className="text-sm font-bold text-gray-900 tabular-nums" dir="ltr">
+                        {Number(o.totalToman).toLocaleString("en-US")} <span className="text-[10px] font-normal text-gray-400">تومان</span>
+                      </span>
+                    </div>
                   </div>
 
                 </div>
