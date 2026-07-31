@@ -159,8 +159,12 @@ export default function NewOrderPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!customerId || !currencyId || !amount) { setErrorToast("فیلدهای الزامی را پر کنید"); setTimeout(() => setErrorToast(null), 4000); return; }
-    if (isHawala && !recipientName) { setErrorToast("نام دریافت‌کننده الزامی است"); setTimeout(() => setErrorToast(null), 4000); return; }
+    if (!customerId) { setErrorToast("لطفاً مشتری را انتخاب کنید"); setTimeout(() => setErrorToast(null), 4000); return; }
+    if (!amount || parseFormatted(amount) <= 0) { setErrorToast("لطفاً مبلغ را وارد کنید"); setTimeout(() => setErrorToast(null), 4000); return; }
+    if ((selectedType === "BUY_PKR" || selectedType === "PK_TO_IR") && (!buyRate || parseFormatted(buyRate) <= 0)) { setErrorToast("لطفاً نرخ خرید را وارد کنید"); setTimeout(() => setErrorToast(null), 4000); return; }
+    if ((selectedType === "SELL_PKR" || selectedType === "IR_TO_PK") && (!sellRate || parseFormatted(sellRate) <= 0)) { setErrorToast("لطفاً نرخ فروش را وارد کنید"); setTimeout(() => setErrorToast(null), 4000); return; }
+    if (!marketRate || parseFormatted(marketRate) <= 0) { setErrorToast("لطفاً نرخ بازار را وارد کنید"); setTimeout(() => setErrorToast(null), 4000); return; }
+    if (isHawala && !recipientName) { setErrorToast("لطفاً نام دریافت‌کننده را وارد کنید"); setTimeout(() => setErrorToast(null), 4000); return; }
     setLoading(true);
     try {
       await api.post("/api/orders", {
@@ -218,7 +222,7 @@ export default function NewOrderPage() {
       )}
 
       {errorToast && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 rounded-[5px] bg-white border border-gray-100 px-4 py-3 shadow-lg shadow-black/5 animate-slide-up max-w-[90vw]">
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-2.5 rounded-[5px] bg-white border border-gray-100 px-4 py-3 shadow-lg shadow-black/5 animate-slide-up max-w-[90vw]">
           <AlertCircle className="h-4.5 w-4.5 text-red-500 flex-shrink-0" />
           <span className="text-[13px] font-medium text-gray-700">{errorToast}</span>
         </div>
@@ -406,7 +410,7 @@ export default function NewOrderPage() {
             <div className="grid grid-cols-2 gap-2">
               {(selectedType === "BUY_PKR" || selectedType === "PK_TO_IR") && (
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-gray-500">نرخ خرید روپیه</label>
+                  <label className="text-xs font-medium text-gray-500">نرخ خرید روپیه <span className="text-red-500">*</span></label>
                   <Input
                     type="text"
                     inputMode="numeric"
@@ -419,7 +423,7 @@ export default function NewOrderPage() {
               )}
               {(selectedType === "SELL_PKR" || selectedType === "IR_TO_PK") && (
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-gray-500">نرخ فروش روپیه</label>
+                  <label className="text-xs font-medium text-gray-500">نرخ فروش روپیه <span className="text-red-500">*</span></label>
                   <Input
                     type="text"
                     inputMode="numeric"
@@ -431,7 +435,7 @@ export default function NewOrderPage() {
                 </div>
               )}
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-gray-500">نرخ بازار روپیه</label>
+                <label className="text-xs font-medium text-gray-500">نرخ بازار روپیه <span className="text-red-500">*</span></label>
                 <Input
                   type="text"
                   inputMode="numeric"
