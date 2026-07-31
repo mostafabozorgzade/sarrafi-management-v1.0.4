@@ -24,6 +24,7 @@ import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ErrorAlert } from "@/components/ui/error-alert";
+import { useAuth } from "@/lib/auth-context";
 import {
   DIRECTIONS,
   SUB_TYPES,
@@ -67,6 +68,7 @@ interface Order {
   customer: { name: string; phone: string };
   currency: { code: string; name: string };
   user: { firstName: string; lastName: string };
+  tenant?: { id: string; name: string };
 }
 
 interface Customer { id: string; name: string; phone: string }
@@ -80,6 +82,7 @@ const FILTER_TABS = [
 ] as const;
 
 export default function OrdersPage() {
+  const { user } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -722,8 +725,14 @@ export default function OrdersPage() {
                     </span>
                   </div>
 
-                  {/* Middle row: rate + PKR amount */}
+                  {/* Middle row: rate + PKR amount + tenant */}
                   <div className="flex items-center gap-3 mb-2.5">
+                    {user?.role === "SUPER_ADMIN" && o.tenant && (
+                      <div className="flex items-center gap-1 rounded-[3px] bg-blue-50 px-2 py-1">
+                        <span className="text-[10px] text-blue-500">صرافی</span>
+                        <span className="text-[11px] font-semibold text-blue-700">{o.tenant.name}</span>
+                      </div>
+                    )}
                     {orderRate > 0 && (
                       <div className="flex items-center gap-1 rounded-[3px] bg-gray-50 px-2 py-1">
                         <span className="text-[10px] text-gray-400">{isTomanAmt ? "نرخ فروش" : "نرخ خرید"}</span>

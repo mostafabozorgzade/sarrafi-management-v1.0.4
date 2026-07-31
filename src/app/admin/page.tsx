@@ -13,6 +13,8 @@ import {
   X,
   Coins,
   ArrowLeft,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { Input } from "@/components/ui/input";

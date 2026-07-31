@@ -27,6 +27,7 @@ import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ErrorAlert } from "@/components/ui/error-alert";
+import { useAuth } from "@/lib/auth-context";
 
 interface Customer {
   id: string;
@@ -37,6 +38,7 @@ interface Customer {
   totalBuy: bigint;
   totalSell: bigint;
   debt: bigint;
+  tenant?: { id: string; name: string };
 }
 
 interface CustomerDetail extends Customer {
@@ -49,6 +51,7 @@ const typeLabels: Record<string, string> = {
 };
 
 export default function CustomersPage() {
+  const { user } = useAuth();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -359,9 +362,16 @@ export default function CustomersPage() {
                           <span className="rounded-[3px] bg-red-50 px-1.5 py-0.5 text-[9px] font-semibold text-red-500 mr-2">بدهکار</span>
                         )}
                       </div>
-                      <div className="flex items-center gap-1 mt-0.5">
-                        <Phone className="h-3 w-3 text-gray-300" strokeWidth={1.5} />
-                        <span className="text-[11px] text-gray-400 tabular-nums" dir="ltr">{c.phone}</span>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <div className="flex items-center gap-1">
+                          <Phone className="h-3 w-3 text-gray-300" strokeWidth={1.5} />
+                          <span className="text-[11px] text-gray-400 tabular-nums" dir="ltr">{c.phone}</span>
+                        </div>
+                        {user?.role === "SUPER_ADMIN" && c.tenant && (
+                          <div className="flex items-center gap-1 rounded-[3px] bg-blue-50 px-1.5 py-0.5">
+                            <span className="text-[9px] font-semibold text-blue-600">{c.tenant.name}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                     <ChevronLeft className="h-4 w-4 text-gray-300 flex-shrink-0" strokeWidth={1.5} />

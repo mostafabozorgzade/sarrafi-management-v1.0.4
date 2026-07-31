@@ -15,6 +15,7 @@ export async function GET(request: NextRequest) {
     const limitParam = searchParams.get("limit");
 
     const tenantWhere = getTenantFilter(user);
+    const includeTenant = user.role === "SUPER_ADMIN";
 
     if (pageParam) {
       const page = Math.max(1, parseInt(pageParam, 10));
@@ -33,6 +34,9 @@ export async function GET(request: NextRequest) {
       const [customers, total] = await Promise.all([
         prisma.customer.findMany({
           where,
+          include: {
+            ...(includeTenant ? { tenant: { select: { id: true, name: true } } } : {}),
+          },
           orderBy: { createdAt: "desc" },
           skip,
           take: limit,
@@ -54,6 +58,9 @@ export async function GET(request: NextRequest) {
 
     const customers = await prisma.customer.findMany({
       where,
+      include: {
+        ...(includeTenant ? { tenant: { select: { id: true, name: true } } } : {}),
+      },
       orderBy: { createdAt: "desc" },
     });
 
