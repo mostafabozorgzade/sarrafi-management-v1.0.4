@@ -135,6 +135,7 @@ export default function OrdersPage() {
   const [quickCustomerName, setQuickCustomerName] = useState("");
   const [quickCustomerPhone, setQuickCustomerPhone] = useState("");
   const [quickCustomerSaving, setQuickCustomerSaving] = useState(false);
+  const [customerSheetOpen, setCustomerSheetOpen] = useState(false);
 
   const hasHistoryRef = useRef(false);
 
@@ -142,6 +143,8 @@ export default function OrdersPage() {
     const handlePopState = () => {
       if (quickCustomerOpen) {
         setQuickCustomerOpen(false);
+      } else if (customerSheetOpen) {
+        setCustomerSheetOpen(false);
       } else if (formSheetOpen) {
         setFormSheetOpen(false);
       } else if (subTypeSheetOpen) {
@@ -156,9 +159,9 @@ export default function OrdersPage() {
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, [directionSheetOpen, subTypeSheetOpen, formSheetOpen, detailSheetOpen, editSheetOpen, quickCustomerOpen]);
+  }, [directionSheetOpen, subTypeSheetOpen, formSheetOpen, detailSheetOpen, editSheetOpen, quickCustomerOpen, customerSheetOpen]);
 
-  const anySheetOpen = directionSheetOpen || subTypeSheetOpen || formSheetOpen || detailSheetOpen || editSheetOpen || quickCustomerOpen;
+  const anySheetOpen = directionSheetOpen || subTypeSheetOpen || formSheetOpen || detailSheetOpen || editSheetOpen || quickCustomerOpen || customerSheetOpen;
 
   useEffect(() => {
     if (anySheetOpen && !hasHistoryRef.current) {
@@ -934,13 +937,14 @@ export default function OrdersPage() {
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-gray-500">مشتری</label>
             <div className="flex gap-2">
-              <div className="relative flex-1">
-                <select value={customerId} onChange={(e) => setCustomerId(e.target.value)} className="flex h-12 w-full appearance-none rounded-[5px] border border-gray-200 bg-white px-4 pr-10 text-sm focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900/10 transition-colors">
-                  <option value="">انتخاب مشتری</option>
-                  {customers.map((c) => <option key={c.id} value={c.id}>{c.name} ({c.phone})</option>)}
-                </select>
-                <ChevronLeft className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 pointer-events-none" strokeWidth={1.5} />
-              </div>
+              <button type="button" onClick={() => setCustomerSheetOpen(true)} className="flex h-12 flex-1 items-center justify-between rounded-[5px] border border-gray-200 bg-white px-4 text-sm transition-colors active:bg-gray-50">
+                {customerId ? (
+                  <span className="font-sans text-gray-900">{customers.find((c) => c.id === customerId)?.name} ({customers.find((c) => c.id === customerId)?.phone})</span>
+                ) : (
+                  <span className="text-gray-400">انتخاب مشتری</span>
+                )}
+                <ChevronLeft className="h-4 w-4 text-gray-400" strokeWidth={1.5} />
+              </button>
               <button type="button" onClick={() => setQuickCustomerOpen(true)} className="flex h-12 w-12 items-center justify-center rounded-[5px] border border-gray-200 bg-white text-gray-500 active:bg-gray-50 transition-colors">
                 <Plus className="h-5 w-5" strokeWidth={2} />
               </button>
@@ -1353,13 +1357,14 @@ export default function OrdersPage() {
 
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-gray-500">مشتری</label>
-            <div className="relative">
-              <select value={customerId} onChange={(e) => setCustomerId(e.target.value)} className="flex h-12 w-full appearance-none rounded-[5px] border border-gray-200 bg-white px-4 pr-10 text-sm focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900/10 transition-colors">
-                <option value="">انتخاب مشتری</option>
-                {customers.map((c) => <option key={c.id} value={c.id}>{c.name} ({c.phone})</option>)}
-              </select>
-              <ChevronLeft className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 pointer-events-none" strokeWidth={1.5} />
-            </div>
+            <button type="button" onClick={() => setCustomerSheetOpen(true)} className="flex h-12 w-full items-center justify-between rounded-[5px] border border-gray-200 bg-white px-4 text-sm transition-colors active:bg-gray-50">
+              {customerId ? (
+                <span className="font-sans text-gray-900">{customers.find((c) => c.id === customerId)?.name} ({customers.find((c) => c.id === customerId)?.phone})</span>
+              ) : (
+                <span className="text-gray-400">انتخاب مشتری</span>
+              )}
+              <ChevronLeft className="h-4 w-4 text-gray-400" strokeWidth={1.5} />
+            </button>
           </div>
 
           <div className="space-y-1.5">
@@ -1513,6 +1518,33 @@ export default function OrdersPage() {
           <Button type="submit" isLoading={submitting} className="w-full h-12 rounded-[5px] bg-gray-900 hover:bg-gray-800">ذخیره تغییرات</Button>
         </form>
         )}
+      </BottomSheet>
+
+      {/* Customer Selector BottomSheet */}
+      <BottomSheet isOpen={customerSheetOpen} onClose={() => setCustomerSheetOpen(false)} title="انتخاب مشتری" className="max-h-[70vh]">
+        <div className="space-y-2">
+          {customers.length === 0 ? (
+            <p className="text-center text-sm text-gray-400 py-8">مشتری‌ای وجود ندارد</p>
+          ) : (
+            customers.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => { setCustomerId(c.id); setCustomerSheetOpen(false); }}
+                className={cn(
+                  "w-full flex items-center justify-between rounded-[5px] border p-4 text-right transition-all active:bg-gray-50",
+                  customerId === c.id ? "border-gray-900 bg-gray-50" : "border-gray-200"
+                )}
+              >
+                <div>
+                  <p className="text-[13px] font-semibold text-gray-900">{c.name}</p>
+                  <p className="text-[11px] text-gray-400 mt-0.5" dir="ltr">{c.phone}</p>
+                </div>
+                {customerId === c.id && <CheckCircle2 className="h-5 w-5 text-gray-900" strokeWidth={1.5} />}
+              </button>
+            ))
+          )}
+        </div>
       </BottomSheet>
 
       {/* Quick Customer BottomSheet */}
