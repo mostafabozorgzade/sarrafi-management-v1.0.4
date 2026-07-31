@@ -1,10 +1,16 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
-import { Settings, LogOut, ChevronLeft, User, Shield, Phone } from "lucide-react";
+import { api } from "@/lib/api";
+import { Settings, LogOut, ChevronLeft, User, Shield, Phone, Pencil, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { BottomSheet } from "@/components/ui/bottom-sheet";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { ErrorAlert } from "@/components/ui/error-alert";
 
 const roleLabels: Record<string, string> = {
   OWNER: "مالک",
@@ -21,7 +27,48 @@ const roleColors: Record<string, string> = {
 };
 
 export default function ProfilePage() {
-  const { user, isLoading, logout } = useAuth();
+  const { user, isLoading, logout, refreshUser } = useAuth();
+  const [editOpen, setEditOpen] = useState(false);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const openEdit = () => {
+    if (!user) return;
+    setFirstName(user.firstName);
+    setLastName(user.lastName);
+    setCurrentPassword("");
+    setNewPassword("");
+    setError(null);
+    setSuccess(false);
+    setEditOpen(true);
+    window.history.pushState({}, "");
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    if (!firstName.trim()) { setError("نام الزامی است"); return; }
+    if (!lastName.trim()) { setError("نام خانوادگی الزامی است"); return; }
+    if (newPassword && !currentPassword) { setError("برای تغییر رمز، رمز فعلی را وارد کنید"); return; }
+    setSubmitting(true);
+    try {
+      const payload: Record<string, string> = { firstName: firstName.trim(), lastName: lastName.trim() };
+      if (newPassword) {
+        payload.currentPassword = currentPassword;
+        payload.newPassword = newPassword;
+      }
+      await api.put("/api/auth/profile", payload);
+      setSuccess(true);
+      await refreshUser();
+      setTimeout(() => { setEditOpen(false); setSuccess(false); }, 1200);
+    } catch (err) { setError(err instanceof Error ? err.message : "خطا"); }
+    setSubmitting(false);
+  };
 
   if (isLoading || !user) {
     return (
@@ -80,7 +127,10 @@ export default function ProfilePage() {
       </div>
 
       <div className="space-y-1">
-        <div className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-3">
+        <button
+          onClick={openEdit}
+          className="flex w-full items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 active:bg-gray-50 text-right"
+        >
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gray-50">
             <User className="h-4 w-4 text-gray-500" strokeWidth={1.5} />
           </div>
@@ -88,7 +138,8 @@ export default function ProfilePage() {
             <p className="text-xs font-medium text-gray-900">نام</p>
             <p className="text-[11px] text-gray-400 mt-0.5">{user.firstName} {user.lastName}</p>
           </div>
-        </div>
+          <Pencil className="h-4 w-4 text-gray-300" strokeWidth={1.5} />
+        </button>
         <div className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gray-50">
             <Phone className="h-4 w-4 text-gray-500" strokeWidth={1.5} />
@@ -116,6 +167,68 @@ export default function ProfilePage() {
         <LogOut className="h-4 w-4" strokeWidth={1.5} />
         خروج از حساب کاربری
       </button>
+
+      <BottomSheet isOpen={editOpen} onClose={() => setEditOpen(false)} title="ویرایش پروفایل">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {error && <ErrorAlert message={error} />}
+          {success && (
+            <div className="flex items-center gap-2 rounded-lg bg-green-50 p-3 text-xs text-green-600">
+              <CheckCircle2 className="h-4 w-4" />
+              پروفایل بروزرسانی شد
+            </div>
+          )}
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-gray-500">نام <span className="text-red-400">*</span></label>
+            <Input
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              placeholder="نام"
+              className="h-12 rounded-[5px]"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-gray-500">نام خانوادگی <span className="text-red-400">*</span></label>
+            <Input
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              placeholder="نام خانوادگی"
+              className="h-12 rounded-[5px]"
+            />
+          </div>
+
+          <div className="border-t border-gray-100 pt-4">
+            <p className="text-[11px] font-medium text-gray-400 mb-3">تغییر رمز عبور (اختیاری)</p>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-gray-500">رمز عبور فعلی</label>
+            <Input
+              type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              placeholder="رمز عبور فعلی"
+              className="h-12 rounded-[5px]"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-gray-500">رمز عبور جدید</label>
+            <Input
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="رمز عبور جدید"
+              className="h-12 rounded-[5px]"
+            />
+          </div>
+
+          <Button type="submit" isLoading={submitting} className="w-full h-12 rounded-[5px] bg-gray-900 hover:bg-gray-800">
+            ذخیره تغییرات
+          </Button>
+        </form>
+      </BottomSheet>
     </div>
   );
 }

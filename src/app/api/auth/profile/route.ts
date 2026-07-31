@@ -1,0 +1,63 @@
+import { NextRequest } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { getAuthUser, unauthorized } from "@/lib/api-helpers";
+import { safeJson } from "@/lib/safe-json";
+
+export async function PUT(request: NextRequest) {
+  const user = await getAuthUser(request);
+  if (!user) return unauthorized();
+
+  try {
+    const body = await request.json();
+    const { firstName, lastName, currentPassword, newPassword } = body;
+
+    if (!firstName || !lastName) {
+      return safeJson({ error: "نام و نام خانوادگی الزامی است" }, { status: 400 });
+    }
+
+    const data: Record<string, unknown> = {
+      firstName,
+      lastName,
+    };
+
+    if (newPassword) {
+      if (!currentPassword) {
+        return safeJson({ error: "رمز عبور فعلی الزامی است" }, { status: 400 });
+      }
+
+      const currentUser = await prisma.user.findUnique({
+        where: { id: user.userId },
+        select: { password: true },
+      });
+
+      if (!currentUser) {
+        return safeJson({ error: "کاربر یافت نشد" }, { status: 404 });
+      }
+
+      const bcrypt = await import("bcryptjs");
+      const isValid = await bcrypt.compare(currentPassword, currentUser.password);
+      if (!isValid) {
+        return safeJson({ error: "رمز عبور فعلی اشتباه است" }, { status: 400 });
+      }
+
+      data.password = await bcrypt.hash(newPassword, 12);
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: user.userId },
+      data,
+      select: { id: true, mobile: true, firstName: true, lastName: true, role: true, tenantId: true },
+    });
+
+    return safeJson({
+      user: {
+        ...updated,
+        tenantName: null,
+      },
+    });
+  } catch (err) {
+    console.error("Profile update error:", err);
+    const message = err instanceof Error ? err.message : "خطا در بروزرسانی پروفایل";
+    return safeJson({ error: message }, { status: 500 });
+  }
+}
