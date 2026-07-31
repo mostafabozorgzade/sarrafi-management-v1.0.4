@@ -537,7 +537,12 @@ export default function OrdersPage() {
   };
 
   const handleQuickCustomer = async () => {
-    if (!quickCustomerName.trim() || !quickCustomerPhone.trim()) return;
+    if (!quickCustomerName.trim()) return;
+    if (quickCustomerPhone.trim() && !/^09[0-9]{9}$/.test(quickCustomerPhone.trim())) {
+      setErrorToast("شماره تماس باید ۱۱ رقم و با ۰۹ شروع شود");
+      setTimeout(() => setErrorToast(null), 4000);
+      return;
+    }
     setQuickCustomerSaving(true);
     try {
       const newCustomer = await api.post("/api/customers", {
@@ -1656,7 +1661,7 @@ export default function OrdersPage() {
             <label className="text-xs font-medium text-gray-500">شماره تماس</label>
             <Input value={quickCustomerPhone} onChange={(e) => setQuickCustomerPhone(e.target.value)} placeholder="09..." className="h-12 rounded-[5px]" dir="ltr" />
           </div>
-          <Button onClick={handleQuickCustomer} isLoading={quickCustomerSaving} disabled={!quickCustomerName.trim() || !quickCustomerPhone.trim()} className="w-full h-12 rounded-[5px] bg-gray-900 hover:bg-gray-800">افزودن مشتری</Button>
+          <Button onClick={handleQuickCustomer} isLoading={quickCustomerSaving} disabled={!quickCustomerName.trim()} className="w-full h-12 rounded-[5px] bg-gray-900 hover:bg-gray-800">افزودن مشتری</Button>
         </div>
       </BottomSheet>
 
