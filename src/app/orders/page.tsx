@@ -140,7 +140,9 @@ export default function OrdersPage() {
 
   useEffect(() => {
     const handlePopState = () => {
-      if (formSheetOpen) {
+      if (quickCustomerOpen) {
+        setQuickCustomerOpen(false);
+      } else if (formSheetOpen) {
         setFormSheetOpen(false);
       } else if (subTypeSheetOpen) {
         setSubTypeSheetOpen(false);
@@ -154,9 +156,9 @@ export default function OrdersPage() {
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, [directionSheetOpen, subTypeSheetOpen, formSheetOpen, detailSheetOpen, editSheetOpen]);
+  }, [directionSheetOpen, subTypeSheetOpen, formSheetOpen, detailSheetOpen, editSheetOpen, quickCustomerOpen]);
 
-  const anySheetOpen = directionSheetOpen || subTypeSheetOpen || formSheetOpen || detailSheetOpen || editSheetOpen;
+  const anySheetOpen = directionSheetOpen || subTypeSheetOpen || formSheetOpen || detailSheetOpen || editSheetOpen || quickCustomerOpen;
 
   useEffect(() => {
     if (anySheetOpen && !hasHistoryRef.current) {
@@ -208,7 +210,6 @@ export default function OrdersPage() {
     setFormLoading(true);
     Promise.all([api.get("/api/customers"), api.get("/api/currencies"), api.get("/api/rates")]).then(([c, cur, rates]) => {
       setCustomers(c.customers || []);
-      if (c.customers && c.customers.length > 0) setCustomerId(c.customers[0].id);
       const pkrCurrency = cur.find((x: { code: string; id: string }) => x.code === "PKR");
       if (pkrCurrency) setCurrencyId(pkrCurrency.id);
       const pkrRate = rates.find((r: Rate) => r.currency?.code === "PKR");
