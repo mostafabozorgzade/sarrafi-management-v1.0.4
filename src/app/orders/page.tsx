@@ -117,6 +117,7 @@ export default function OrdersPage() {
   const [destinationCard, setDestinationCard] = useState("");
   const [destinationSheba, setDestinationSheba] = useState("");
   const [description, setDescription] = useState("");
+  const [orderStatus, setOrderStatus] = useState("IN_PROGRESS");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -345,7 +346,7 @@ export default function OrdersPage() {
   const resetForm = () => {
     setAmount(""); setBuyRate(""); setSellRate(""); setMarketRate(""); setFee(""); setTransferCost(""); setRecipientName(""); setRecipientAccount("");
     setDestinationCard(""); setDestinationSheba(""); setDescription(""); setError(null);
-    setSelectedType(null); setCurrentRates(null);
+    setSelectedType(null); setCurrentRates(null); setOrderStatus("IN_PROGRESS");
   };
 
   const isTomanAmount = selectedType ? isTomanAmountType(selectedType) : false;
@@ -406,7 +407,7 @@ export default function OrdersPage() {
       const newOrder = await api.post("/api/orders", {
         customerId, currencyId, orderType: selectedType, amount, buyRate, sellRate, marketRate, fee, transferCost,
         recipientName, recipientAccount, recipientMethod,
-        destinationCard, destinationSheba, description,
+        destinationCard, destinationSheba, description, status: orderStatus,
       });
       setFormSheetOpen(false);
       setSuccess(true);
@@ -1056,6 +1057,30 @@ export default function OrdersPage() {
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-gray-500">توضیحات</label>
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="اختیاری" rows={2} className="flex w-full rounded-[5px] border border-gray-200 bg-white px-3 py-2.5 text-sm placeholder:text-gray-300 focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900/10 transition-colors" />
+          </div>
+
+          {/* Status Selector in Create */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-gray-500">وضعیت سفارش</label>
+            <div className="flex gap-2">
+              {(["IN_PROGRESS", "COMPLETED", "CANCELLED"] as const).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setOrderStatus(s)}
+                  className={cn(
+                    "flex-1 rounded-[5px] py-2.5 text-[12px] font-semibold transition-all border",
+                    orderStatus === s
+                      ? s === "IN_PROGRESS" ? "bg-yellow-50 border-yellow-300 text-yellow-700"
+                        : s === "COMPLETED" ? "bg-green-50 border-green-300 text-green-700"
+                        : "bg-red-50 border-red-300 text-red-700"
+                      : "bg-white border-gray-200 text-gray-400"
+                  )}
+                >
+                  {STATUS_LABELS[s]}
+                </button>
+              ))}
+            </div>
           </div>
 
           <Button type="submit" isLoading={submitting} className="w-full h-12 rounded-[5px] bg-gray-900 hover:bg-gray-800">ثبت سفارش</Button>

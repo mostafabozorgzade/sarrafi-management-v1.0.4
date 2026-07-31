@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     const {
       customerId, currencyId, orderType, amount, buyRate, sellRate, marketRate, fee, transferCost,
       recipientName, recipientAccount, recipientMethod,
-      destinationCard, destinationSheba, description,
+      destinationCard, destinationSheba, description, status,
     } = body;
 
     if (!customerId || !currencyId || !orderType || !amount) {
@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
         destinationCard: destinationCard || null,
         destinationSheba: destinationSheba || null,
         description: description || null,
-        status: "IN_PROGRESS",
+        status: status || "IN_PROGRESS",
       },
       include: {
         customer: { select: { name: true, phone: true } },
