@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
 import {
@@ -16,6 +17,7 @@ import {
   AlertCircle,
   Lock,
   BarChart3,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -40,8 +42,10 @@ const roleColors: Record<string, string> = {
 };
 
 export default function ProfilePage() {
+  const router = useRouter();
   const { user, isLoading, logout, refreshUser } = useAuth();
   const [editOpen, setEditOpen] = useState(false);
+  const [settingsLoading, setSettingsLoading] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [mobile, setMobile] = useState("");
@@ -217,19 +221,31 @@ export default function ProfilePage() {
         {/* Settings Link */}
         {user.role !== "CASHIER" && (
           <div className="rounded-[5px] bg-white border border-gray-200/80">
-            <Link
-              href="/settings"
-              className="flex items-center gap-3 p-4 active:bg-gray-50 transition-colors"
+            <button
+              onClick={() => {
+                setSettingsLoading(true);
+                router.push("/settings");
+              }}
+              disabled={settingsLoading}
+              className="flex items-center gap-3 p-4 active:bg-gray-50 transition-colors w-full text-right"
             >
               <div className="flex h-10 w-10 items-center justify-center rounded-[5px] bg-gray-50">
-                <Settings className="h-[18px] w-[18px] text-gray-500" strokeWidth={1.5} />
+                {settingsLoading ? (
+                  <Loader2 className="h-[18px] w-[18px] text-gray-400 animate-spin" strokeWidth={1.5} />
+                ) : (
+                  <Settings className="h-[18px] w-[18px] text-gray-500" strokeWidth={1.5} />
+                )}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-semibold text-gray-900">تنظیمات کارکنان</p>
-                <p className="text-[11px] text-gray-400 mt-0.5">مدیریت کاربران و نقش‌ها</p>
+                <p className="text-[13px] font-semibold text-gray-900">تنظیمات</p>
+                <p className="text-[11px] text-gray-400 mt-0.5">تنظیمات کلی سامانه</p>
               </div>
-              <ChevronLeft className="h-5 w-5 flex-shrink-0 text-gray-300" strokeWidth={1.5} />
-            </Link>
+              {settingsLoading ? (
+                <Loader2 className="h-5 w-5 flex-shrink-0 text-gray-400 animate-spin" strokeWidth={1.5} />
+              ) : (
+                <ChevronLeft className="h-5 w-5 flex-shrink-0 text-gray-300" strokeWidth={1.5} />
+              )}
+            </button>
           </div>
         )}
 
