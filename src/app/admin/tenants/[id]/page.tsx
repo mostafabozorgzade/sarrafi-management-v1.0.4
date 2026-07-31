@@ -49,7 +49,7 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
   const { user, isLoading: authLoading } = useAuth();
   const [tenant, setTenant] = useState<TenantDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"info" | "users" | "add-user">("info");
+  const [tab, setTab] = useState<"info" | "users">("info");
 
   useEffect(() => {
     if (!authLoading && user && user.role !== "SUPER_ADMIN") {
@@ -82,6 +82,8 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
   const [editUserSaving, setEditUserSaving] = useState(false);
   const [editUserSuccess, setEditUserSuccess] = useState(false);
 
+  const [addUserOpen, setAddUserOpen] = useState(false);
+
   const loadTenant = () => {
     api.get(`/api/tenants/${id}`)
       .then((data) => {
@@ -105,7 +107,7 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
       await api.post(`/api/tenants/${id}/users`, { mobile, firstName, lastName, password, role });
       setSuccess(true);
       loadTenant();
-      setTimeout(() => { setSuccess(false); setTab("users"); setMobile(""); setFirstName(""); setLastName(""); setPassword(""); }, 1500);
+      setTimeout(() => { setSuccess(false); setAddUserOpen(false); setMobile(""); setFirstName(""); setLastName(""); setPassword(""); setRole("CASHIER"); }, 1500);
     } catch (err) { setError(err instanceof Error ? err.message : "خطا"); }
     setCreating(false);
   };
@@ -218,7 +220,6 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
         <div className="flex gap-1 px-4 pb-2">
           <button onClick={() => setTab("info")} className={cn("flex-1 rounded-md py-1.5 text-xs font-medium transition-colors", tab === "info" ? "bg-gray-900 text-white" : "text-gray-400")}>اطلاعات</button>
           <button onClick={() => setTab("users")} className={cn("flex-1 rounded-md py-1.5 text-xs font-medium transition-colors", tab === "users" ? "bg-gray-900 text-white" : "text-gray-400")}>کاربران ({tenant.users.length})</button>
-          <button onClick={() => setTab("add-user")} className={cn("flex-1 rounded-md py-1.5 text-xs font-medium transition-colors", tab === "add-user" ? "bg-gray-900 text-white" : "text-gray-400")}>افزودن کاربر</button>
         </div>
       </div>
 
@@ -418,49 +419,79 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
             )}
           </div>
         )}
-
-        {tab === "add-user" && (
-          <div className="rounded-[5px] bg-white border border-gray-200/80 p-4">
-            <h3 className="text-[13px] font-semibold text-gray-900 mb-3">افزودن کاربر به {tenant.name}</h3>
-            {success && (
-              <div className="flex items-center gap-2 rounded-lg bg-green-50 p-3 text-xs text-green-600 mb-3">
-                <CheckCircle2 className="h-4 w-4" />کاربر اضافه شد
-              </div>
-            )}
-            <form onSubmit={handleAddUser} className="space-y-3">
-              <div className="space-y-1">
-                <label className="text-[11px] font-medium text-gray-500">شماره موبایل</label>
-                <Input value={mobile} onChange={(e) => setMobile(e.target.value)} placeholder="09..." className="h-11" dir="ltr" inputMode="numeric" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[11px] font-medium text-gray-500">نام</label>
-                <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="نام" className="h-11" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[11px] font-medium text-gray-500">نام خانوادگی</label>
-                <Input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="نام خانوادگی" className="h-11" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[11px] font-medium text-gray-500">رمز عبور</label>
-                <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="حداقل ۶ کاراکتر" className="h-11" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[11px] font-medium text-gray-500">نقش</label>
-                <select value={role} onChange={(e) => setRole(e.target.value)} className="flex h-11 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm focus:outline-none focus:border-blue-500">
-                  <option value="CASHIER">صندوق‌دار</option>
-                  <option value="MANAGER">مدیر</option>
-                  <option value="OWNER">مالک</option>
-                  <option value="ACCOUNTANT">حسابدار</option>
-                </select>
-              </div>
-              <Button type="submit" isLoading={creating} className="w-full h-11">
-                <UserPlus className="h-4 w-4" strokeWidth={1.5} />
-                افزودن کاربر
-              </Button>
-            </form>
-          </div>
-        )}
       </div>
+
+      {/* FAB - Add User */}
+      {tab === "users" && (
+        <button
+          onClick={() => setAddUserOpen(true)}
+          className="fixed bottom-20 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 rounded-full bg-blue-600 px-5 py-3 text-[13px] font-semibold text-white shadow-lg shadow-blue-600/25 hover:bg-blue-700 transition-colors"
+        >
+          <UserPlus className="h-4 w-4" strokeWidth={1.5} />
+          افزودن کاربر
+        </button>
+      )}
+
+      {/* Add User BottomSheet */}
+      <BottomSheet isOpen={addUserOpen} onClose={() => setAddUserOpen(false)} title={`افزودن کاربر به ${tenant.name}`}>
+        <div>
+          {success && (
+            <div className="flex items-center gap-2 rounded-lg bg-green-50 p-3 text-xs text-green-600 mb-3">
+              <CheckCircle2 className="h-4 w-4" />کاربر اضافه شد
+            </div>
+          )}
+          <form onSubmit={handleAddUser} className="space-y-3">
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-gray-500">شماره موبایل</label>
+              <Input value={mobile} onChange={(e) => setMobile(e.target.value)} placeholder="09..." className="h-11" dir="ltr" inputMode="numeric" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-gray-500">نام</label>
+              <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="نام" className="h-11" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-gray-500">نام خانوادگی</label>
+              <Input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="نام خانوادگی" className="h-11" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-gray-500">رمز عبور</label>
+              <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="حداقل ۶ کاراکتر" className="h-11" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-medium text-gray-500">نقش</label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { value: "CASHIER", label: "صندوق‌دار", color: "green" },
+                  { value: "MANAGER", label: "مدیر", color: "blue" },
+                  { value: "OWNER", label: "مالک", color: "red" },
+                  { value: "ACCOUNTANT", label: "حسابدار", color: "violet" },
+                ].map((r) => (
+                  <button
+                    key={r.value}
+                    type="button"
+                    onClick={() => setRole(r.value)}
+                    className={cn(
+                      "rounded-[5px] border px-3 py-2.5 text-[12px] font-medium transition-colors",
+                      role === r.value
+                        ? r.color === "green" ? "border-green-500 bg-green-50 text-green-700"
+                        : r.color === "blue" ? "border-blue-500 bg-blue-50 text-blue-700"
+                        : r.color === "red" ? "border-red-500 bg-red-50 text-red-700"
+                        : "border-violet-500 bg-violet-50 text-violet-700"
+                        : "border-gray-200 bg-white text-gray-500"
+                    )}
+                  >
+                    {r.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <Button type="submit" isLoading={creating} className="w-full h-11">
+              <UserPlus className="h-4 w-4" strokeWidth={1.5} />
+              افزودن کاربر
+            </Button>
+          </form>
+        </div>
+      </BottomSheet>
 
       {/* Edit User BottomSheet */}
       <BottomSheet isOpen={!!editingUser} onClose={() => setEditingUser(null)} title="ویرایش کاربر">
