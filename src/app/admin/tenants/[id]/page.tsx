@@ -198,6 +198,7 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
 
   return (
     <main className="min-h-dvh bg-[#fafafa]">
+      {/* Header */}
       <div className="bg-white border-b border-gray-100/80">
         <div className="flex h-14 items-center justify-between px-5">
           <div className="flex items-center gap-2.5">
@@ -209,36 +210,61 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
           <button
             onClick={handleToggleActive}
             className={cn(
-              "flex items-center gap-1 rounded-[3px] px-2.5 py-1.5 text-[10px] font-medium transition-colors",
+              "flex items-center gap-1.5 rounded-[5px] px-3 py-1.5 text-[11px] font-semibold transition-all active:scale-95",
               tenant.isActive ? "bg-amber-50 text-amber-600 hover:bg-amber-100" : "bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
             )}
           >
-            <Power className="h-3 w-3" strokeWidth={1.5} />
-            {tenant.isActive ? "غیرفعال کردن" : "فعال کردن"}
+            <Power className="h-3.5 w-3.5" strokeWidth={1.5} />
+            {tenant.isActive ? "غیرفعال" : "فعال"}
           </button>
         </div>
-        <div className="flex gap-1 px-4 pb-2">
-          <button onClick={() => setTab("info")} className={cn("flex-1 rounded-md py-1.5 text-xs font-medium transition-colors", tab === "info" ? "bg-gray-900 text-white" : "text-gray-400")}>اطلاعات</button>
-          <button onClick={() => setTab("users")} className={cn("flex-1 rounded-md py-1.5 text-xs font-medium transition-colors", tab === "users" ? "bg-gray-900 text-white" : "text-gray-400")}>کاربران ({tenant.users.length})</button>
+
+        {/* Tabs */}
+        <div className="px-4 pb-3">
+          <div className="flex gap-1.5">
+            <button
+              onClick={() => setTab("info")}
+              className={cn(
+                "rounded-[5px] px-4 py-1.5 text-[11px] font-semibold transition-all duration-200",
+                tab === "info"
+                  ? "bg-gray-900 text-white shadow-sm"
+                  : "bg-gray-100/70 text-gray-400 hover:text-gray-600"
+              )}
+            >
+              اطلاعات
+            </button>
+            <button
+              onClick={() => setTab("users")}
+              className={cn(
+                "rounded-[5px] px-4 py-1.5 text-[11px] font-semibold transition-all duration-200",
+                tab === "users"
+                  ? "bg-gray-900 text-white shadow-sm"
+                  : "bg-gray-100/70 text-gray-400 hover:text-gray-600"
+              )}
+            >
+              کاربران ({tenant.users.length})
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="p-4 pb-24 space-y-3">
+      {/* Content */}
+      <div className="p-4 pb-28">
         {error && <ErrorAlert message={error} />}
 
         {tab === "info" && (
           <div className="space-y-3">
             {/* Stats */}
             <div className="grid grid-cols-3 gap-2">
-              <div className="rounded-[5px] bg-white border border-gray-200/80 p-3 text-center">
+              <div className="rounded-[5px] bg-white border border-gray-200/80 p-3 text-center active:bg-gray-50 transition-colors">
                 <p className="text-[10px] text-gray-400 mb-1">کاربران</p>
                 <p className="text-[18px] font-bold text-gray-900">{tenant._count.users}</p>
               </div>
-              <div className="rounded-[5px] bg-white border border-gray-200/80 p-3 text-center">
+              <div className="rounded-[5px] bg-white border border-gray-200/80 p-3 text-center active:bg-gray-50 transition-colors">
                 <p className="text-[10px] text-gray-400 mb-1">سفارشات</p>
                 <p className="text-[18px] font-bold text-blue-600">{tenant._count.orders}</p>
               </div>
-              <div className="rounded-[5px] bg-white border border-gray-200/80 p-3 text-center">
+              <div className="rounded-[5px] bg-white border border-gray-200/80 p-3 text-center active:bg-gray-50 transition-colors">
                 <p className="text-[10px] text-gray-400 mb-1">مشتریان</p>
                 <p className="text-[18px] font-bold text-emerald-600">{tenant._count.customers}</p>
               </div>
@@ -359,58 +385,60 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
         )}
 
         {tab === "users" && (
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             {success && (
-              <div className="flex items-center gap-2 rounded-lg bg-green-50 p-3 text-xs text-green-600">
-                <CheckCircle2 className="h-4 w-4" />کاربر اضافه شد
+              <div className="flex items-center gap-2.5 rounded-[5px] bg-white border border-gray-100 px-4 py-3 shadow-lg shadow-black/5 animate-slide-up">
+                <CheckCircle2 className="h-4.5 w-4.5 text-emerald-500" />
+                <span className="text-[13px] font-medium text-gray-700">کاربر اضافه شد</span>
               </div>
             )}
             {tenant.users.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 rounded-[5px] bg-white border border-gray-200/80">
-                <div className="flex h-12 w-12 items-center justify-center rounded-[5px] bg-gray-50 mb-3">
-                  <Users className="h-5 w-5 text-gray-300" strokeWidth={1.5} />
+              <div className="flex flex-col items-center justify-center py-20">
+                <div className="flex h-16 w-16 items-center justify-center rounded-[5px] bg-gray-50 mb-4">
+                  <Users className="h-7 w-7 text-gray-300" strokeWidth={1.5} />
                 </div>
-                <p className="text-[13px] font-medium text-gray-400">هنوز کاربری اضافه نشده</p>
+                <p className="text-sm font-medium text-gray-400">هنوز کاربری اضافه نشده</p>
+                <p className="text-xs text-gray-300 mt-1">برای شروع، دکمه + را بزنید</p>
               </div>
             ) : (
               tenant.users.map((u) => (
-                <div key={u.id} className="rounded-[5px] bg-white border border-gray-200/80 p-3">
-                  <div className="flex items-center gap-3">
+                <div key={u.id} className="rounded-[5px] bg-white border border-gray-200/80 p-4 active:bg-gray-50/50 transition-colors">
+                  <div className="flex items-center gap-3 mb-3">
                     <div className={cn(
-                      "flex h-9 w-9 items-center justify-center rounded-[5px] text-xs font-bold",
+                      "flex h-10 w-10 items-center justify-center rounded-[5px] text-xs font-bold",
                       u.isActive ? "bg-blue-50 text-blue-600" : "bg-gray-50 text-gray-400"
                     )}>
                       {u.firstName.charAt(0)}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between">
-                        <span className="text-[12px] font-semibold text-gray-900">{u.firstName} {u.lastName}</span>
-                        <span className={cn("rounded-[3px] px-1.5 py-0.5 text-[9px] font-medium", roleColors[u.role])}>{roleLabels[u.role]}</span>
+                        <p className="text-[13px] font-semibold text-gray-900 leading-tight">{u.firstName} {u.lastName}</p>
+                        <span className={cn("rounded-[3px] px-2 py-0.5 text-[10px] font-semibold", roleColors[u.role])}>{roleLabels[u.role]}</span>
                       </div>
-                      <div className="flex items-center justify-between mt-0.5">
-                        <span className="text-[10px] text-gray-400" dir="ltr">{u.mobile}</span>
+                      <div className="flex items-center gap-3 mt-1">
+                        <span className="text-[11px] text-gray-400" dir="ltr">{u.mobile}</span>
                         {u.lastLogin && (
-                          <span className="text-[9px] text-gray-300">آخرین ورود: {new Date(u.lastLogin).toLocaleDateString("fa-IR")}</span>
+                          <span className="text-[10px] text-gray-300">آخرین ورود: {new Date(u.lastLogin).toLocaleDateString("fa-IR")}</span>
                         )}
                       </div>
                     </div>
                   </div>
-                  <div className="flex justify-end gap-2 mt-2 pt-2 border-t border-gray-100">
+                  <div className="flex justify-end gap-2 pt-2.5 border-t border-gray-100">
                     <button
                       onClick={() => openEditUser(u)}
-                      className="flex items-center gap-1 rounded-[3px] px-2 py-1 text-[10px] font-medium text-blue-600 hover:bg-blue-50 transition-colors"
+                      className="flex items-center gap-1.5 rounded-[5px] bg-gray-100/70 px-3 py-1.5 text-[11px] font-semibold text-gray-600 hover:bg-gray-200/70 transition-colors"
                     >
-                      <Pencil className="h-3 w-3" strokeWidth={1.5} />
+                      <Pencil className="h-3.5 w-3.5" strokeWidth={1.5} />
                       ویرایش
                     </button>
                     <button
                       onClick={() => handleToggleUserActive(u)}
                       className={cn(
-                        "flex items-center gap-1 rounded-[3px] px-2 py-1 text-[10px] font-medium transition-colors",
-                        u.isActive ? "text-amber-600 hover:bg-amber-50" : "text-emerald-600 hover:bg-emerald-50"
+                        "flex items-center gap-1.5 rounded-[5px] px-3 py-1.5 text-[11px] font-semibold transition-colors",
+                        u.isActive ? "bg-amber-50 text-amber-600 hover:bg-amber-100" : "bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
                       )}
                     >
-                      <Power className="h-3 w-3" strokeWidth={1.5} />
+                      <Power className="h-3.5 w-3.5" strokeWidth={1.5} />
                       {u.isActive ? "غیرفعال" : "فعال"}
                     </button>
                   </div>
@@ -421,14 +449,14 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
         )}
       </div>
 
-      {/* FAB - Add User */}
+      {/* FAB */}
       {tab === "users" && (
         <button
           onClick={() => setAddUserOpen(true)}
-          className="fixed bottom-20 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 rounded-full bg-blue-600 px-5 py-3 text-[13px] font-semibold text-white shadow-lg shadow-blue-600/25 hover:bg-blue-700 transition-colors"
+          className="fixed bottom-24 left-4 z-30 flex h-12 items-center gap-2 rounded-[5px] bg-gray-900 pl-4 pr-3 text-white shadow-lg shadow-gray-900/20 transition-all active:scale-95 hover:bg-gray-800"
         >
-          <UserPlus className="h-4 w-4" strokeWidth={1.5} />
-          افزودن کاربر
+          <span className="text-[13px] font-semibold">افزودن کاربر</span>
+          <UserPlus className="h-5 w-5" strokeWidth={2} />
         </button>
       )}
 
@@ -436,29 +464,56 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
       <BottomSheet isOpen={addUserOpen} onClose={() => setAddUserOpen(false)} title={`افزودن کاربر به ${tenant.name}`}>
         <div>
           {success && (
-            <div className="flex items-center gap-2 rounded-lg bg-green-50 p-3 text-xs text-green-600 mb-3">
-              <CheckCircle2 className="h-4 w-4" />کاربر اضافه شد
+            <div className="flex items-center gap-2.5 rounded-[5px] bg-white border border-gray-100 px-4 py-3 shadow-lg shadow-black/5 animate-slide-up mb-3">
+              <CheckCircle2 className="h-4.5 w-4.5 text-emerald-500" />
+              <span className="text-[13px] font-medium text-gray-700">کاربر اضافه شد</span>
             </div>
           )}
           <form onSubmit={handleAddUser} className="space-y-3">
-            <div className="space-y-1">
-              <label className="text-[11px] font-medium text-gray-500">شماره موبایل</label>
-              <Input value={mobile} onChange={(e) => setMobile(e.target.value)} placeholder="09..." className="h-11" dir="ltr" inputMode="numeric" />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[11px] font-medium text-gray-500">نام</label>
-              <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="نام" className="h-11" />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[11px] font-medium text-gray-500">نام خانوادگی</label>
-              <Input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="نام خانوادگی" className="h-11" />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[11px] font-medium text-gray-500">رمز عبور</label>
-              <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="حداقل ۶ کاراکتر" className="h-11" />
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-semibold text-gray-500">شماره موبایل</label>
+              <input
+                type="text"
+                value={mobile}
+                onChange={(e) => setMobile(e.target.value)}
+                placeholder="09..."
+                dir="ltr"
+                inputMode="numeric"
+                className="h-11 w-full rounded-[5px] border border-gray-200 bg-white px-3 text-[13px] text-gray-700 placeholder:text-gray-300 focus:outline-none focus:border-gray-400 focus:shadow-sm transition-all"
+              />
             </div>
             <div className="space-y-1.5">
-              <label className="text-[11px] font-medium text-gray-500">نقش</label>
+              <label className="text-[11px] font-semibold text-gray-500">نام</label>
+              <input
+                type="text"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder="نام"
+                className="h-11 w-full rounded-[5px] border border-gray-200 bg-white px-3 text-[13px] text-gray-700 placeholder:text-gray-300 focus:outline-none focus:border-gray-400 focus:shadow-sm transition-all"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-semibold text-gray-500">نام خانوادگی</label>
+              <input
+                type="text"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                placeholder="نام خانوادگی"
+                className="h-11 w-full rounded-[5px] border border-gray-200 bg-white px-3 text-[13px] text-gray-700 placeholder:text-gray-300 focus:outline-none focus:border-gray-400 focus:shadow-sm transition-all"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-semibold text-gray-500">رمز عبور</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="حداقل ۶ کاراکتر"
+                className="h-11 w-full rounded-[5px] border border-gray-200 bg-white px-3 text-[13px] text-gray-700 placeholder:text-gray-300 focus:outline-none focus:border-gray-400 focus:shadow-sm transition-all"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-semibold text-gray-500">نقش</label>
               <div className="grid grid-cols-2 gap-2">
                 {[
                   { value: "CASHIER", label: "صندوق‌دار", color: "green" },
@@ -471,13 +526,13 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
                     type="button"
                     onClick={() => setRole(r.value)}
                     className={cn(
-                      "rounded-[5px] border px-3 py-2.5 text-[12px] font-medium transition-colors",
+                      "rounded-[5px] border px-3 py-2.5 text-[12px] font-semibold transition-all duration-200",
                       role === r.value
-                        ? r.color === "green" ? "border-green-500 bg-green-50 text-green-700"
-                        : r.color === "blue" ? "border-blue-500 bg-blue-50 text-blue-700"
-                        : r.color === "red" ? "border-red-500 bg-red-50 text-red-700"
-                        : "border-violet-500 bg-violet-50 text-violet-700"
-                        : "border-gray-200 bg-white text-gray-500"
+                        ? r.color === "green" ? "border-green-500 bg-green-50 text-green-700 shadow-sm"
+                        : r.color === "blue" ? "border-blue-500 bg-blue-50 text-blue-700 shadow-sm"
+                        : r.color === "red" ? "border-red-500 bg-red-50 text-red-700 shadow-sm"
+                        : "border-violet-500 bg-violet-50 text-violet-700 shadow-sm"
+                        : "border-gray-200 bg-white text-gray-500 hover:border-gray-300"
                     )}
                   >
                     {r.label}
@@ -485,10 +540,18 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
                 ))}
               </div>
             </div>
-            <Button type="submit" isLoading={creating} className="w-full h-11">
-              <UserPlus className="h-4 w-4" strokeWidth={1.5} />
+            <button
+              type="submit"
+              disabled={creating}
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-[5px] bg-gray-900 text-[13px] font-semibold text-white shadow-sm transition-all active:scale-[0.98] hover:bg-gray-800 disabled:opacity-50"
+            >
+              {creating ? (
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+              ) : (
+                <UserPlus className="h-4 w-4" strokeWidth={1.5} />
+              )}
               افزودن کاربر
-            </Button>
+            </button>
           </form>
         </div>
       </BottomSheet>
@@ -498,25 +561,43 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
         {editingUser && (
           <div>
             {editUserSuccess && (
-              <div className="flex items-center gap-2 rounded-lg bg-green-50 p-3 text-xs text-green-600 mb-3">
-                <CheckCircle2 className="h-4 w-4" />کاربر بروزرسانی شد
+              <div className="flex items-center gap-2.5 rounded-[5px] bg-white border border-gray-100 px-4 py-3 shadow-lg shadow-black/5 animate-slide-up mb-3">
+                <CheckCircle2 className="h-4.5 w-4.5 text-emerald-500" />
+                <span className="text-[13px] font-medium text-gray-700">کاربر بروزرسانی شد</span>
               </div>
             )}
             <form onSubmit={handleEditUser} className="space-y-3">
-              <div className="space-y-1">
-                <label className="text-[11px] font-medium text-gray-500">شماره موبایل</label>
-                <Input value={editUserMobile} onChange={(e) => setEditUserMobile(e.target.value)} className="h-11" dir="ltr" inputMode="numeric" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[11px] font-medium text-gray-500">نام</label>
-                <Input value={editUserFirstName} onChange={(e) => setEditUserFirstName(e.target.value)} className="h-11" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[11px] font-medium text-gray-500">نام خانوادگی</label>
-                <Input value={editUserLastName} onChange={(e) => setEditUserLastName(e.target.value)} className="h-11" />
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-semibold text-gray-500">شماره موبایل</label>
+                <input
+                  type="text"
+                  value={editUserMobile}
+                  onChange={(e) => setEditUserMobile(e.target.value)}
+                  dir="ltr"
+                  inputMode="numeric"
+                  className="h-11 w-full rounded-[5px] border border-gray-200 bg-white px-3 text-[13px] text-gray-700 placeholder:text-gray-300 focus:outline-none focus:border-gray-400 focus:shadow-sm transition-all"
+                />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[11px] font-medium text-gray-500">نقش</label>
+                <label className="text-[11px] font-semibold text-gray-500">نام</label>
+                <input
+                  type="text"
+                  value={editUserFirstName}
+                  onChange={(e) => setEditUserFirstName(e.target.value)}
+                  className="h-11 w-full rounded-[5px] border border-gray-200 bg-white px-3 text-[13px] text-gray-700 placeholder:text-gray-300 focus:outline-none focus:border-gray-400 focus:shadow-sm transition-all"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-semibold text-gray-500">نام خانوادگی</label>
+                <input
+                  type="text"
+                  value={editUserLastName}
+                  onChange={(e) => setEditUserLastName(e.target.value)}
+                  className="h-11 w-full rounded-[5px] border border-gray-200 bg-white px-3 text-[13px] text-gray-700 placeholder:text-gray-300 focus:outline-none focus:border-gray-400 focus:shadow-sm transition-all"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-semibold text-gray-500">نقش</label>
                 <div className="grid grid-cols-2 gap-2">
                   {[
                     { value: "CASHIER", label: "صندوق‌دار", color: "green" },
@@ -529,13 +610,13 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
                       type="button"
                       onClick={() => setEditUserRole(r.value)}
                       className={cn(
-                        "rounded-[5px] border px-3 py-2.5 text-[12px] font-medium transition-colors",
+                        "rounded-[5px] border px-3 py-2.5 text-[12px] font-semibold transition-all duration-200",
                         editUserRole === r.value
-                          ? r.color === "green" ? "border-green-500 bg-green-50 text-green-700"
-                          : r.color === "blue" ? "border-blue-500 bg-blue-50 text-blue-700"
-                          : r.color === "red" ? "border-red-500 bg-red-50 text-red-700"
-                          : "border-violet-500 bg-violet-50 text-violet-700"
-                          : "border-gray-200 bg-white text-gray-500"
+                          ? r.color === "green" ? "border-green-500 bg-green-50 text-green-700 shadow-sm"
+                          : r.color === "blue" ? "border-blue-500 bg-blue-50 text-blue-700 shadow-sm"
+                          : r.color === "red" ? "border-red-500 bg-red-50 text-red-700 shadow-sm"
+                          : "border-violet-500 bg-violet-50 text-violet-700 shadow-sm"
+                          : "border-gray-200 bg-white text-gray-500 hover:border-gray-300"
                       )}
                     >
                       {r.label}
@@ -543,14 +624,28 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
                   ))}
                 </div>
               </div>
-              <div className="space-y-1">
-                <label className="text-[11px] font-medium text-gray-500">رمز عبور جدید (اختیاری)</label>
-                <Input type="password" value={editUserPassword} onChange={(e) => setEditUserPassword(e.target.value)} placeholder="برای تغییر رمز وارد کنید" className="h-11" />
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-semibold text-gray-500">رمز عبور جدید (اختیاری)</label>
+                <input
+                  type="password"
+                  value={editUserPassword}
+                  onChange={(e) => setEditUserPassword(e.target.value)}
+                  placeholder="برای تغییر رمز وارد کنید"
+                  className="h-11 w-full rounded-[5px] border border-gray-200 bg-white px-3 text-[13px] text-gray-700 placeholder:text-gray-300 focus:outline-none focus:border-gray-400 focus:shadow-sm transition-all"
+                />
               </div>
-              <Button type="submit" isLoading={editUserSaving} className="w-full h-11">
-                <Pencil className="h-4 w-4" strokeWidth={1.5} />
+              <button
+                type="submit"
+                disabled={editUserSaving}
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-[5px] bg-gray-900 text-[13px] font-semibold text-white shadow-sm transition-all active:scale-[0.98] hover:bg-gray-800 disabled:opacity-50"
+              >
+                {editUserSaving ? (
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+                ) : (
+                  <Pencil className="h-4 w-4" strokeWidth={1.5} />
+                )}
                 ذخیره تغییرات
-              </Button>
+              </button>
             </form>
           </div>
         )}
