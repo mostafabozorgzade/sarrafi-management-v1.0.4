@@ -20,15 +20,21 @@ export async function POST(request: NextRequest) {
   const user = await getAuthUser(request);
   if (!user) return unauthorized();
 
-  const tenantId = user.role === "SUPER_ADMIN" ? (await request.json().then((b) => b.tenantId).catch(() => null)) || user.tenantId : user.tenantId;
-  if (!tenantId) return safeJson({ error: "tenant required" }, { status: 400 });
+  try {
+    const body = await request.json();
+    const { name, type, tenantId: bodyTenantId } = body;
 
-  const body = await request.json();
-  const { name, type } = body;
+    const tenantId = user.role === "SUPER_ADMIN" ? (bodyTenantId || user.tenantId) : user.tenantId;
+    if (!tenantId) return safeJson({ error: "tenant required" }, { status: 400 });
 
-  const register = await prisma.cashRegister.create({
-    data: { tenantId, name, type },
-  });
+    const register = await prisma.cashRegister.create({
+      data: { tenantId, name, type },
+    });
 
-  return safeJson(register);
+    return safeJson(register);
+  } catch (err) {
+    console.error("Cash register creation error:", err);
+    const message = err instanceof Error ? err.message : "خطا در ایجاد صندوق";
+    return safeJson({ error: message }, { status: 500 });
+  }
 }

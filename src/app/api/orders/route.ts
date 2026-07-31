@@ -49,16 +49,16 @@ export async function POST(request: NextRequest) {
   const user = await getAuthUser(request);
   if (!user) return unauthorized();
 
-  const tenantId = user.role === "SUPER_ADMIN" ? (await request.json().then((b) => b.tenantId).catch(() => null)) || user.tenantId : user.tenantId;
-  if (!tenantId) return safeJson({ error: "tenant required" }, { status: 400 });
-
   try {
     const body = await request.json();
     const {
       customerId, currencyId, orderType, amount, buyRate, sellRate, marketRate, fee, transferCost,
       recipientName, recipientAccount, recipientMethod,
-      destinationCard, destinationSheba, description, status,
+      destinationCard, destinationSheba, description, status, tenantId: bodyTenantId,
     } = body;
+
+    const tenantId = user.role === "SUPER_ADMIN" ? (bodyTenantId || user.tenantId) : user.tenantId;
+    if (!tenantId) return safeJson({ error: "tenant required" }, { status: 400 });
 
     if (!customerId || !currencyId || !orderType || !amount) {
       return safeJson({ error: "فیلدهای الزامی را پر کنید" }, { status: 400 });

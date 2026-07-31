@@ -22,26 +22,32 @@ export async function POST(request: NextRequest) {
   const user = await getAuthUser(request);
   if (!user) return unauthorized();
 
-  const tenantId = user.role === "SUPER_ADMIN" ? (await request.json().then((b) => b.tenantId).catch(() => null)) || user.tenantId : user.tenantId;
-  if (!tenantId) return safeJson({ error: "tenant required" }, { status: 400 });
+  try {
+    const body = await request.json();
+    const { category, amount, description, tenantId: bodyTenantId } = body;
 
-  const body = await request.json();
-  const { category, amount, description } = body;
+    const tenantId = user.role === "SUPER_ADMIN" ? (bodyTenantId || user.tenantId) : user.tenantId;
+    if (!tenantId) return safeJson({ error: "tenant required" }, { status: 400 });
 
-  if (!category || !amount) {
-    return safeJson({ error: "فیلدهای الزامی را پر کنید" }, { status: 400 });
+    if (!category || !amount) {
+      return safeJson({ error: "فیلدهای الزامی را پر کنید" }, { status: 400 });
+    }
+
+    const expense = await prisma.expense.create({
+      data: {
+        tenantId,
+        userId: user.userId,
+        category,
+        amount: BigInt(Number(amount)),
+        description: description || null,
+      },
+      include: { user: { select: { firstName: true, lastName: true } } },
+    });
+
+    return safeJson(expense);
+  } catch (err) {
+    console.error("Expense creation error:", err);
+    const message = err instanceof Error ? err.message : "خطا در ایجاد هزینه";
+    return safeJson({ error: message }, { status: 500 });
   }
-
-  const expense = await prisma.expense.create({
-    data: {
-      tenantId,
-      userId: user.userId,
-      category,
-      amount: BigInt(Number(amount)),
-      description: description || null,
-    },
-    include: { user: { select: { firstName: true, lastName: true } } },
-  });
-
-  return safeJson(expense);
 }

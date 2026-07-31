@@ -22,30 +22,36 @@ export async function POST(request: NextRequest) {
   if (!user) return unauthorized();
   if (user.role !== "SUPER_ADMIN" && user.role !== "OWNER" && user.role !== "MANAGER") return safeJson({ error: "دسترسی ندارید" }, { status: 403 });
 
-  const tenantId = user.role === "SUPER_ADMIN" ? (await request.json().then((b) => b.tenantId).catch(() => null)) || user.tenantId : user.tenantId;
-  if (!tenantId) return safeJson({ error: "tenant required" }, { status: 400 });
+  try {
+    const body = await request.json();
+    const { mobile, firstName, lastName, role, password, tenantId: bodyTenantId } = body;
 
-  const body = await request.json();
-  const { mobile, firstName, lastName, role, password } = body;
+    const tenantId = user.role === "SUPER_ADMIN" ? (bodyTenantId || user.tenantId) : user.tenantId;
+    if (!tenantId) return safeJson({ error: "tenant required" }, { status: 400 });
 
-  if (!mobile || !firstName || !lastName || !password) {
-    return safeJson({ error: "فیلدهای الزامی را پر کنید" }, { status: 400 });
+    if (!mobile || !firstName || !lastName || !password) {
+      return safeJson({ error: "فیلدهای الزامی را پر کنید" }, { status: 400 });
+    }
+
+    const bcrypt = await import("bcryptjs");
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    const newUser = await prisma.user.create({
+      data: {
+        tenantId,
+        mobile,
+        firstName,
+        lastName,
+        password: hashedPassword,
+        role: role || "CASHIER",
+      },
+      select: { id: true, mobile: true, firstName: true, lastName: true, role: true, isActive: true },
+    });
+
+    return safeJson(newUser);
+  } catch (err) {
+    console.error("User creation error:", err);
+    const message = err instanceof Error ? err.message : "خطا در ایجاد کاربر";
+    return safeJson({ error: message }, { status: 500 });
   }
-
-  const bcrypt = await import("bcryptjs");
-  const hashedPassword = await bcrypt.hash(password, 12);
-
-  const newUser = await prisma.user.create({
-    data: {
-      tenantId,
-      mobile,
-      firstName,
-      lastName,
-      password: hashedPassword,
-      role: role || "CASHIER",
-    },
-    select: { id: true, mobile: true, firstName: true, lastName: true, role: true, isActive: true },
-  });
-
-  return safeJson(newUser);
 }
