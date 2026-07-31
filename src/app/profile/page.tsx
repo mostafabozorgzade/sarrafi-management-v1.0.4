@@ -4,13 +4,12 @@ import { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
-import { Settings, LogOut, ChevronLeft, User, Shield, Phone, Pencil, CheckCircle2 } from "lucide-react";
+import { Settings, LogOut, ChevronLeft, User, Shield, Phone, Pencil, CheckCircle2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ErrorAlert } from "@/components/ui/error-alert";
 
 const roleLabels: Record<string, string> = {
   OWNER: "مالک",
@@ -31,42 +30,40 @@ export default function ProfilePage() {
   const [editOpen, setEditOpen] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const showToast = (type: "success" | "error", message: string) => {
+    setToast({ type, message });
+    setTimeout(() => setToast(null), 2500);
+  };
 
   const openEdit = () => {
     if (!user) return;
     setFirstName(user.firstName);
     setLastName(user.lastName);
-    setCurrentPassword("");
     setNewPassword("");
-    setError(null);
-    setSuccess(false);
+    setToast(null);
     setEditOpen(true);
     window.history.pushState({}, "");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    if (!firstName.trim()) { setError("نام الزامی است"); return; }
-    if (!lastName.trim()) { setError("نام خانوادگی الزامی است"); return; }
-    if (newPassword && !currentPassword) { setError("برای تغییر رمز، رمز فعلی را وارد کنید"); return; }
+    if (!firstName.trim()) { showToast("error", "نام الزامی است"); return; }
+    if (!lastName.trim()) { showToast("error", "نام خانوادگی الزامی است"); return; }
     setSubmitting(true);
     try {
       const payload: Record<string, string> = { firstName: firstName.trim(), lastName: lastName.trim() };
-      if (newPassword) {
-        payload.currentPassword = currentPassword;
-        payload.newPassword = newPassword;
+      if (newPassword.trim()) {
+        payload.newPassword = newPassword.trim();
       }
       await api.put("/api/auth/profile", payload);
-      setSuccess(true);
       await refreshUser();
-      setTimeout(() => { setEditOpen(false); setSuccess(false); }, 1200);
-    } catch (err) { setError(err instanceof Error ? err.message : "خطا"); }
+      showToast("success", "پروفایل بروزرسانی شد");
+      setTimeout(() => setEditOpen(false), 1200);
+    } catch (err) { showToast("error", err instanceof Error ? err.message : "خطا"); }
     setSubmitting(false);
   };
 
@@ -95,6 +92,19 @@ export default function ProfilePage() {
 
   return (
     <div className="px-4 py-4 space-y-4">
+      {toast && toast.type === "success" && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-2.5 rounded-[5px] bg-white border border-gray-100 px-4 py-3 shadow-lg shadow-black/5 animate-slide-up">
+          <CheckCircle2 className="h-4.5 w-4.5 text-emerald-500" />
+          <span className="text-[13px] font-medium text-gray-700">{toast.message}</span>
+        </div>
+      )}
+      {toast && toast.type === "error" && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-2.5 rounded-[5px] bg-white border border-gray-100 px-4 py-3 shadow-lg shadow-black/5 animate-slide-up max-w-[90vw]">
+          <AlertCircle className="h-4.5 w-4.5 text-red-500 flex-shrink-0" />
+          <span className="text-[13px] font-medium text-gray-700">{toast.message}</span>
+        </div>
+      )}
+
       <div className="flex flex-col items-center gap-3 rounded-xl border border-gray-100 bg-white p-4">
         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-50 text-xl font-bold text-blue-600">
           {user.firstName.charAt(0)}
@@ -170,14 +180,6 @@ export default function ProfilePage() {
 
       <BottomSheet isOpen={editOpen} onClose={() => setEditOpen(false)} title="ویرایش پروفایل">
         <form onSubmit={handleSubmit} className="space-y-4">
-          {error && <ErrorAlert message={error} />}
-          {success && (
-            <div className="flex items-center gap-2 rounded-lg bg-green-50 p-3 text-xs text-green-600">
-              <CheckCircle2 className="h-4 w-4" />
-              پروفایل بروزرسانی شد
-            </div>
-          )}
-
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-gray-500">نام <span className="text-red-400">*</span></label>
             <Input
@@ -200,17 +202,6 @@ export default function ProfilePage() {
 
           <div className="border-t border-gray-100 pt-4">
             <p className="text-[11px] font-medium text-gray-400 mb-3">تغییر رمز عبور (اختیاری)</p>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-gray-500">رمز عبور فعلی</label>
-            <Input
-              type="password"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              placeholder="رمز عبور فعلی"
-              className="h-12 rounded-[5px]"
-            />
           </div>
 
           <div className="space-y-1.5">

@@ -9,7 +9,7 @@ export async function PUT(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { firstName, lastName, currentPassword, newPassword } = body;
+    const { firstName, lastName, newPassword } = body;
 
     if (!firstName || !lastName) {
       return safeJson({ error: "نام و نام خانوادگی الزامی است" }, { status: 400 });
@@ -21,25 +21,7 @@ export async function PUT(request: NextRequest) {
     };
 
     if (newPassword) {
-      if (!currentPassword) {
-        return safeJson({ error: "رمز عبور فعلی الزامی است" }, { status: 400 });
-      }
-
-      const currentUser = await prisma.user.findUnique({
-        where: { id: user.userId },
-        select: { password: true },
-      });
-
-      if (!currentUser) {
-        return safeJson({ error: "کاربر یافت نشد" }, { status: 404 });
-      }
-
       const bcrypt = await import("bcryptjs");
-      const isValid = await bcrypt.compare(currentPassword, currentUser.password);
-      if (!isValid) {
-        return safeJson({ error: "رمز عبور فعلی اشتباه است" }, { status: 400 });
-      }
-
       data.password = await bcrypt.hash(newPassword, 12);
     }
 
