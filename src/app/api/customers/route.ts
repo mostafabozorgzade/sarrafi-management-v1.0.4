@@ -82,15 +82,19 @@ export async function POST(request: NextRequest) {
     const tenantId = user.role === "SUPER_ADMIN" ? (bodyTenantId || user.tenantId) : user.tenantId;
     if (!tenantId) return safeJson({ error: "tenant required" }, { status: 400 });
 
-    if (!name || !phone) {
-      return safeJson({ error: "نام و شماره تماس الزامی است" }, { status: 400 });
+    if (!name) {
+      return safeJson({ error: "نام الزامی است" }, { status: 400 });
+    }
+
+    if (phone && !/^09[0-9]{9}$/.test(phone)) {
+      return safeJson({ error: "شماره تماس باید ۱۱ رقم و با ۰۹ شروع شود" }, { status: 400 });
     }
 
     const customer = await prisma.customer.create({
       data: {
-        tenantId,
+        tenant: { connect: { id: tenantId } },
         name,
-        phone,
+        phone: phone || "",
         address: address || null,
         pakAccount: pakAccount || null,
       },

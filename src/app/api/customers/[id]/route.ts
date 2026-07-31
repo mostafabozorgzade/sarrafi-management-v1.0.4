@@ -40,8 +40,12 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const body = await request.json();
     const { name, phone, address, pakAccount } = body;
 
-    if (!name || !phone) {
-      return safeJson({ error: "نام و شماره تماس الزامی است" }, { status: 400 });
+    if (!name) {
+      return safeJson({ error: "نام الزامی است" }, { status: 400 });
+    }
+
+    if (phone && !/^09[0-9]{9}$/.test(phone)) {
+      return safeJson({ error: "شماره تماس باید ۱۱ رقم و با ۰۹ شروع شود" }, { status: 400 });
     }
 
     const tenantWhere = user.role === "SUPER_ADMIN" ? {} : { tenantId: user.tenantId };
@@ -55,7 +59,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       where: { id },
       data: {
         name,
-        phone,
+        phone: phone || "",
         address: address || null,
         pakAccount: pakAccount || null,
       },

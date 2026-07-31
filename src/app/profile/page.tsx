@@ -18,6 +18,9 @@ import {
   Lock,
   BarChart3,
   Loader2,
+  HelpCircle,
+  FileText,
+  Headphones,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -46,6 +49,9 @@ export default function ProfilePage() {
   const { user, isLoading, logout, refreshUser } = useAuth();
   const [editOpen, setEditOpen] = useState(false);
   const [settingsLoading, setSettingsLoading] = useState(false);
+  const [faqOpen, setFaqOpen] = useState(false);
+  const [termsOpen, setTermsOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [mobile, setMobile] = useState("");
@@ -249,6 +255,51 @@ export default function ProfilePage() {
           </div>
         )}
 
+        {/* Support & Info Links */}
+        <div className="rounded-[5px] bg-white border border-gray-200/80">
+          <button
+            onClick={() => { setFaqOpen(true); window.history.pushState({}, ""); }}
+            className="flex items-center gap-3 p-4 active:bg-gray-50 transition-colors w-full text-right border-b border-gray-100"
+          >
+            <div className="flex h-10 w-10 items-center justify-center rounded-[5px] bg-blue-50">
+              <HelpCircle className="h-[18px] w-[18px] text-blue-500" strokeWidth={1.5} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-semibold text-gray-900">سوالات متداول</p>
+              <p className="text-[11px] text-gray-400 mt-0.5">پاسخ سوالات رایج</p>
+            </div>
+            <ChevronLeft className="h-5 w-5 flex-shrink-0 text-gray-300" strokeWidth={1.5} />
+          </button>
+
+          <button
+            onClick={() => { setTermsOpen(true); window.history.pushState({}, ""); }}
+            className="flex items-center gap-3 p-4 active:bg-gray-50 transition-colors w-full text-right border-b border-gray-100"
+          >
+            <div className="flex h-10 w-10 items-center justify-center rounded-[5px] bg-amber-50">
+              <FileText className="h-[18px] w-[18px] text-amber-500" strokeWidth={1.5} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-semibold text-gray-900">قوانین و مقررات</p>
+              <p className="text-[11px] text-gray-400 mt-0.5">شرایط استفاده از سامانه</p>
+            </div>
+            <ChevronLeft className="h-5 w-5 flex-shrink-0 text-gray-300" strokeWidth={1.5} />
+          </button>
+
+          <button
+            onClick={() => { setSupportOpen(true); window.history.pushState({}, ""); }}
+            className="flex items-center gap-3 p-4 active:bg-gray-50 transition-colors w-full text-right"
+          >
+            <div className="flex h-10 w-10 items-center justify-center rounded-[5px] bg-green-50">
+              <Headphones className="h-[18px] w-[18px] text-green-500" strokeWidth={1.5} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-semibold text-gray-900">پشتیبانی</p>
+              <p className="text-[11px] text-gray-400 mt-0.5">ارتباط با پشتیبانی</p>
+            </div>
+            <ChevronLeft className="h-5 w-5 flex-shrink-0 text-gray-300" strokeWidth={1.5} />
+          </button>
+        </div>
+
         {/* Logout */}
         <button
           onClick={logout}
@@ -312,6 +363,113 @@ export default function ProfilePage() {
             ذخیره تغییرات
           </Button>
         </form>
+      </BottomSheet>
+
+      {/* FAQ BottomSheet */}
+      <BottomSheet isOpen={faqOpen} onClose={() => setFaqOpen(false)} title="سوالات متداول" className="max-h-[85vh]">
+        <div className="space-y-4">
+          {[
+            { q: "چگونه سفارش تبدیل ارز ثبت کنم؟", a: "از صفحه سفارشات، دکمه ثبت سفارش را بزنید، نوع تبدیل (ایران به پاکستان یا بالعکس) و سپس نوع معامله را انتخاب کنید. اطلاعات مشتری، مبلغ و نرخ را وارد کرده و ثبت کنید." },
+            { q: "تفاوت خرید روپیه و فروش روپیه چیست؟", a: "خرید روپیه یعنی شما روپیه از مشتری می‌خرید (پاکستان→ایران)، فروش روپیه یعنی روپیه به مشتری می‌فروشید (ایران→پاکستان)." },
+            { q: "سود معاملات چگونه محاسبه می‌شود؟", a: "سود بر اساس تفاوت نرخ بازار و نرخ معامله محاسبه می‌شود. نرخ بازار در لحظه ثبت سفارش ذخیره شده و سود نهایی در گزارشات قابل مشاهده است." },
+            { q: "آیا امکان لغو سفارش وجود دارد؟", a: "بله، سفارشات در حال انجام قابل لغو هستند. از صفحه سفارشات، سفارش مورد نظر را انتخاب و وضعیت آن را به لغو شده تغییر دهید." },
+            { q: "نرخ ارز را چگونه بروزرسانی کنم؟", a: "از بخش نرخ ارز در صفحه اصلی یا تنظیمات، روی ویرایش کلیک کرده و نرخ بازار، خرید و فروش را وارد کنید." },
+            { q: "آیا امکان مشاهده گزارش سود وجود دارد؟", a: "بله، از صفحه گزارشات می‌توانید سود خرید، سود فروش و سود نهایی را به تفکیک امروز، این هفته، این ماه و کل مشاهده کنید." },
+          ].map((item, i) => (
+            <div key={i} className="rounded-[5px] bg-gray-50 p-3.5">
+              <p className="text-[12px] font-semibold text-gray-900 mb-1.5">{item.q}</p>
+              <p className="text-[11px] text-gray-500 leading-relaxed">{item.a}</p>
+            </div>
+          ))}
+        </div>
+      </BottomSheet>
+
+      {/* Terms BottomSheet */}
+      <BottomSheet isOpen={termsOpen} onClose={() => setTermsOpen(false)} title="قوانین و مقررات" className="max-h-[85vh]">
+        <div className="space-y-4">
+          <div className="rounded-[5px] bg-gray-50 p-3.5">
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">قوانین عمومی</p>
+            <p className="text-[11px] text-gray-600 leading-relaxed">
+              استفاده از سامانه صرافی سرفی به معنای پذیرش قوانین زیر است. کاربران موظف به رعایت تمامی مقررات ذکر شده بوده و هرگونه سوءاستفاده پیگرد قانونی دارد.
+            </p>
+          </div>
+          <div className="rounded-[5px] bg-gray-50 p-3.5">
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">حریم خصوصی</p>
+            <p className="text-[11px] text-gray-600 leading-relaxed">
+              اطلاعات شخصی کاربران، مشتریان و تراکنش‌ها کاملاً محرمانه بوده و در اختیار اشخاص ثالث قرار نخواهد گرفت. تمامی داده‌ها رمزنگاری شده و در سرور امن نگهداری می‌شوند.
+            </p>
+          </div>
+          <div className="rounded-[5px] bg-gray-50 p-3.5">
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">مسئولیت‌ها</p>
+            <p className="text-[11px] text-gray-600 leading-relaxed">
+              هر کاربر مسئول حفظ امنیت حساب کاربری خود (نام کاربری و رمز عبور) است. صندوقداران فقط امکان مدیریت سفارشات و مشتریان را دارند و امکان تغییر تنظیمات برای آن‌ها غیرفعال است.
+            </p>
+          </div>
+          <div className="rounded-[5px] bg-gray-50 p-3.5">
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">قوانین مالی</p>
+            <p className="text-[11px] text-gray-600 leading-relaxed">
+              تمامی تراکنش‌ها بر اساس نرخ لحظه‌ای ارز ثبت می‌شوند. سود حاصل از معاملات به صورت خودکار محاسبه شده و در بخش گزارشات قابل مشاهده است. اطلاعات مالی فقط برای مدیران و مالک قابل رویت است.
+            </p>
+          </div>
+          <div className="rounded-[5px] bg-gray-50 p-3.5">
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">تغییرات</p>
+            <p className="text-[11px] text-gray-600 leading-relaxed">
+              مدیریت سامانه حق تغییر در قوانین، نرخ‌ها و شرایط استفاده را در هر زمان برای خود محفوظ می‌دارد. کاربران موظف به بررسی دوره‌ای تغییرات هستند.
+            </p>
+          </div>
+        </div>
+      </BottomSheet>
+
+      {/* Support BottomSheet */}
+      <BottomSheet isOpen={supportOpen} onClose={() => setSupportOpen(false)} title="پشتیبانی" className="max-h-[85vh]">
+        <div className="space-y-4">
+          <div className="rounded-[5px] bg-green-50 p-4 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 mx-auto mb-3">
+              <Headphones className="h-6 w-6 text-green-600" strokeWidth={1.5} />
+            </div>
+            <p className="text-[13px] font-semibold text-gray-900">پشتیبانی ۲۴ ساعته</p>
+            <p className="text-[11px] text-gray-500 mt-1">برای رفع مشکل با ما در ارتباط باشید</p>
+          </div>
+
+          <div className="rounded-[5px] bg-white border border-gray-200/80">
+            <a href="tel:+989224013811" className="flex items-center gap-3 p-4 active:bg-gray-50 transition-colors border-b border-gray-100">
+              <div className="flex h-10 w-10 items-center justify-center rounded-[5px] bg-blue-50">
+                <Phone className="h-[18px] w-[18px] text-blue-500" strokeWidth={1.5} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] font-semibold text-gray-900">تماس تلفنی</p>
+                <p className="text-[11px] text-gray-400 mt-0.5" dir="ltr">09224013811</p>
+              </div>
+              <ChevronLeft className="h-5 w-5 flex-shrink-0 text-gray-300" strokeWidth={1.5} />
+            </a>
+
+            <a href="https://wa.me/989224013811" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-4 active:bg-gray-50 transition-colors border-b border-gray-100">
+              <div className="flex h-10 w-10 items-center justify-center rounded-[5px] bg-green-50">
+                <svg className="h-[18px] w-[18px] text-green-500" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] font-semibold text-gray-900">واتساپ</p>
+                <p className="text-[11px] text-gray-400 mt-0.5" dir="ltr">09224013811</p>
+              </div>
+              <ChevronLeft className="h-5 w-5 flex-shrink-0 text-gray-300" strokeWidth={1.5} />
+            </a>
+
+            <a href="mailto:support@sarrafi.com" className="flex items-center gap-3 p-4 active:bg-gray-50 transition-colors">
+              <div className="flex h-10 w-10 items-center justify-center rounded-[5px] bg-violet-50">
+                <svg className="h-[18px] w-[18px] text-violet-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] font-semibold text-gray-900">ایمیل</p>
+                <p className="text-[11px] text-gray-400 mt-0.5" dir="ltr">support@sarrafi.com</p>
+              </div>
+              <ChevronLeft className="h-5 w-5 flex-shrink-0 text-gray-300" strokeWidth={1.5} />
+            </a>
+          </div>
+        </div>
       </BottomSheet>
     </main>
   );

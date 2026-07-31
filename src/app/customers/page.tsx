@@ -200,7 +200,7 @@ export default function CustomersPage() {
   const openEditSheet = (customer: CustomerDetail | Customer) => {
     setDetailSheetOpen(false);
     setFullName(customer.name);
-    setPhone(customer.phone);
+    setPhone(customer.phone || "");
     setAddress(customer.address || "");
     setError(null);
     setEditSheetOpen(true);
@@ -217,8 +217,7 @@ export default function CustomersPage() {
     e.preventDefault();
     setError(null);
     if (!fullName.trim()) { setError("نام و نام خانوادگی الزامی است"); return; }
-    if (!phone.trim()) { setError("شماره موبایل الزامی است"); return; }
-    if (!/^[0-9]+$/.test(phone.trim())) { setError("فقط اعداد انگلیسی مجاز است"); return; }
+    if (phone.trim() && !/^09[0-9]{9}$/.test(phone.trim())) { setError("شماره تماس باید ۱۱ رقم و با ۰۹ شروع شود"); return; }
     setSubmitting(true);
     try {
       const newCustomer = await api.post("/api/customers", { name: fullName.trim(), phone: phone.trim(), address: address.trim() || null });
@@ -234,8 +233,7 @@ export default function CustomersPage() {
     e.preventDefault();
     setError(null);
     if (!fullName.trim()) { setError("نام و نام خانوادگی الزامی است"); return; }
-    if (!phone.trim()) { setError("شماره موبایل الزامی است"); return; }
-    if (!/^[0-9]+$/.test(phone.trim())) { setError("فقط اعداد انگلیسی مجاز است"); return; }
+    if (phone.trim() && !/^09[0-9]{9}$/.test(phone.trim())) { setError("شماره تماس باید ۱۱ رقم و با ۰۹ شروع شود"); return; }
     if (!selectedCustomer) return;
     setSubmitting(true);
     try {
@@ -363,10 +361,12 @@ export default function CustomersPage() {
                         )}
                       </div>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <div className="flex items-center gap-1">
-                          <Phone className="h-3 w-3 text-gray-300" strokeWidth={1.5} />
-                          <span className="text-[11px] text-gray-400 tabular-nums" dir="ltr">{c.phone}</span>
-                        </div>
+                        {c.phone && (
+                          <div className="flex items-center gap-1">
+                            <Phone className="h-3 w-3 text-gray-300" strokeWidth={1.5} />
+                            <span className="text-[11px] text-gray-400 tabular-nums" dir="ltr">{c.phone}</span>
+                          </div>
+                        )}
                         {user?.role === "SUPER_ADMIN" && c.tenant && (
                           <div className="flex items-center gap-1 rounded-[3px] bg-blue-50 px-1.5 py-0.5">
                             <span className="text-[9px] font-semibold text-blue-600">{c.tenant.name}</span>
@@ -433,7 +433,7 @@ export default function CustomersPage() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-gray-500">شماره موبایل <span className="text-red-400">*</span></label>
+            <label className="text-xs font-medium text-gray-500">شماره موبایل</label>
             <Input
               value={phone}
               onChange={(e) => setPhone(e.target.value.replace(/[^0-9]/g, ""))}
@@ -475,7 +475,7 @@ export default function CustomersPage() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-gray-500">شماره موبایل <span className="text-red-400">*</span></label>
+            <label className="text-xs font-medium text-gray-500">شماره موبایل</label>
             <Input
               value={phone}
               onChange={(e) => setPhone(e.target.value.replace(/[^0-9]/g, ""))}
@@ -549,10 +549,12 @@ export default function CustomersPage() {
               </div>
               <div className="flex-1">
                 <p className="text-[15px] font-bold text-gray-900">{selectedCustomer.name}</p>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <Phone className="h-3.5 w-3.5 text-gray-400" strokeWidth={1.5} />
-                  <span className="text-[12px] text-gray-500 tabular-nums" dir="ltr">{selectedCustomer.phone}</span>
-                </div>
+                {selectedCustomer.phone && (
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <Phone className="h-3.5 w-3.5 text-gray-400" strokeWidth={1.5} />
+                    <span className="text-[12px] text-gray-500 tabular-nums" dir="ltr">{selectedCustomer.phone}</span>
+                  </div>
+                )}
                 {selectedCustomer.address && (
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <MapPin className="h-3.5 w-3.5 text-gray-400" strokeWidth={1.5} />
