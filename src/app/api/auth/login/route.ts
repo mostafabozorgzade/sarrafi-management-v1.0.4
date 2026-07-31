@@ -33,6 +33,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (user.tenant && !user.tenant.isActive) {
+      return NextResponse.json(
+        { error: "TENANT_INACTIVE" },
+        { status: 403 }
+      );
+    }
+
     const isValid = await verifyPassword(password, user.password);
     if (!isValid) {
       return NextResponse.json(

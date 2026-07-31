@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import { TenantInactiveModal } from "@/components/tenant-inactive-modal";
 
 interface User {
   id: string;
@@ -26,6 +27,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showInactiveModal, setShowInactiveModal] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -46,6 +48,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const data = await res.json();
         setUser(data.user);
         setIsLoading(false);
+
+        if (data.user.isActive === false) {
+          setShowInactiveModal(true);
+        }
       } else {
         await forceLogout();
       }
@@ -69,6 +75,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await res.json();
 
       if (!res.ok) {
+        if (data.error === "TENANT_INACTIVE") {
+          setShowInactiveModal(true);
+          return { success: false, error: "صرافی غیرفعال است" };
+        }
         return { success: false, error: data.error || "خطا در ورود" };
       }
 
@@ -89,6 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <AuthContext.Provider value={{ user, isLoading, login, logout, refreshUser }}>
       {children}
+      <TenantInactiveModal isOpen={showInactiveModal} />
     </AuthContext.Provider>
   );
 }
