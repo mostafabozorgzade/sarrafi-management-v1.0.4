@@ -30,6 +30,7 @@ export default function ProfilePage() {
   const [editOpen, setEditOpen] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [mobile, setMobile] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -43,6 +44,7 @@ export default function ProfilePage() {
     if (!user) return;
     setFirstName(user.firstName);
     setLastName(user.lastName);
+    setMobile(user.mobile);
     setNewPassword("");
     setToast(null);
     setEditOpen(true);
@@ -53,9 +55,11 @@ export default function ProfilePage() {
     e.preventDefault();
     if (!firstName.trim()) { showToast("error", "نام الزامی است"); return; }
     if (!lastName.trim()) { showToast("error", "نام خانوادگی الزامی است"); return; }
+    if (!mobile.trim()) { showToast("error", "شماره موبایل الزامی است"); return; }
+    if (!/^[0-9]+$/.test(mobile.trim())) { showToast("error", "فقط اعداد انگلیسی مجاز است"); return; }
     setSubmitting(true);
     try {
-      const payload: Record<string, string> = { firstName: firstName.trim(), lastName: lastName.trim() };
+      const payload: Record<string, string> = { firstName: firstName.trim(), lastName: lastName.trim(), mobile: mobile.trim() };
       if (newPassword.trim()) {
         payload.newPassword = newPassword.trim();
       }
@@ -158,6 +162,7 @@ export default function ProfilePage() {
             <p className="text-xs font-medium text-gray-900">شماره موبایل</p>
             <p className="text-[11px] text-gray-400 mt-0.5" dir="ltr">{user.mobile}</p>
           </div>
+          <Pencil className="h-4 w-4 text-gray-300" strokeWidth={1.5} />
         </div>
         <div className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gray-50">
@@ -197,6 +202,18 @@ export default function ProfilePage() {
               onChange={(e) => setLastName(e.target.value)}
               placeholder="نام خانوادگی"
               className="h-12 rounded-[5px]"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-gray-500">شماره موبایل <span className="text-red-400">*</span></label>
+            <Input
+              value={mobile}
+              onChange={(e) => setMobile(e.target.value.replace(/[^0-9]/g, ""))}
+              placeholder="09123456789"
+              className="h-12 rounded-[5px] text-left"
+              dir="ltr"
+              inputMode="numeric"
             />
           </div>
 

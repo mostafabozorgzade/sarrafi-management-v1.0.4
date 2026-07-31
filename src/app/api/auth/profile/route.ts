@@ -9,15 +9,29 @@ export async function PUT(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { firstName, lastName, newPassword } = body;
+    const { firstName, lastName, mobile, newPassword } = body;
 
-    if (!firstName || !lastName) {
-      return safeJson({ error: "نام و نام خانوادگی الزامی است" }, { status: 400 });
+    if (!firstName || !lastName || !mobile) {
+      return safeJson({ error: "نام، نام خانوادگی و شماره موبایل الزامی است" }, { status: 400 });
+    }
+
+    if (!/^[0-9]+$/.test(mobile)) {
+      return safeJson({ error: "فقط اعداد انگلیسی مجاز است" }, { status: 400 });
+    }
+
+    const existingUser = await prisma.user.findFirst({
+      where: { mobile, id: { not: user.userId } },
+      select: { id: true },
+    });
+
+    if (existingUser) {
+      return safeJson({ error: "این شماره موبایل قبلا ثبت شده است" }, { status: 400 });
     }
 
     const data: Record<string, unknown> = {
       firstName,
       lastName,
+      mobile,
     };
 
     if (newPassword) {
