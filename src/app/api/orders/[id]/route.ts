@@ -34,15 +34,11 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const existing = await prisma.order.findFirst({ where: { id, ...tenantWhere } });
     if (!existing) return safeJson({ error: "سفارش یافت نشد" }, { status: 404 });
 
-    if (existing.status === "COMPLETED" || existing.status === "CANCELLED") {
-      return safeJson({ error: "سفارش تکمیل شده یا لغو شده قابل ویرایش نیست" }, { status: 400 });
-    }
-
     const body = await request.json();
     const {
-      customerId, currencyId, amount, marketRate, fee, transferCost,
+      customerId, currencyId, amount, buyRate, sellRate, marketRate, fee, transferCost,
       recipientName, recipientAccount, recipientMethod,
-      destinationCard, destinationSheba, description,
+      destinationCard, destinationSheba, description, status,
     } = body;
 
     if (!customerId || !currencyId || !amount) {
@@ -61,8 +57,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     const fallbackMarketRate = currencyRate ? Number(currencyRate.marketRate ?? 0) : 0;
 
-    const buyRateAtTime = Number(existing.buyRateAtTime || 0);
-    const sellRateAtTime = Number(existing.sellRateAtTime || 0);
+    const buyRateAtTime = buyRate !== undefined ? Number(String(buyRate).replace(/,/g, "")) || 0 : Number(existing.buyRateAtTime || 0);
+    const sellRateAtTime = sellRate !== undefined ? Number(String(sellRate).replace(/,/g, "")) || 0 : Number(existing.sellRateAtTime || 0);
     const marketRateAtTime = marketRateNum > 0 ? marketRateNum : (Number(existing.marketRateAtTime) || fallbackMarketRate);
 
     const orderRate = (orderType === "BUY_PKR" || orderType === "PK_TO_IR") ? buyRateAtTime : sellRateAtTime;
@@ -124,6 +120,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         destinationCard: destinationCard || null,
         destinationSheba: destinationSheba || null,
         description: description || null,
+        ...(status && { status }),
       },
       include: {
         customer: { select: { name: true, phone: true } },

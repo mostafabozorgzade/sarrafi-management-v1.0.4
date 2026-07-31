@@ -124,6 +124,7 @@ export default function OrdersPage() {
   const [currentRates, setCurrentRates] = useState<{ buyRate: number; sellRate: number; marketRate: number } | null>(null);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [editSheetOpen, setEditSheetOpen] = useState(false);
+  const [editStatus, setEditStatus] = useState("");
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deletingOrder, setDeletingOrder] = useState<Order | null>(null);
   const [formLoading, setFormLoading] = useState(false);
@@ -438,6 +439,7 @@ export default function OrdersPage() {
     setDestinationCard(order.destinationCard || "");
     setDestinationSheba(order.destinationSheba || "");
     setDescription(order.description || "");
+    setEditStatus(order.status);
     setError(null);
     setDetailSheetOpen(false);
     loadFormData();
@@ -454,9 +456,9 @@ export default function OrdersPage() {
     setSubmitting(true);
     try {
       const updated = await api.put(`/api/orders/${editingOrder.id}`, {
-        customerId, currencyId, amount, marketRate, fee, transferCost,
+        customerId, currencyId, amount, buyRate, sellRate, marketRate, fee, transferCost,
         recipientName, recipientAccount, recipientMethod,
-        destinationCard, destinationSheba, description,
+        destinationCard, destinationSheba, description, status: editStatus,
       });
       setEditSheetOpen(false);
       setOrders((prev) => prev.map((o) => o.id === editingOrder.id ? updated : o));
@@ -1200,9 +1202,10 @@ export default function OrdersPage() {
             </div>
 
             {/* Action Buttons */}
-            {selectedOrder.status !== "COMPLETED" && selectedOrder.status !== "CANCELLED" && (() => {
+            {(() => {
               const nextAction = getNextAction(selectedOrder.status);
               const isLoadingDetail = statusLoading === selectedOrder.id;
+              const isEditable = selectedOrder.status === "IN_PROGRESS";
               return (
                 <div className="space-y-2">
                   {isLoadingDetail && (
@@ -1211,18 +1214,20 @@ export default function OrdersPage() {
                       <span>در حال پردازش...</span>
                     </div>
                   )}
-                  {nextAction && (
+                  {isEditable && nextAction && (
                     <button onClick={() => handleStatus(selectedOrder.id, nextAction.next, () => setDetailSheetOpen(false))} disabled={isLoadingDetail} className="w-full flex items-center justify-center gap-1.5 rounded-[5px] bg-gray-900 py-3 text-[13px] font-semibold text-white active:bg-gray-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
                       {isLoadingDetail ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                       {isLoadingDetail ? "در حال تکمیل..." : nextAction.label}
                     </button>
                   )}
                   <div className="flex gap-2">
-                    <button onClick={() => handleStatus(selectedOrder.id, "CANCELLED", () => setDetailSheetOpen(false))} disabled={isLoadingDetail} className="flex-1 flex items-center justify-center gap-1.5 rounded-[5px] border border-red-200 bg-red-50 py-2.5 text-[12px] font-medium text-red-600 active:bg-red-100 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
-                      {isLoadingDetail ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-                      {isLoadingDetail ? "در حال لغو..." : "لغو"}
-                    </button>
-                    <button onClick={() => openEdit(selectedOrder)} disabled={isLoadingDetail} className="flex-1 flex items-center justify-center gap-1.5 rounded-[5px] border border-gray-200 py-2.5 text-[12px] font-medium text-gray-600 active:bg-gray-50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                    {isEditable && (
+                      <button onClick={() => handleStatus(selectedOrder.id, "CANCELLED", () => setDetailSheetOpen(false))} disabled={isLoadingDetail} className="flex-1 flex items-center justify-center gap-1.5 rounded-[5px] border border-red-200 bg-red-50 py-2.5 text-[12px] font-medium text-red-600 active:bg-red-100 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                        {isLoadingDetail ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                        {isLoadingDetail ? "در حال لغو..." : "لغو"}
+                      </button>
+                    )}
+                    <button onClick={() => openEdit(selectedOrder)} disabled={isLoadingDetail} className={cn("flex-1 flex items-center justify-center gap-1.5 rounded-[5px] border border-gray-200 py-2.5 text-[12px] font-medium text-gray-600 active:bg-gray-50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed", !isEditable && "w-full")}>
                       <Pencil className="h-3.5 w-3.5" strokeWidth={1.5} /> ویرایش
                     </button>
                   </div>
@@ -1299,15 +1304,13 @@ export default function OrdersPage() {
               {(editingOrder.orderType === "BUY_PKR" || editingOrder.orderType === "PK_TO_IR") && (
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-gray-500">نرخ خرید روپیه</label>
-                  <Input type="text" inputMode="numeric" value={buyRate} readOnly className="h-12 text-left rounded-[5px] bg-gray-50 text-gray-500 cursor-not-allowed" />
-                  <p className="text-[9px] text-gray-400">قفل شده - هنگام ایجاد سفارش ثبت شده</p>
+                  <Input type="text" inputMode="numeric" value={buyRate} onChange={(e) => setBuyRate(formatNum(e.target.value))} placeholder="0" className="h-12 text-left rounded-[5px]" />
                 </div>
               )}
               {(editingOrder.orderType === "SELL_PKR" || editingOrder.orderType === "IR_TO_PK") && (
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-gray-500">نرخ فروش روپیه</label>
-                  <Input type="text" inputMode="numeric" value={sellRate} readOnly className="h-12 text-left rounded-[5px] bg-gray-50 text-gray-500 cursor-not-allowed" />
-                  <p className="text-[9px] text-gray-400">قفل شده - هنگام ایجاد سفارش ثبت شده</p>
+                  <Input type="text" inputMode="numeric" value={sellRate} onChange={(e) => setSellRate(formatNum(e.target.value))} placeholder="0" className="h-12 text-left rounded-[5px]" />
                 </div>
               )}
               <div className="space-y-1.5">
@@ -1316,6 +1319,57 @@ export default function OrdersPage() {
               </div>
             </div>
           )}
+
+          {/* Profit Preview in Edit */}
+          {editingOrder && amountNum > 0 && rateNum > 0 && (
+            <div className="rounded-[5px] bg-emerald-50 p-4 space-y-3">
+              <p className="text-[10px] font-semibold text-emerald-600 uppercase tracking-wider">پیش‌نمایش سود</p>
+              <div className="space-y-2">
+                {previewMainProfit > 0 && (
+                  <div className="rounded-[5px] bg-white p-2.5 border border-emerald-100/80">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[11px] text-emerald-600">{mainProfitLabel}</span>
+                      <span className="text-[13px] font-bold text-emerald-700 tabular-nums" dir="ltr">{previewMainProfit.toLocaleString("en-US")} <span className="text-[9px] font-normal text-emerald-500">تومان</span></span>
+                    </div>
+                    <p className="text-[9px] text-emerald-500" dir="ltr">{mainProfitFormula}</p>
+                  </div>
+                )}
+                {feeNum > 0 && (
+                  <div className="rounded-[5px] bg-white p-2.5 border border-emerald-100/80">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] text-emerald-600">کارمزد (+)</span>
+                      <span className="text-[13px] font-bold text-emerald-700 tabular-nums" dir="ltr">{feeNum.toLocaleString("en-US")} <span className="text-[9px] font-normal text-emerald-500">تومان</span></span>
+                    </div>
+                  </div>
+                )}
+                {transferCostNum > 0 && (
+                  <div className="rounded-[5px] bg-white p-2.5 border border-red-100/80">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] text-red-500">هزینه انتقال (-)</span>
+                      <span className="text-[13px] font-bold text-red-600 tabular-nums" dir="ltr">{transferCostNum.toLocaleString("en-US")} <span className="text-[9px] font-normal text-red-400">تومان</span></span>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center justify-between border-t border-emerald-200/60 pt-2.5">
+                <span className="text-[12px] font-medium text-emerald-600">سود کل</span>
+                <span className="text-[15px] font-bold text-emerald-800 tabular-nums" dir="ltr">{previewTotalProfit.toLocaleString("en-US")} <span className="text-[9px] font-normal text-emerald-600">تومان</span></span>
+              </div>
+            </div>
+          )}
+
+          {/* Status Dropdown in Edit */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-gray-500">وضعیت سفارش</label>
+            <div className="relative">
+              <select value={editStatus} onChange={(e) => setEditStatus(e.target.value)} className="flex h-12 w-full appearance-none rounded-[5px] border border-gray-200 bg-white px-4 pr-10 text-sm focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900/10 transition-colors">
+                <option value="IN_PROGRESS">در حال انجام</option>
+                <option value="COMPLETED">تکمیل شده</option>
+                <option value="CANCELLED">لغو شده</option>
+              </select>
+              <ChevronLeft className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 pointer-events-none" strokeWidth={1.5} />
+            </div>
+          </div>
 
           {editingOrder && isHawalaType(editingOrder.orderType) && (
             <div className="space-y-1.5">
