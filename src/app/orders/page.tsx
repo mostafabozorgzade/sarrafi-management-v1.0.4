@@ -1593,9 +1593,9 @@ export default function OrdersPage() {
                     customerId === c.id ? "border-gray-900 bg-gray-50" : "border-gray-200"
                   )}
                 >
-                  <div>
-                    <p className="text-[13px] font-semibold text-gray-900">{c.name}</p>
-                    <p className="text-[11px] text-gray-400 mt-0.5" dir="ltr">{c.phone}</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[13px] font-semibold text-gray-900">{c.name}</span>
+                    <span className="text-[11px] text-gray-400" dir="ltr">{c.phone}</span>
                   </div>
                   {customerId === c.id && <CheckCircle2 className="h-5 w-5 text-gray-900" strokeWidth={1.5} />}
                 </button>
