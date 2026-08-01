@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Vazirmatn } from "next/font/google";
 import { AuthProvider } from "@/components/auth-provider";
 import { ServiceWorkerRegister } from "@/components/sw-register";
+import { InstallPrompt } from "@/components/install-prompt";
 import "./globals.css";
 
 const vazirmatn = Vazirmatn({
@@ -48,6 +49,7 @@ export default function RootLayout({
       <body className="min-h-dvh bg-white font-sans text-gray-900 antialiased">
         <AuthProvider>
           <ServiceWorkerRegister />
+          <InstallPrompt />
           {children}
         </AuthProvider>
       </body>
