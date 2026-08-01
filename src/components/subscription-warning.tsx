@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { AlertTriangle, CreditCard } from "lucide-react";
+import { AlertTriangle, CreditCard, Phone, Lock } from "lucide-react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 import { formatJalaliDate, toPersianDigits } from "@/lib/jalali";
 
 export function SubscriptionWarning() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [billing, setBilling] = useState<{
     billingMode: string;
     subscriptionEnd: string | null;
@@ -30,6 +30,51 @@ export function SubscriptionWarning() {
   if (daysLeft > 6) return null;
 
   const isExpired = daysLeft < 0;
+  const isBlocked = daysLeft < -2;
+
+  if (isBlocked) {
+    return (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white">
+        <div className="mx-6 max-w-sm w-full">
+          <div className="flex flex-col items-center text-center">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-red-100 mb-6">
+              <Lock className="h-10 w-10 text-red-500" strokeWidth={1.5} />
+            </div>
+
+            <h2 className="text-[20px] font-bold text-gray-900 mb-2">دسترسی مسدود شده</h2>
+            <p className="text-[13px] text-gray-500 leading-relaxed mb-2">
+              اشتراک شما بیش از ۲ روز است منقضی شده است.
+            </p>
+            <p className="text-[13px] text-gray-500 leading-relaxed mb-6">
+              جهت جلوگیری از از بین رفتن اطلاعات و فعال‌سازی مجدد سامانه، لطفاً با پشتیبانی تماس بگیرید.
+            </p>
+
+            <div className="w-full rounded-[5px] bg-red-50 border border-red-200 p-4 mb-6">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Phone className="h-4 w-4 text-red-600" strokeWidth={1.5} />
+                <span className="text-[12px] font-semibold text-red-700">شماره پشتیبانی</span>
+              </div>
+              <a
+                href="tel:+989224013811"
+                className="flex items-center justify-center gap-2 h-12 rounded-[5px] bg-red-600 text-white text-[16px] font-bold"
+                dir="ltr"
+              >
+                <Phone className="h-5 w-5" strokeWidth={1.5} />
+                09224013811
+              </a>
+            </div>
+
+            <button
+              onClick={() => logout()}
+              className="w-full h-11 rounded-[5px] border border-gray-200 text-[13px] font-semibold text-gray-500 active:bg-gray-50 transition-colors"
+            >
+              خروج از حساب کاربری
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cn(
@@ -57,9 +102,17 @@ export function SubscriptionWarning() {
               : `تنها ${toPersianDigits(daysLeft)} روز باقی مانده. جهت جلوگیری از غیرفعال شدن اپلیکیشن، اشتراک خود را تمدید کنید.`
             }
           </p>
-          <span className={cn("text-[9px] font-medium", isExpired ? "text-red-500" : "text-amber-500")}>
-            پایان: {formatJalaliDate(billing.subscriptionEnd)}
-          </span>
+          <div className="flex items-center justify-between mt-2">
+            <span className={cn("text-[9px] font-medium", isExpired ? "text-red-500" : "text-amber-500")}>
+              پایان: {formatJalaliDate(billing.subscriptionEnd)}
+            </span>
+            {isExpired && (
+              <a href="tel:+989224013811" className="flex items-center gap-1 text-[9px] font-medium text-red-500">
+                <Phone className="h-3 w-3" strokeWidth={1.5} />
+                پشتیبانی
+              </a>
+            )}
+          </div>
         </div>
       </div>
     </div>
