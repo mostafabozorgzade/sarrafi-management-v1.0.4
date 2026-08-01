@@ -26,6 +26,7 @@
     "jose": "^6.2.4",
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^1.27.0",
+    "moment-jalaali": "^0.10.4",
     "next": "15.3.5",
     "pg": "^8.22.0",
     "prisma": "^7.9.0",

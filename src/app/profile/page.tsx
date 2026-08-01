@@ -27,6 +27,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { formatJalaliDate } from "@/lib/jalali";
 
 const roleLabels: Record<string, string> = {
   SUPER_ADMIN: "سوپرادمین",
@@ -264,7 +265,7 @@ export default function ProfilePage() {
                 <>
                   <div className="flex justify-between text-[12px]">
                     <span className="text-gray-400">تاریخ پایان اشتراک</span>
-                    <span className="font-medium text-gray-700">{new Date(tenantBilling.subscriptionEnd).toLocaleDateString("fa-IR")}</span>
+                    <span className="font-medium text-gray-700">{formatJalaliDate(tenantBilling.subscriptionEnd)}</span>
                   </div>
                   <div className="flex justify-between text-[12px]">
                     <span className="text-gray-400">روزهای باقی‌مانده</span>
