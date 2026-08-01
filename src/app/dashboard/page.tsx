@@ -11,12 +11,15 @@ import {
   Clock,
   Target,
   Loader2,
+  AlertTriangle,
+  CreditCard,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { STATUS_LABELS, STATUS_COLORS, ICON_MAP } from "@/lib/order-types";
 import { useAuth } from "@/lib/auth-context";
+import { formatJalaliDate, toPersianDigits } from "@/lib/jalali";
 
 interface DashboardData {
   stats: {
@@ -43,6 +46,10 @@ export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [navigating, setNavigating] = useState<string | null>(null);
+  const [tenantBilling, setTenantBilling] = useState<{
+    billingMode: string;
+    subscriptionEnd: string | null;
+  } | null>(null);
   const showProfit = user?.role !== "CASHIER";
 
   const navigate = useCallback((href: string) => {
@@ -55,6 +62,16 @@ export default function DashboardPage() {
       .then((d) => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (user?.tenantId) {
+      api.get(`/api/tenants/${user.tenantId}`)
+        .then((d) => {
+          setTenantBilling({ billingMode: d.billingMode, subscriptionEnd: d.subscriptionEnd });
+        })
+        .catch(() => {});
+    }
+  }, [user?.tenantId]);
 
   const fmt = (v: bigint | number) => Number(v).toLocaleString("en-US");
 
@@ -149,6 +166,49 @@ export default function DashboardPage() {
       </div>
 
       <div className="p-4 pb-24 space-y-3">
+        {/* Subscription Warning */}
+        {tenantBilling && tenantBilling.billingMode === "SUBSCRIPTION" && tenantBilling.subscriptionEnd && (() => {
+          const daysLeft = Math.ceil((new Date(tenantBilling.subscriptionEnd).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+          if (daysLeft <= 6) {
+            const isExpired = daysLeft < 0;
+            return (
+              <div className={cn(
+                "rounded-[5px] border p-4",
+                isExpired ? "bg-red-50 border-red-200" : "bg-amber-50 border-amber-200"
+              )}>
+                <div className="flex items-start gap-3">
+                  <div className={cn(
+                    "flex h-9 w-9 items-center justify-center rounded-[5px] flex-shrink-0",
+                    isExpired ? "bg-red-100" : "bg-amber-100"
+                  )}>
+                    {isExpired ? (
+                      <AlertTriangle className="h-4.5 w-4.5 text-red-600" strokeWidth={1.5} />
+                    ) : (
+                      <CreditCard className="h-4.5 w-4.5 text-amber-600" strokeWidth={1.5} />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={cn("text-[13px] font-bold", isExpired ? "text-red-800" : "text-amber-800")}>
+                      {isExpired ? "اشتراک منقضی شده!" : "اتمام اشتراک نزدیک است"}
+                    </p>
+                    <p className={cn("text-[11px] mt-1 leading-relaxed", isExpired ? "text-red-600" : "text-amber-700")}>
+                      {isExpired
+                        ? "اشتراک شما منقضی شده است. جهت جلوگیری از غیرفعال شدن اپلیکیشن و از بین رفتن اطلاعات، اشتراک خود را تمدید کنید."
+                        : `تنها ${toPersianDigits(daysLeft)} روز از مدت اشتراک باقی مانده است. جهت جلوگیری از غیرفعال شدن اپلیکیشن و از بین رفتن اطلاعات، اشتراک خود را تمدید کنید.`
+                      }
+                    </p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className={cn("text-[10px] font-medium", isExpired ? "text-red-500" : "text-amber-500")}>
+                        تاریخ پایان: {formatJalaliDate(tenantBilling.subscriptionEnd)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          }
+          return null;
+        })()}
         {/* Buy & Sell Profit Today - hidden for CASHIER */}
         {showProfit && (
         <div className="grid grid-cols-2 gap-2.5">

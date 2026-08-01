@@ -12,6 +12,8 @@ import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/lib/auth-context";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
+import { JalaliDatePicker } from "@/components/ui/jalali-date-picker";
+import { formatJalaliDate } from "@/lib/jalali";
 
 interface CurrencyRate {
   buyRate: number;
@@ -415,7 +417,7 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
                   </div>
                   <div className="flex justify-between text-[12px]">
                     <span className="text-gray-400">تاریخ ایجاد</span>
-                    <span className="font-medium text-gray-700">{new Date(tenant.createdAt).toLocaleDateString("fa-IR")}</span>
+                    <span className="font-medium text-gray-700">{formatJalaliDate(tenant.createdAt)}</span>
                   </div>
                 </div>
               </div>
@@ -507,7 +509,7 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
                       <div className="flex items-center gap-3 mt-1">
                         <span className="text-[11px] text-gray-400" dir="ltr">{u.mobile}</span>
                         {u.lastLogin && (
-                          <span className="text-[10px] text-gray-300">آخرین ورود: {new Date(u.lastLogin).toLocaleDateString("fa-IR")}</span>
+                          <span className="text-[10px] text-gray-300">آخرین ورود: {formatJalaliDate(u.lastLogin)}</span>
                         )}
                       </div>
                     </div>
@@ -565,11 +567,11 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
                   <>
                     <div className="flex justify-between text-[12px]">
                       <span className="text-gray-400">شروع اشتراک</span>
-                      <span className="font-medium text-gray-700">{tenant.subscriptionStart ? new Date(tenant.subscriptionStart).toLocaleDateString("fa-IR") : "-"}</span>
+                      <span className="font-medium text-gray-700">{formatJalaliDate(tenant.subscriptionStart)}</span>
                     </div>
                     <div className="flex justify-between text-[12px]">
                       <span className="text-gray-400">پایان اشتراک</span>
-                      <span className="font-medium text-gray-700">{new Date(tenant.subscriptionEnd).toLocaleDateString("fa-IR")}</span>
+                      <span className="font-medium text-gray-700">{formatJalaliDate(tenant.subscriptionEnd)}</span>
                     </div>
                     <div className="flex justify-between text-[12px]">
                       <span className="text-gray-400">روزهای باقی‌مانده</span>
@@ -609,7 +611,7 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
                     {tenant.amountDueLastCalculated && (
                       <div className="flex justify-between text-[12px]">
                         <span className="text-gray-400">آخرین محاسبه</span>
-                        <span className="font-medium text-gray-700">{new Date(tenant.amountDueLastCalculated).toLocaleDateString("fa-IR")}</span>
+                        <span className="font-medium text-gray-700">{formatJalaliDate(tenant.amountDueLastCalculated)}</span>
                       </div>
                     )}
                     <button
@@ -662,20 +664,16 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
                   <>
                     <div className="space-y-1.5">
                       <label className="text-[11px] font-medium text-gray-500">تاریخ شروع</label>
-                      <input
-                        type="date"
+                      <JalaliDatePicker
                         value={editSubStart}
-                        onChange={(e) => setEditSubStart(e.target.value)}
-                        className="h-11 w-full rounded-[5px] border border-gray-200 bg-white px-3 text-[13px] text-gray-700 focus:outline-none focus:border-gray-400 transition-all"
+                        onChange={setEditSubStart}
                       />
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-[11px] font-medium text-gray-500">تاریخ پایان</label>
-                      <input
-                        type="date"
+                      <JalaliDatePicker
                         value={editSubEnd}
-                        onChange={(e) => setEditSubEnd(e.target.value)}
-                        className="h-11 w-full rounded-[5px] border border-gray-200 bg-white px-3 text-[13px] text-gray-700 focus:outline-none focus:border-gray-400 transition-all"
+                        onChange={setEditSubEnd}
                       />
                     </div>
                   </>
