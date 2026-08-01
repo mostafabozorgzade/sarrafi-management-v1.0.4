@@ -41,10 +41,11 @@ export function LoginForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="w-full space-y-3">
+    <form onSubmit={handleSubmit} className="w-full space-y-3 animate-fade-in">
       {serverError && <ErrorAlert message={serverError} />}
 
-      <div className="space-y-1">
+      <div className="space-y-1.5">
+        <label className="text-xs font-medium text-gray-500">شماره موبایل <span className="text-red-500">*</span></label>
         <div className="relative">
           <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
             <Phone className="h-4 w-4 text-gray-300" strokeWidth={1.5} />
@@ -54,16 +55,17 @@ export function LoginForm() {
             placeholder="09123456789"
             value={mobile}
             onChange={(e) => setMobile(e.target.value)}
-            className="h-12 pr-10 pl-3"
+            className="h-12 pr-10 pl-3 rounded-[5px]"
             autoComplete="tel"
             inputMode="numeric"
             maxLength={11}
           />
         </div>
-        <p className="text-[10px] text-gray-300 pr-1">+98 | شماره موبایل</p>
+        <p className="text-[10px] text-gray-300 pr-1">+98</p>
       </div>
 
-      <div className="space-y-1">
+      <div className="space-y-1.5">
+        <label className="text-xs font-medium text-gray-500">رمز عبور <span className="text-red-500">*</span></label>
         <div className="relative">
           <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
             <Lock className="h-4 w-4 text-gray-300" strokeWidth={1.5} />
@@ -73,7 +75,7 @@ export function LoginForm() {
             placeholder="رمز عبور"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="h-12 pr-10 pl-10"
+            className="h-12 pr-10 pl-10 rounded-[5px]"
             autoComplete="current-password"
           />
           <button
@@ -87,14 +89,14 @@ export function LoginForm() {
         </div>
       </div>
 
-      <Button type="submit" isLoading={isLoading} className="w-full h-12">
+      <Button type="submit" isLoading={isLoading} className="w-full h-12 rounded-[5px] bg-gray-900 hover:bg-gray-800">
         <LogIn className="h-4 w-4" strokeWidth={1.5} />
         ورود به حساب
       </Button>
 
       <div className="flex items-center justify-between pt-1">
-        <button type="button" className="text-xs text-gray-400 hover:text-blue-600">فراموشی رمز</button>
-        <button type="button" className="text-xs text-gray-400 hover:text-blue-600">پشتیبانی</button>
+        <button type="button" className="text-xs text-gray-400 hover:text-gray-600 transition-colors">فراموشی رمز</button>
+        <button type="button" className="text-xs text-gray-400 hover:text-gray-600 transition-colors">پشتیبانی</button>
       </div>
     </form>
   );
